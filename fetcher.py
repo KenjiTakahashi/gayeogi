@@ -76,6 +76,44 @@ class Filesystem(object):
         subDirectories=[f.split(' - ') for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
         return [{'album':d[1],'year':d[0],'digital':True,'analog':False} for d in subDirectories]
 
+class Internet(object):
+    def update(self,library):
+        def exists(a,lib):
+            state=False
+            for l in lib:
+                if l['album']==a:
+                    state=True
+                    break
+            return state
+        import urllib2
+        from gzip import GzipFile
+        from cStringIO import StringIO
+        from xml.dom import minidom
+        for l in library:
+            request=urllib2.Request('http://www.discogs.com/artist/'+l['artist'].replace(' ','+')+'?f=xml&api_key=95b787be0c')
+            request.add_header('Accept-Encoding','gzip')
+            try:
+                try:
+                    data=GzipFile(fileobj=StringIO(urllib2.urlopen(request).read())).read()
+                except IOError:
+                    data=urllib2.urlopen(request).read()
+            except urllib2.HTTPError:
+                pass
+            else:
+                print '.'
+                xml=minidom.parseString(data)
+                releases=[]
+                years=[]
+                types=('CD, Album','LP, Album')
+                for r in xml.getElementsByTagName('release'):
+                    if r.childNodes[1].firstChild.data in types and r.firstChild.firstChild.data not in releases:
+                        releases.append(r.firstChild.firstChild.data)
+                        if len(r.childNodes)>3:
+                            years.append(r.childNodes[3].firstChild.data)
+                for a,y in map(None,releases,years):
+                    if not exists(a,l['albums']):
+                        l['albums'].append({'album':a,'year':y,'digital':False,'analog':False})
+
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):
         QtGui.QDialog.__init__(self,parent)
@@ -85,7 +123,7 @@ class FirstRun(QtGui.QDialog):
         self.ui.browse.clicked.connect(self.__browse)
         self.ui.cancel.clicked.connect(sys.exit)
         self.ui.ok.clicked.connect(self.close)
-        self.setWindowTitle('Fetcher 0.0.9 - First Run Configuration')
+        self.setWindowTitle('Fetcher 0.1 - First Run Configuration')
     def __browse(self):
         dialog=QtGui.QFileDialog()
         self.ui.directory.setText(dialog.getExistingDirectory())
@@ -107,6 +145,8 @@ class Main(QtGui.QMainWindow):
             self.db=Sqlite()
             self.library=self.db.read()
             self.fs.update(self.db.getMainPath(),self.library)
+        self.inet=Internet()
+        self.inet.update(self.library) # separate thread!
         from main import Ui_main
         self.ui=Ui_main()
         widget=QtGui.QWidget()
@@ -123,7 +163,7 @@ class Main(QtGui.QMainWindow):
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.statusBar()
-        self.setWindowTitle('Fetcher 0.0.9')
+        self.setWindowTitle('Fetcher 0.1')
     def save(self):
         self.db.write(self.library)
         self.statusBar().showMessage('Saved')
@@ -136,7 +176,10 @@ class Main(QtGui.QMainWindow):
                     for a in l['albums']:
                         rows=self.ui.albums.rowCount()
                         self.ui.albums.setRowCount(rows+1)
-                        self.ui.albums.setItem(rows,0,QtGui.QTableWidgetItem(a['year']))
+                        if a['year']:
+                            self.ui.albums.setItem(rows,0,QtGui.QTableWidgetItem(a['year']))
+                        else:
+                            self.ui.albums.setItem(rows,0,QtGui.QTableWidgetItem('<None>'))
                         self.ui.albums.setItem(rows,1,QtGui.QTableWidgetItem(a['album']))
                         if a['digital']:
                             self.ui.albums.setItem(rows,2,QtGui.QTableWidgetItem('YES'))
