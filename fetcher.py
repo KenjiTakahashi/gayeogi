@@ -10,7 +10,7 @@ class Sqlite(object):
     def __init__(self):
         self.__connector=sqlite3.connect(os.path.expanduser('~/.config/fetcher/db.sqlite3'))
         self.cursor=self.__connector.cursor()
-        self.cursor.execute("create table if not exists settings(main_path text)")
+        self.cursor.execute("create table if not exists settings(main_path text,metal_archives boolean,discogs boolean)")
         self.cursor.execute("""create table if not exists artists(
                 artist text primary key,
                 path text,
@@ -21,11 +21,11 @@ class Sqlite(object):
                 year text,
                 digital boolean,
                 analog boolean, primary key(album,year))""")
-    def setMainPath(self,path):
-        self.cursor.execute("insert into settings values(?)",(path,))
+    def setSettings(self,settings):
+        self.cursor.execute("insert into settings values(?,?,?)",settings)
         self.__connector.commit()
-    def getMainPath(self):
-        return self.cursor.execute("select main_path from settings").fetchone()[0]
+    def getSettings(self):
+        return self.cursor.execute("select * from settings").fetchone()
     def read(self):
         def __getAlbums(artist):
             albums=self.cursor.execute("select album,year,digital,analog from albums where artist=?",(artist,))
@@ -58,7 +58,7 @@ class Filesystem(object):
                 l['albums']=self.__parseSubDirs(l['path'])
         mainDirectories=[f for f in os.listdir(directory)
                 if os.path.isdir(os.path.join(directory,f))
-                and f!="$RECYCLER" and f!="System Volume Information" and f!="Incoming"]
+                and f!="$RECYCLE.BIN" and f!="System Volume Information" and f!="Incoming"]
         def exists(d):
             state=False
             for l in library:
@@ -75,44 +75,6 @@ class Filesystem(object):
     def __parseSubDirs(self,d):
         subDirectories=[f.split(' - ') for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
         return [{'album':d[1],'year':d[0],'digital':True,'analog':False} for d in subDirectories]
-
-class Internet(object):
-    def update(self,library):
-        def exists(a,lib):
-            state=False
-            for l in lib:
-                if l['album']==a:
-                    state=True
-                    break
-            return state
-        import urllib2
-        from gzip import GzipFile
-        from cStringIO import StringIO
-        from xml.dom import minidom
-        for l in library:
-            request=urllib2.Request('http://www.discogs.com/artist/'+l['artist'].replace(' ','+')+'?f=xml&api_key=95b787be0c')
-            request.add_header('Accept-Encoding','gzip')
-            try:
-                try:
-                    data=GzipFile(fileobj=StringIO(urllib2.urlopen(request).read())).read()
-                except IOError:
-                    data=urllib2.urlopen(request).read()
-            except urllib2.HTTPError:
-                pass
-            else:
-                print '.'
-                xml=minidom.parseString(data)
-                releases=[]
-                years=[]
-                types=('CD, Album','LP, Album')
-                for r in xml.getElementsByTagName('release'):
-                    if r.childNodes[1].firstChild.data in types and r.firstChild.firstChild.data not in releases:
-                        releases.append(r.firstChild.firstChild.data)
-                        if len(r.childNodes)>3:
-                            years.append(r.childNodes[3].firstChild.data)
-                for a,y in map(None,releases,years):
-                    if not exists(a,l['albums']):
-                        l['albums'].append({'album':a,'year':y,'digital':False,'analog':False})
 
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):
@@ -138,15 +100,16 @@ class Main(QtGui.QMainWindow):
             dialog=FirstRun()
             dialog.exec_()
             self.db=Sqlite()
-            mainDirectory=str(dialog.ui.directory.text())
-            self.library=self.fs.create(mainDirectory)
-            self.db.setMainPath(mainDirectory)
+            settings=(str(dialog.ui.directory.text()),dialog.ui.metalArchives.isChecked(),dialog.ui.discogs.isChecked())
+            self.library=self.fs.create(settings[0])
+            self.db.setSettings(settings)
         else:
             self.db=Sqlite()
             self.library=self.db.read()
-            self.fs.update(self.db.getMainPath(),self.library)
-        self.inet=Internet()
-        self.inet.update(self.library) # separate thread!
+            settings=self.db.getSettings()
+            self.fs.update(settings[0],self.library)
+        #self.inet=Internet()
+        #self.inet.update(self.library) # separate thread!
         from main import Ui_main
         self.ui=Ui_main()
         widget=QtGui.QWidget()
