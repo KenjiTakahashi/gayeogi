@@ -5,10 +5,12 @@ import time
 import urllib2
 from BeautifulSoup import BeautifulSoup
 import threadpool
-from PyQt4 import QtCore,QtGui
+from PyQt4 import QtGui
+from PyQt4.QtCore import SIGNAL,QThread
 
-class MetalArchives(object):
+class MetalArchives(QThread):
     def __init__(self,library):
+        QThread.__init__(self)
         self.library=library
     def parse(self,soup,elem):
         if soup.findAll('script')[0].contents:
@@ -19,6 +21,7 @@ class MetalArchives(object):
             if len(partial)!=0:
                 if len(partial)==1:
                     soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+partial[0][1]).read())
+                    name=None
                 else:
                     app=QtGui.QApplication(sys.argv) # temporary, to have ability to test from command line
                     from interfaces import chooser
@@ -27,8 +30,14 @@ class MetalArchives(object):
                     for p in partial:
                         dialog.addButton(p)
                     dialog.exec_()
-                    soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+dialog.getChoice()).read())
-                result=[tag.contents[0] for tag in soup.findAll('a',attrs={'class':'album'})]
+                    (name,link)=dialog.getChoice()
+                    soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+link).read())
+                result={
+                        'choice':name,
+                        'elem':elem,
+                        'albums':[tag.contents[0] for tag in soup.findAll('a',attrs={'class':'album'})],
+                        'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
+                        }
             else:
                 result='no_band'
         except urllib2.HTTPError:
@@ -51,8 +60,24 @@ class MetalArchives(object):
         else:
             result=self.parse(soup,elem)
         return result
-    def done(self,request,result):
-        print "**** Results from request #%s: %r"%(request.requestID,result)
+    def done(self,_,result):
+        def exists(a,albums):
+            state=False
+            for alb in albums:
+                if a.lower()==alb['album'].lower():
+                    state=True
+                    break
+            return state
+        if result=='no_band':
+            print "No such band found"
+        elif result!='error':
+            elem=self.library[self.library.index(result['elem'])]
+            if result['choice']:
+                elem['artist']=result['choice']
+            for a,y in map(None,result['albums'],result['years']):
+                if not exists(a,elem['albums']):
+                    elem['albums'].append({'album':a,'year':y,'digital':False,'analog':False})
+            print elem
     def update(self):
         requests=threadpool.makeRequests(self.work,self.library,self.done)
         # metal-archives is blocking members on high load, that's why I use only 1 thread here.

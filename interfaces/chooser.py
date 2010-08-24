@@ -30,4 +30,4 @@ class Chooser(QtGui.QDialog):
         self.buttonGroup.addButton(button)
         self.buttons.addWidget(button)
     def getChoice(self):
-        return self.buttonGroup.checkedButton().link
+        return (str(self.buttonGroup.checkedButton().text()),self.buttonGroup.checkedButton().link)
