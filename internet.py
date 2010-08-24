@@ -19,15 +19,16 @@ class MetalArchives(object):
             if len(partial)!=0:
                 if len(partial)==1:
                     soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+partial[0][1]).read())
-                    result=soup
                 else:
                     app=QtGui.QApplication(sys.argv) # temporary, to have ability to test from command line
-                    import chooser
-                    chWidget=QtGui.QDialog()
-                    ch=chooser.Ui_chooser()
-                    ch.setupUi(chWidget)
-                    ch.label.setText(ch.label.text()+elem['artist'])
-                    chWidget.exec_()
+                    from interfaces import chooser
+                    dialog=chooser.Chooser()
+                    dialog.setArtist(elem['artist'])
+                    for p in partial:
+                        dialog.addButton(p)
+                    dialog.exec_()
+                    soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+dialog.getChoice()).read())
+                result=[tag.contents[0] for tag in soup.findAll('a',attrs={'class':'album'})]
             else:
                 result='no_band'
         except urllib2.HTTPError:
