@@ -1,17 +1,25 @@
 # -*- coding: utf-8 -*-
 
-import sys
-import time
 import urllib2
 from BeautifulSoup import BeautifulSoup
 import threadpool
-from PyQt4 import QtGui
-from PyQt4.QtCore import SIGNAL,QThread
+from PyQt4.QtCore import SIGNAL,QThread,pyqtSignal
 
 class MetalArchives(QThread):
+    paused=False
+    disambiguation=pyqtSignal(str,list)
+    error=pyqtSignal(str)
+    nextBand=pyqtSignal(str)
     def __init__(self,library):
         QThread.__init__(self)
         self.library=library
+        self.link=None
+        self.name=None
+    def setPaused(self,state):
+        self.paused=state
+    def disambigue(self,(name,link)):
+        self.name=name
+        self.link=link
     def parse(self,soup,elem):
         if soup.findAll('script')[0].contents:
             partial=[(elem['artist'],soup.findAll('script')[0].contents[0][18:-2])]
@@ -21,19 +29,15 @@ class MetalArchives(QThread):
             if len(partial)!=0:
                 if len(partial)==1:
                     soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+partial[0][1]).read())
-                    name=None
+                    self.name=None
                 else:
-                    app=QtGui.QApplication(sys.argv) # temporary, to have ability to test from command line
-                    from interfaces import chooser
-                    dialog=chooser.Chooser()
-                    dialog.setArtist(elem['artist'])
-                    for p in partial:
-                        dialog.addButton(p)
-                    dialog.exec_()
-                    (name,link)=dialog.getChoice()
-                    soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+link).read())
+                    self.disambiguation.emit(elem['artist'],partial)
+                    self.setPaused(True)
+                    while(self.paused):
+                        pass
+                    soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+self.link).read())
                 result={
-                        'choice':name,
+                        'choice':self.name,
                         'elem':elem,
                         'albums':[tag.contents[0] for tag in soup.findAll('a',attrs={'class':'album'})],
                         'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
@@ -44,12 +48,13 @@ class MetalArchives(QThread):
             result='error'
         return result
     def work(self,elem):
+        self.nextBand.emit(elem['artist']+': working')
         try:
             soup=BeautifulSoup(urllib2.urlopen(
                 'http://www.metal-archives.com/search.php?string='+elem['artist'].replace(' ','+')+'&type=band').read())
         except urllib2.HTTPError:
-            print "retrying..."
-            time.sleep(60)
+            self.error.emit('first attempt failed, retrying')
+            self.sleep(60)
             try:
                 soup=BeautifulSoup(urllib2.urlopen(
                     'http://www.metal-archives.com/search.php?string='+elem['artist'].replace(' ','+')+'&type=band').read())
@@ -69,7 +74,7 @@ class MetalArchives(QThread):
                     break
             return state
         if result=='no_band':
-            print "No such band found"
+            self.emit(SIGNAL('bandNotFound()'))
         elif result!='error':
             elem=self.library[self.library.index(result['elem'])]
             if result['choice']:
@@ -77,8 +82,9 @@ class MetalArchives(QThread):
             for a,y in map(None,result['albums'],result['years']):
                 if not exists(a,elem['albums']):
                     elem['albums'].append({'album':a,'year':y,'digital':False,'analog':False})
-            print elem
-    def update(self):
+        else:
+            self.error.emit('failed with an error, trying next band')
+    def run(self):
         requests=threadpool.makeRequests(self.work,self.library,self.done)
         # metal-archives is blocking members on high load, that's why I use only 1 thread here.
         # (It sometimes gets blocked anyway).

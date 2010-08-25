@@ -54,7 +54,6 @@ class Filesystem(object):
     def update(self,directory,library):
         for l in library:
             if os.stat(l['path']).st_mtime!=l['modified']:
-                print "LOL"
                 l['albums']=self.__parseSubDirs(l['path'])
         mainDirectories=[f for f in os.listdir(directory)
                 if os.path.isdir(os.path.join(directory,f))
@@ -79,7 +78,7 @@ class Filesystem(object):
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):
         QtGui.QDialog.__init__(self,parent)
-        from firstrun import Ui_firstRun
+        from interfaces.firstrun import Ui_firstRun
         self.ui=Ui_firstRun()
         self.ui.setupUi(self)
         self.ui.browse.clicked.connect(self.__browse)
@@ -108,25 +107,46 @@ class Main(QtGui.QMainWindow):
             self.library=self.db.read()
             settings=self.db.getSettings()
             self.fs.update(settings[0],self.library)
-        #self.inet=Internet()
-        #self.inet.update(self.library) # separate thread!
-        from main import Ui_main
+        from interfaces.main import Ui_main
         self.ui=Ui_main()
         widget=QtGui.QWidget()
         self.ui.setupUi(widget)
+        if settings[1]:
+            from internet import MetalArchives
+            self.metalThread=MetalArchives(self.library)
+            self.metalThread.disambiguation.connect(self.chooser)
+            self.metalThread.finished.connect(self.update)
+            self.metalThread.nextBand.connect(self.ui.label.setText)
+            self.metalThread.error.connect(self.append)
+            self.metalThread.start()
+        #if settings[2]: #discogs here
         self.setCentralWidget(widget)
         self.ui.artists.setHorizontalHeaderLabels(QStringList(['Artist','Digital','Analog']))
+        if not settings[1] and not settings[2]:
+            self.update()
+        self.ui.albums.setHorizontalHeaderLabels(QStringList(['Year','Album','Digital','Analog']))
+        self.ui.close.clicked.connect(self.close)
+        self.ui.save.clicked.connect(self.save)
+        self.statusBar()
+        self.setWindowTitle('Fetcher 0.1')
+    def chooser(self,artist,partial):
+        from interfaces import chooser
+        dialog=chooser.Chooser()
+        dialog.setArtist(artist)
+        for p in partial:
+            dialog.addButton(p)
+        dialog.exec_()
+        self.metalThread.disambigue(dialog.getChoice())
+        self.metalThread.setPaused(False)
+    def append(self,appendix):
+        self.ui.label.setText(self.ui.label.text()[:-7]+appendix)
+    def update(self):
         self.ui.artists.setRowCount(len(self.library))
         for i,a in enumerate(self.library):
             self.ui.artists.setItem(i,0,QtGui.QTableWidgetItem(a['artist']))
         self.ui.artists.sortItems(0)
         self.ui.artists.resizeColumnsToContents()
         self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
-        self.ui.albums.setHorizontalHeaderLabels(QStringList(['Year','Album','Digital','Analog']))
-        self.ui.close.clicked.connect(self.close)
-        self.ui.save.clicked.connect(self.save)
-        self.statusBar()
-        self.setWindowTitle('Fetcher 0.1')
     def save(self):
         self.db.write(self.library)
         self.statusBar().showMessage('Saved')
@@ -161,6 +181,7 @@ class Main(QtGui.QMainWindow):
                         else:
                             for i in range(4):
                                 self.ui.albums.item(rows,i).setBackground(Qt.red)
+        self.ui.albums.sortItems(0)
         self.ui.albums.resizeColumnsToContents()
 
 if __name__=='__main__':

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui/main.ui'
+# Form implementation generated from reading ui file '../ui/main.ui'
 #
-# Created: Sat Aug 21 02:09:20 2010
+# Created: Wed Aug 25 19:04:26 2010
 #      by: PyQt4 UI code generator 4.7.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -31,6 +31,7 @@ class Ui_main(object):
         self.horizontalLayout.addWidget(self.artists)
         self.albums = QtGui.QTableWidget(self.widget)
         self.albums.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.albums.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.albums.setColumnCount(4)
         self.albums.setObjectName("albums")
         self.albums.setColumnCount(4)
@@ -44,6 +45,9 @@ class Ui_main(object):
         self.horizontalLayout_2 = QtGui.QHBoxLayout(self.widget_2)
         self.horizontalLayout_2.setMargin(0)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.label = QtGui.QLabel(self.widget_2)
+        self.label.setObjectName("label")
+        self.horizontalLayout_2.addWidget(self.label)
         spacerItem = QtGui.QSpacerItem(439, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem)
         self.close = QtGui.QPushButton(self.widget_2)
@@ -62,6 +66,8 @@ class Ui_main(object):
 
     def retranslateUi(self, main):
         self.artists.setSortingEnabled(True)
+        self.albums.setSortingEnabled(True)
+        self.label.setText(QtGui.QApplication.translate("main", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setText(QtGui.QApplication.translate("main", "&Close", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk. (Do it if you don\'t like your changes to be lost!)", None, QtGui.QApplication.UnicodeUTF8))
