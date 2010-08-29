@@ -52,7 +52,7 @@ class Filesystem(object):
             'path':os.path.join(directory,d),
             'modified':os.stat(os.path.join(directory,d)).st_mtime,
             'albums':self.__parseSubDirs(os.path.join(directory,d)),
-            'url':None
+            'url':''
             } for d in mainDirectories]
     def update(self,directory,library):
         mainDirectories=[f for f in os.listdir(directory)
@@ -75,7 +75,7 @@ class Filesystem(object):
             'path':os.path.join(directory,d),
             'modified':os.stat(os.path.join(directory,d)).st_mtime,
             'albums':self.__parseSubDirs(os.path.join(directory,d)),
-            'url':None
+            'url':''
             } for d in mainDirectories if not exists(os.path.join(directory,d),'path')])
     def __parseSubDirs(self,d):
         subDirectories=[f.split(' - ') for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
@@ -168,25 +168,17 @@ class Main(QtGui.QMainWindow):
     def fillAlbums(self):
         self.ui.albums.setRowCount(0)
         items=self.ui.artists.selectedItems()
+        self.ui.albums.setSortingEnabled(False)
         for l in self.library:
             for i in items:
                 if i.text()==l['artist']:
                     for a in l['albums']:
                         rows=self.ui.albums.rowCount()
                         self.ui.albums.setRowCount(rows+1)
-                        if a['year']:
-                            self.ui.albums.setItem(rows,0,QtGui.QTableWidgetItem(a['year']))
-                        else:
-                            self.ui.albums.setItem(rows,0,QtGui.QTableWidgetItem('<None>'))
+                        self.ui.albums.setItem(rows,0,QtGui.QTableWidgetItem(a['year'] or '<None>'))
                         self.ui.albums.setItem(rows,1,QtGui.QTableWidgetItem(a['album']))
-                        if a['digital']:
-                            self.ui.albums.setItem(rows,2,QtGui.QTableWidgetItem('YES'))
-                        else:
-                            self.ui.albums.setItem(rows,2,QtGui.QTableWidgetItem('NO'))
-                        if a['analog']:
-                            self.ui.albums.setItem(rows,3,QtGui.QTableWidgetItem('YES'))
-                        else:
-                            self.ui.albums.setItem(rows,3,QtGui.QTableWidgetItem('NO'))
+                        self.ui.albums.setItem(rows,2,QtGui.QTableWidgetItem(a['digital'] and 'YES' or 'NO'))
+                        self.ui.albums.setItem(rows,3,QtGui.QTableWidgetItem(a['analog'] and 'YES' or 'NO'))
                         if a['digital'] and a['analog']:
                             for i in range(4):
                                 self.ui.albums.item(rows,i).setBackground(Qt.green)
@@ -196,7 +188,8 @@ class Main(QtGui.QMainWindow):
                         else:
                             for i in range(4):
                                 self.ui.albums.item(rows,i).setBackground(Qt.red)
-        #self.ui.albums.sortItems(0)
+        self.ui.albums.setSortingEnabled(True)
+        self.ui.albums.sortItems(0)
         self.ui.albums.resizeColumnsToContents()
 
 if __name__=='__main__':

@@ -14,7 +14,7 @@ class MetalArchives(QThread):
     def __init__(self,library):
         QThread.__init__(self)
         self.library=library
-        self.link=None
+        self.link=''
     def setPaused(self,state):
         self.paused=state
     def disambigue(self,link):
@@ -22,7 +22,7 @@ class MetalArchives(QThread):
     def parse1(self,elem):
         soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+elem['url']).read())
         return {
-                'choice':None,
+                'choice':'',
                 'elem':elem,
                 'albums':[tag.contents[0].title() for tag in soup.findAll('a',attrs={'class':'album'})],
                 'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
@@ -79,7 +79,7 @@ class MetalArchives(QThread):
         if elem['url']:
             result=self.parse1(elem)
         else:
-            artist=urllib2.quote(elem['artist'].replace(' ','+').encode('latin-1'))
+            artist=urllib2.quote(elem['artist'].encode('latin-1')).replace('%20','+')
             try:
                 soup=BeautifulSoup(urllib2.urlopen(
                     'http://www.metal-archives.com/search.php?string='+artist+'&type=band').read())
