@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../ui/main.ui'
 #
-# Created: Sun Aug 29 22:55:46 2010
+# Created: Sun Aug 29 23:01:35 2010
 #      by: PyQt4 UI code generator 4.7.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -76,7 +76,7 @@ class Ui_main(object):
         self.refresh.setText(QtGui.QApplication.translate("main", "&Refresh", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk. (Do it if you don\'t like your changes to be lost!)", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setText(QtGui.QApplication.translate("main", "&Save", None, QtGui.QApplication.UnicodeUTF8))
-        self.log.setText(QtGui.QApplication.translate("main", "Logs", None, QtGui.QApplication.UnicodeUTF8))
+        self.log.setText(QtGui.QApplication.translate("main", "&Logs", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setText(QtGui.QApplication.translate("main", "&Close", None, QtGui.QApplication.UnicodeUTF8))
 

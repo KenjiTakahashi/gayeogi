@@ -119,6 +119,7 @@ class Main(QtGui.QMainWindow):
         widget=QtGui.QWidget()
         self.ui.setupUi(widget)
         if settings[1]:
+            self.ui.log.setEnabled(False)
             from internet import MetalArchives
             self.metalThread=MetalArchives(self.library)
             self.metalThread.disambiguation.connect(self.chooser)
@@ -134,10 +135,15 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.setHorizontalHeaderLabels(QStringList(['Year','Album','Digital','Analog']))
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
+        self.ui.log.clicked.connect(self.showLogs)
         self.statusBar()
         self.setWindowTitle('Fetcher 0.1')
-    def addLogEntry(self,message):
-        self.log.append((self.ui.label.text(),message))
+    def showLogs(self):
+        from interfaces.logsview import LogsView
+        dialog=LogsView(self.log)
+        dialog.exec_()
+    def addLogEntry(self,artist,message):
+        self.log.append((artist,message))
     def chooser(self,artist,partial):
         from interfaces import chooser
         dialog=chooser.Chooser()
@@ -155,6 +161,7 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.sortItems(0)
         self.ui.artists.resizeColumnsToContents()
         self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
+        self.ui.log.setEnabled(True)
     def save(self):
         self.db.write(self.library)
         self.statusBar().showMessage('Saved')

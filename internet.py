@@ -10,7 +10,7 @@ class MetalArchives(QThread):
     disambiguation=pyqtSignal(str,list)
     error=pyqtSignal(str)
     nextBand=pyqtSignal(str)
-    message=pyqtSignal(str)
+    message=pyqtSignal(str,str)
     def __init__(self,library):
         QThread.__init__(self)
         self.library=library
@@ -50,9 +50,9 @@ class MetalArchives(QThread):
                         'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
                         }
             else:
-                result='no_band'
+                result={'choice':'no_band','elem':elem['artist']}
         except urllib2.HTTPError:
-            result='error'
+            result={'choice':'error','elem':elem['artist']}
         return result
     def done(self,_,result):
         def exists(a,albums):
@@ -62,18 +62,18 @@ class MetalArchives(QThread):
                     state=True
                     break
             return state
-        if result=='no_band':
-            self.message.emit('no such band')
-        elif result!='error':
-            self.message.emit('success')
+        if result['choice']=='no_band':
+            self.message.emit(result['elem'],'no such band')
+        elif result['choice']!='error':
             elem=self.library[self.library.index(result['elem'])]
+            self.message.emit(elem['artist'],'success')
             if result['choice']:
                 elem['url']=result['choice']
             for a,y in map(None,result['albums'],result['years']):
                 if not exists(a,elem['albums']):
                     elem['albums'].append({'album':a,'year':y,'digital':False,'analog':False})
         else:
-            self.message.emit('failed with an error')
+            self.message.emit(result['elem'],'failed with an error')
     def work(self,elem):
         self.nextBand.emit(elem['artist'])
         if elem['url']:
@@ -84,7 +84,7 @@ class MetalArchives(QThread):
                 soup=BeautifulSoup(urllib2.urlopen(
                     'http://www.metal-archives.com/search.php?string='+artist+'&type=band').read())
             except urllib2.HTTPError:
-                self.message.emit('first attempt failed, retrying')
+                self.message.emit(elem['artist'],'first attempt failed, retrying')
                 self.sleep(60)
                 try:
                     soup=BeautifulSoup(urllib2.urlopen(
