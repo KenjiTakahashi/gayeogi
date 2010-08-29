@@ -3,24 +3,31 @@
 import urllib2
 from BeautifulSoup import BeautifulSoup
 import threadpool
-from PyQt4.QtCore import SIGNAL,QThread,pyqtSignal
+from PyQt4.QtCore import QThread,pyqtSignal
 
 class MetalArchives(QThread):
     paused=False
     disambiguation=pyqtSignal(str,list)
     error=pyqtSignal(str)
     nextBand=pyqtSignal(str)
+    message=pyqtSignal(str)
     def __init__(self,library):
         QThread.__init__(self)
         self.library=library
         self.link=None
-        self.name=None
     def setPaused(self,state):
         self.paused=state
-    def disambigue(self,(name,link)):
-        self.name=name
+    def disambigue(self,link):
         self.link=link
-    def parse(self,soup,elem):
+    def parse1(self,elem):
+        soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+elem['url']).read())
+        return {
+                'choice':None,
+                'elem':elem,
+                'albums':[tag.contents[0].title() for tag in soup.findAll('a',attrs={'class':'album'})],
+                'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
+                }
+    def parse2(self,soup,elem):
         if soup.findAll('script')[0].contents:
             partial=[(elem['artist'],soup.findAll('script')[0].contents[0][18:-2])]
         else:
@@ -29,7 +36,7 @@ class MetalArchives(QThread):
             if len(partial)!=0:
                 if len(partial)==1:
                     soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+partial[0][1]).read())
-                    self.name=None
+                    self.link=partial[0][1]
                 else:
                     self.disambiguation.emit(elem['artist'],partial)
                     self.setPaused(True)
@@ -37,33 +44,15 @@ class MetalArchives(QThread):
                         pass
                     soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+self.link).read())
                 result={
-                        'choice':self.name,
+                        'choice':self.link,
                         'elem':elem,
-                        'albums':[tag.contents[0] for tag in soup.findAll('a',attrs={'class':'album'})],
+                        'albums':[tag.contents[0].title() for tag in soup.findAll('a',attrs={'class':'album'})],
                         'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
                         }
             else:
                 result='no_band'
         except urllib2.HTTPError:
             result='error'
-        return result
-    def work(self,elem):
-        self.nextBand.emit(elem['artist']+': working')
-        try:
-            soup=BeautifulSoup(urllib2.urlopen(
-                'http://www.metal-archives.com/search.php?string='+elem['artist'].replace(' ','+')+'&type=band').read())
-        except urllib2.HTTPError:
-            self.error.emit('first attempt failed, retrying')
-            self.sleep(60)
-            try:
-                soup=BeautifulSoup(urllib2.urlopen(
-                    'http://www.metal-archives.com/search.php?string='+elem['artist'].replace(' ','+')+'&type=band').read())
-            except urllib2.HTTPError:
-                result='error'
-            else:
-                result=self.parse(soup,elem)
-        else:
-            result=self.parse(soup,elem)
         return result
     def done(self,_,result):
         def exists(a,albums):
@@ -74,16 +63,39 @@ class MetalArchives(QThread):
                     break
             return state
         if result=='no_band':
-            self.emit(SIGNAL('bandNotFound()'))
+            self.message.emit('no such band')
         elif result!='error':
+            self.message.emit('success')
             elem=self.library[self.library.index(result['elem'])]
             if result['choice']:
-                elem['artist']=result['choice']
+                elem['url']=result['choice']
             for a,y in map(None,result['albums'],result['years']):
                 if not exists(a,elem['albums']):
                     elem['albums'].append({'album':a,'year':y,'digital':False,'analog':False})
         else:
-            self.error.emit('failed with an error, trying next band')
+            self.message.emit('failed with an error')
+    def work(self,elem):
+        self.nextBand.emit(elem['artist'])
+        if elem['url']:
+            result=self.parse1(elem)
+        else:
+            artist=urllib2.quote(elem['artist'].replace(' ','+').encode('latin-1'))
+            try:
+                soup=BeautifulSoup(urllib2.urlopen(
+                    'http://www.metal-archives.com/search.php?string='+artist+'&type=band').read())
+            except urllib2.HTTPError:
+                self.message.emit('first attempt failed, retrying')
+                self.sleep(60)
+                try:
+                    soup=BeautifulSoup(urllib2.urlopen(
+                        'http://www.metal-archives.com/search.php?string='+artist+'&type=band').read())
+                except urllib2.HTTPError:
+                    result='error'
+                else:
+                    result=self.parse2(soup,elem)
+            else:
+                result=self.parse2(soup,elem)
+        return result
     def run(self):
         requests=threadpool.makeRequests(self.work,self.library,self.done)
         # metal-archives is blocking members on high load, that's why I use only 1 thread here.

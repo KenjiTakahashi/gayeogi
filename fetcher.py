@@ -12,15 +12,16 @@ class Sqlite(object):
         self.cursor=self.__connector.cursor()
         self.cursor.execute("create table if not exists settings(main_path text,metal_archives boolean,discogs boolean)")
         self.cursor.execute("""create table if not exists artists(
-                artist text primary key,
+                artist text,
                 path text,
-                modified float)""")
+                modified float,
+                url text,primary key(artist,url))""")
         self.cursor.execute("""create table if not exists albums(
                 artist text,
                 album text,
                 year text,
                 digital boolean,
-                analog boolean, primary key(album,year))""")
+                analog boolean,primary key(album,year))""")
     def setSettings(self,settings):
         self.cursor.execute("insert into settings values(?,?,?)",settings)
         self.__connector.commit()
@@ -31,37 +32,41 @@ class Sqlite(object):
             albums=self.cursor.execute("select album,year,digital,analog from albums where artist=?",(artist,))
             return [{'album':a,'year':y,'digital':d,'analog':anal} for a,y,d,anal in albums]
         artists=self.cursor.execute("select * from artists").fetchall()
-        return [{'artist':a,'path':p,'modified':m,'albums':__getAlbums(a)} for a,p,m in artists]
+        return [{'artist':a,'path':p,'modified':m,'albums':__getAlbums(a),'url':h} for a,p,m,h in artists]
     def write(self,data):
         for d in data:
-            self.cursor.execute('replace into artists values(?,?,?)',(d['artist'],d['path'],d['modified']))
+            self.cursor.execute('replace into artists values(?,?,?,?)',(d['artist'],d['path'],d['modified'],d['url']))
             for a in d['albums']:
                 self.cursor.execute('replace into albums values(?,?,?,?,?)',(
                     d['artist'],a['album'],a['year'],a['digital'],a['analog']))
         self.__connector.commit()
+        self.cursor.close()
 
 class Filesystem(object):
     def create(self,directory):
         mainDirectories=[f for f in os.listdir(directory)
                 if os.path.isdir(os.path.join(directory,f))
-                and f!="$RECYCLER" and f!="System Volume Information" and f!="Incoming"]
+                and f!="$RECYCLE.BIN" and f!="System Volume Information" and f!="Incoming"]
         return [{
             'artist':d,
             'path':os.path.join(directory,d),
             'modified':os.stat(os.path.join(directory,d)).st_mtime,
-            'albums':self.__parseSubDirs(os.path.join(directory,d))
+            'albums':self.__parseSubDirs(os.path.join(directory,d)),
+            'url':None
             } for d in mainDirectories]
     def update(self,directory,library):
-        for l in library:
-            if os.stat(l['path']).st_mtime!=l['modified']:
-                l['albums']=self.__parseSubDirs(l['path'])
         mainDirectories=[f for f in os.listdir(directory)
                 if os.path.isdir(os.path.join(directory,f))
-                and f!="$RECYCLE.BIN" and f!="System Volume Information" and f!="Incoming"]
-        def exists(d):
+                and f!='$RECYCLE.BIN' and f!='System Volume Information' and f!='Incoming']
+        for l in library:
+            if l['artist'] not in mainDirectories:
+                del library[library.index(l)]
+            elif os.stat(l['path']).st_mtime!=l['modified']:
+                l['albums']=self.__parseSubDirs(l['path'])
+        def exists(d,t):
             state=False
             for l in library:
-                if l['path']==d:
+                if l[t]==d:
                     state=True
                     break
             return state
@@ -69,11 +74,12 @@ class Filesystem(object):
             'artist':d,
             'path':os.path.join(directory,d),
             'modified':os.stat(os.path.join(directory,d)).st_mtime,
-            'albums':self.__parseSubDirs(os.path.join(directory,d))
-            } for d in mainDirectories if not exists(os.path.join(directory,d))])
+            'albums':self.__parseSubDirs(os.path.join(directory,d)),
+            'url':None
+            } for d in mainDirectories if not exists(os.path.join(directory,d),'path')])
     def __parseSubDirs(self,d):
         subDirectories=[f.split(' - ') for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
-        return [{'album':d[1],'year':d[0],'digital':True,'analog':False} for d in subDirectories]
+        return [{'album':len(d)>2 and d[1]+' - '+d[2] or d[1],'year':d[0],'digital':True,'analog':False} for d in subDirectories]
 
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):
@@ -90,6 +96,7 @@ class FirstRun(QtGui.QDialog):
         self.ui.directory.setText(dialog.getExistingDirectory())
 
 class Main(QtGui.QMainWindow):
+    log=[]
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         if not os.path.exists(os.path.expanduser('~/.config/fetcher')):
@@ -117,7 +124,7 @@ class Main(QtGui.QMainWindow):
             self.metalThread.disambiguation.connect(self.chooser)
             self.metalThread.finished.connect(self.update)
             self.metalThread.nextBand.connect(self.ui.label.setText)
-            self.metalThread.error.connect(self.append)
+            self.metalThread.message.connect(self.addLogEntry)
             self.metalThread.start()
         #if settings[2]: #discogs here
         self.setCentralWidget(widget)
@@ -129,6 +136,8 @@ class Main(QtGui.QMainWindow):
         self.ui.save.clicked.connect(self.save)
         self.statusBar()
         self.setWindowTitle('Fetcher 0.1')
+    def addLogEntry(self,message):
+        self.log.append((self.ui.label.text(),message))
     def chooser(self,artist,partial):
         from interfaces import chooser
         dialog=chooser.Chooser()
@@ -138,9 +147,8 @@ class Main(QtGui.QMainWindow):
         dialog.exec_()
         self.metalThread.disambigue(dialog.getChoice())
         self.metalThread.setPaused(False)
-    def append(self,appendix):
-        self.ui.label.setText(self.ui.label.text()[:-7]+appendix)
     def update(self):
+        self.ui.label.setText('')
         self.ui.artists.setRowCount(len(self.library))
         for i,a in enumerate(self.library):
             self.ui.artists.setItem(i,0,QtGui.QTableWidgetItem(a['artist']))
@@ -181,7 +189,7 @@ class Main(QtGui.QMainWindow):
                         else:
                             for i in range(4):
                                 self.ui.albums.item(rows,i).setBackground(Qt.red)
-        self.ui.albums.sortItems(0)
+        #self.ui.albums.sortItems(0)
         self.ui.albums.resizeColumnsToContents()
 
 if __name__=='__main__':

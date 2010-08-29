@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../ui/main.ui'
 #
-# Created: Wed Aug 25 19:04:26 2010
+# Created: Sun Aug 29 22:55:46 2010
 #      by: PyQt4 UI code generator 4.7.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,6 +18,7 @@ class Ui_main(object):
         self.widget = QtGui.QWidget(main)
         self.widget.setObjectName("widget")
         self.horizontalLayout = QtGui.QHBoxLayout(self.widget)
+        self.horizontalLayout.setMargin(0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.artists = QtGui.QTableWidget(self.widget)
         self.artists.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
@@ -50,15 +51,18 @@ class Ui_main(object):
         self.horizontalLayout_2.addWidget(self.label)
         spacerItem = QtGui.QSpacerItem(439, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem)
-        self.close = QtGui.QPushButton(self.widget_2)
-        self.close.setObjectName("close")
-        self.horizontalLayout_2.addWidget(self.close)
-        self.save = QtGui.QPushButton(self.widget_2)
-        self.save.setObjectName("save")
-        self.horizontalLayout_2.addWidget(self.save)
         self.refresh = QtGui.QPushButton(self.widget_2)
         self.refresh.setObjectName("refresh")
         self.horizontalLayout_2.addWidget(self.refresh)
+        self.save = QtGui.QPushButton(self.widget_2)
+        self.save.setObjectName("save")
+        self.horizontalLayout_2.addWidget(self.save)
+        self.log = QtGui.QPushButton(self.widget_2)
+        self.log.setObjectName("log")
+        self.horizontalLayout_2.addWidget(self.log)
+        self.close = QtGui.QPushButton(self.widget_2)
+        self.close.setObjectName("close")
+        self.horizontalLayout_2.addWidget(self.close)
         self.verticalLayout.addWidget(self.widget_2)
 
         self.retranslateUi(main)
@@ -68,10 +72,11 @@ class Ui_main(object):
         self.artists.setSortingEnabled(True)
         self.albums.setSortingEnabled(True)
         self.label.setText(QtGui.QApplication.translate("main", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
-        self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application", None, QtGui.QApplication.UnicodeUTF8))
-        self.close.setText(QtGui.QApplication.translate("main", "&Close", None, QtGui.QApplication.UnicodeUTF8))
-        self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk. (Do it if you don\'t like your changes to be lost!)", None, QtGui.QApplication.UnicodeUTF8))
-        self.save.setText(QtGui.QApplication.translate("main", "&Save", None, QtGui.QApplication.UnicodeUTF8))
         self.refresh.setStatusTip(QtGui.QApplication.translate("main", "Refresh the database (both filesystem and internet). (Not working yet! Restart app if you want to refresh)", None, QtGui.QApplication.UnicodeUTF8))
         self.refresh.setText(QtGui.QApplication.translate("main", "&Refresh", None, QtGui.QApplication.UnicodeUTF8))
+        self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk. (Do it if you don\'t like your changes to be lost!)", None, QtGui.QApplication.UnicodeUTF8))
+        self.save.setText(QtGui.QApplication.translate("main", "&Save", None, QtGui.QApplication.UnicodeUTF8))
+        self.log.setText(QtGui.QApplication.translate("main", "Logs", None, QtGui.QApplication.UnicodeUTF8))
+        self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application", None, QtGui.QApplication.UnicodeUTF8))
+        self.close.setText(QtGui.QApplication.translate("main", "&Close", None, QtGui.QApplication.UnicodeUTF8))
 
