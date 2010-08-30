@@ -37,8 +37,32 @@ class Sqlite(object):
         for d in data:
             self.cursor.execute('replace into artists values(?,?,?,?)',(d['artist'],d['path'],d['modified'],d['url']))
             for a in d['albums']:
-                self.cursor.execute('replace into albums values(?,?,?,?,?)',(
-                    d['artist'],a['album'],a['year'],a['digital'],a['analog']))
+                self.cursor.execute('replace into albums values(?,?,?,?,?)',
+                        (d['artist'],a['album'],a['year'],a['digital'],a['analog']))
+        def exists1(a):
+            state=False
+            for d in data:
+                if d['artist']==a:
+                    state=True
+                    break
+            return state
+        def exists2(a):
+            state=False
+            for d in data:
+                for alb in d['albums']:
+                    if a==alb['album']:
+                        state=True
+                        break
+            return state
+        for artist, in self.cursor.execute('select artist from artists').fetchall():
+            if not exists1(artist):
+                self.cursor.execute('delete from artists where artist=?',(artist,))
+                self.cursor.execute('delete from albums where artist=?',(artist,))
+            else:
+                for album, in self.cursor.execute('select album from albums where artist=?',(artist,)):
+                    if not exists2(album):
+                        print "LOL"
+                        self.cursor.execute('delete from albums where artist=? and album=?',(artist,album))
         self.__connector.commit()
         self.cursor.close()
 
@@ -90,7 +114,7 @@ class FirstRun(QtGui.QDialog):
         self.ui.browse.clicked.connect(self.__browse)
         self.ui.cancel.clicked.connect(sys.exit)
         self.ui.ok.clicked.connect(self.close)
-        self.setWindowTitle('Fetcher 0.1 - First Run Configuration')
+        self.setWindowTitle('Fetcher 0.2 - First Run Configuration')
     def __browse(self):
         dialog=QtGui.QFileDialog()
         self.ui.directory.setText(dialog.getExistingDirectory())
@@ -137,7 +161,7 @@ class Main(QtGui.QMainWindow):
         self.ui.save.clicked.connect(self.save)
         self.ui.log.clicked.connect(self.showLogs)
         self.statusBar()
-        self.setWindowTitle('Fetcher 0.1')
+        self.setWindowTitle('Fetcher 0.2')
     def showLogs(self):
         from interfaces.logsview import LogsView
         dialog=LogsView(self.log)
