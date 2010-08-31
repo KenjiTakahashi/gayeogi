@@ -23,7 +23,8 @@ class Chooser(QtGui.QDialog):
         self.setLayout(layout)
     def setArtist(self,artist):
         self.label.setText(self.label.text()+artist)
-    def addButton(self,(name,link)):
+    def addButton(self,data):
+        (name,link)=data
         button=QtGui.QRadioButton(name)
         button.link=link
         button.setChecked(True)

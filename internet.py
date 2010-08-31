@@ -24,7 +24,7 @@ class MetalArchives(QThread):
         return {
                 'choice':'',
                 'elem':elem,
-                'albums':[tag.contents[0].title() for tag in soup.findAll('a',attrs={'class':'album'})],
+                'albums':[tag.contents[0] for tag in soup.findAll('a',attrs={'class':'album'})],
                 'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
                 }
     def parse2(self,soup,elem):
@@ -46,7 +46,7 @@ class MetalArchives(QThread):
                 result={
                         'choice':self.link,
                         'elem':elem,
-                        'albums':[tag.contents[0].title() for tag in soup.findAll('a',attrs={'class':'album'})],
+                        'albums':[tag.contents[0] for tag in soup.findAll('a',attrs={'class':'album'})],
                         'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
                         }
             else:
@@ -90,7 +90,7 @@ class MetalArchives(QThread):
                     soup=BeautifulSoup(urllib2.urlopen(
                         'http://www.metal-archives.com/search.php?string='+artist+'&type=band').read())
                 except urllib2.HTTPError:
-                    result='error'
+                    result={'choice':'error','elem':elem['artist']}
                 else:
                     result=self.parse2(soup,elem)
             else:

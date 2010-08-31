@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui/firstrun.ui'
+# Form implementation generated from reading ui file '../ui/firstrun.ui'
 #
-# Created: Sun Aug 22 20:33:58 2010
+# Created: Tue Aug 31 02:28:51 2010
 #      by: PyQt4 UI code generator 4.7.4
 #
 # WARNING! All changes made in this file will be lost!

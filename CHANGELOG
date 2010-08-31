@@ -9,3 +9,14 @@
 -LOTS of smaller fixes, I don't even remember all of them
 
 #Usable for metalheads :).
+
+0.3:
+-Fixed bug which caused duplicated entries in some cases.
+-Slightly re-defined interface.
+-'Ownage' statistics (green, yellow, red).
+-First ('artists') table is properly filled and colored.
+-Changed runtime behaviour: It will now refresh only local
+files and then allow you to tap 'refresh' to update
+from internet databases.
+
+#Still no discogs in this release, sorry.
