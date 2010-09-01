@@ -184,7 +184,7 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.setHorizontalHeaderLabels(QStringList([u'Artist',u'Digital',u'Analog']))
         self.update()
         self.ui.albums.setHorizontalHeaderLabels(QStringList([u'Year',u'Album',u'Digital',u'Analog']))
-        self.ui.albums.itemClicked.connect(self.setAnalog)
+        self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.refresh.clicked.connect(self.refresh)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
@@ -193,20 +193,42 @@ class Main(QtGui.QMainWindow):
         self.setWindowTitle(u'Fetcher 0.2')
     def setAnalog(self,item):
         digital=self.ui.albums.item(item.row(),2).text()
-        analog=self.ui.albums.item(item.row(),3).text()
-        if analog==u'NO':
+        analog=self.ui.albums.item(item.row(),3)
+        if analog.text()==u'NO':
             self.ui.albums.item(item.row(),3).setText(u'YES')
         else:
             self.ui.albums.item(item.row(),3).setText(u'NO')
-        if digital==u'YES' and analog==u'YES':
+        album=self.ui.albums.item(item.row(),1).text()
+        for l in self.library:
+            if l[u'artist']==analog.artist:
+                for a in l[u'albums']:
+                    if a['album']==album:
+                        if analog.text()==u'YES':
+                            a['analog']=1
+                        else:
+                            a['analog']=0
+                        break
+                break
+        if digital==u'YES' and analog.text()==u'YES':
             for i in range(4):
                 self.ui.albums.item(item.row(),i).setBackground(Qt.green)
-        elif digital==u'YES' or analog==u'YES':
+            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
+            self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())+1))
+        elif digital=='YES':
             for i in range(4):
                 self.ui.albums.item(item.row(),i).setBackground(Qt.yellow)
+            self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())-1))
+            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
+        elif analog.text()==u'YES':
+            for i in range(4):
+                self.ui.albums.item(item.row(),i).setBackground(Qt.yellow)
+            self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())-1))
+            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
         else:
             for i in range(4):
                 self.ui.albums.item(item.row(),i).setBackground(Qt.red)
+            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
+            self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())+1))
     def refresh(self):
         if self.settings[1]:
             self.ui.log.setEnabled(False)
@@ -281,7 +303,9 @@ class Main(QtGui.QMainWindow):
                         self.ui.albums.setItem(rows,0,QtGui.QTableWidgetItem(a[u'year'] or u'<None>'))
                         self.ui.albums.setItem(rows,1,QtGui.QTableWidgetItem(a[u'album']))
                         self.ui.albums.setItem(rows,2,QtGui.QTableWidgetItem(a[u'digital'] and u'YES' or u'NO'))
-                        self.ui.albums.setItem(rows,3,QtGui.QTableWidgetItem(a[u'analog'] and u'YES' or u'NO'))
+                        item=QtGui.QTableWidgetItem(a[u'analog'] and u'YES' or u'NO')
+                        item.artist=l[u'artist']
+                        self.ui.albums.setItem(rows,3,item)
                         if a[u'digital'] and a[u'analog']:
                             for i in range(4):
                                 self.ui.albums.item(rows,i).setBackground(Qt.green)
