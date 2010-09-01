@@ -185,7 +185,7 @@ class Main(QtGui.QMainWindow):
         self.update()
         self.ui.albums.setHorizontalHeaderLabels(QStringList([u'Year',u'Album',u'Digital',u'Analog']))
         self.ui.albums.itemActivated.connect(self.setAnalog)
-        self.ui.refresh.clicked.connect(self.refresh)
+        self.ui.remote.clicked.connect(self.refresh)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.log.clicked.connect(self.showLogs)
@@ -202,11 +202,11 @@ class Main(QtGui.QMainWindow):
         for l in self.library:
             if l[u'artist']==analog.artist:
                 for a in l[u'albums']:
-                    if a['album']==album:
+                    if a[u'album']==album:
                         if analog.text()==u'YES':
-                            a['analog']=1
+                            a[u'analog']=1
                         else:
-                            a['analog']=0
+                            a[u'analog']=0
                         break
                 break
         if digital==u'YES' and analog.text()==u'YES':
@@ -288,6 +288,7 @@ class Main(QtGui.QMainWindow):
         self.ui.albumsRed.setText(statistics[u'albums'][2])
         self.ui.log.setEnabled(True)
     def save(self):
+        self.db.write(self.library)
         self.db.commit()
         self.statusBar().showMessage(u'Saved')
     def fillAlbums(self):

@@ -19,5 +19,9 @@
 files and then allow you to tap 'refresh' to update
 from internet databases.
 -Fixed problems with non-ascii characters.
+-Switching analog option is working (Just double-click or
+ENTER the album you want).
+-Note: Local and Settings buttons does nothing so far,
+stay calm for next release :).
 
 #Still no discogs in this release, sorry.

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../ui/main.ui'
 #
-# Created: Tue Aug 31 02:28:38 2010
+# Created: Wed Sep  1 14:32:19 2010
 #      by: PyQt4 UI code generator 4.7.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -121,22 +121,30 @@ class Ui_main(object):
         self.gridLayout.addWidget(self.albumsStats, 1, 0, 1, 2)
         spacerItem = QtGui.QSpacerItem(20, 62, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.gridLayout.addItem(spacerItem, 2, 1, 1, 1)
-        self.refresh = QtGui.QPushButton(self.widget_3)
-        self.refresh.setMaximumSize(QtCore.QSize(61, 16777215))
-        self.refresh.setObjectName("refresh")
-        self.gridLayout.addWidget(self.refresh, 3, 0, 1, 1)
         self.save = QtGui.QPushButton(self.widget_3)
         self.save.setMaximumSize(QtCore.QSize(61, 16777215))
         self.save.setObjectName("save")
-        self.gridLayout.addWidget(self.save, 3, 1, 1, 1)
+        self.gridLayout.addWidget(self.save, 4, 1, 1, 1)
         self.log = QtGui.QPushButton(self.widget_3)
         self.log.setMaximumSize(QtCore.QSize(61, 16777215))
         self.log.setObjectName("log")
-        self.gridLayout.addWidget(self.log, 4, 0, 1, 1)
+        self.gridLayout.addWidget(self.log, 5, 0, 1, 1)
         self.close = QtGui.QPushButton(self.widget_3)
         self.close.setMaximumSize(QtCore.QSize(61, 16777215))
         self.close.setObjectName("close")
-        self.gridLayout.addWidget(self.close, 4, 1, 1, 1)
+        self.gridLayout.addWidget(self.close, 5, 1, 1, 1)
+        self.remote = QtGui.QPushButton(self.widget_3)
+        self.remote.setMaximumSize(QtCore.QSize(61, 16777215))
+        self.remote.setObjectName("remote")
+        self.gridLayout.addWidget(self.remote, 3, 1, 1, 1)
+        self.settings = QtGui.QPushButton(self.widget_3)
+        self.settings.setMaximumSize(QtCore.QSize(61, 16777215))
+        self.settings.setObjectName("settings")
+        self.gridLayout.addWidget(self.settings, 4, 0, 1, 1)
+        self.local = QtGui.QPushButton(self.widget_3)
+        self.local.setMaximumSize(QtCore.QSize(61, 16777215))
+        self.local.setObjectName("local")
+        self.gridLayout.addWidget(self.local, 3, 0, 1, 1)
         self.horizontalLayout_2.addWidget(self.widget_3)
 
         self.retranslateUi(main)
@@ -147,12 +155,14 @@ class Ui_main(object):
         self.albums.setSortingEnabled(True)
         self.artistsStats.setTitle(QtGui.QApplication.translate("main", "Artists", None, QtGui.QApplication.UnicodeUTF8))
         self.albumsStats.setTitle(QtGui.QApplication.translate("main", "Albums", None, QtGui.QApplication.UnicodeUTF8))
-        self.refresh.setStatusTip(QtGui.QApplication.translate("main", "Refresh internet databases.", None, QtGui.QApplication.UnicodeUTF8))
-        self.refresh.setText(QtGui.QApplication.translate("main", "&Refresh", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk. (Do it if you don\'t like your changes to be lost!)", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setText(QtGui.QApplication.translate("main", "&Save", None, QtGui.QApplication.UnicodeUTF8))
         self.log.setStatusTip(QtGui.QApplication.translate("main", "Access internet refreshing logs.", None, QtGui.QApplication.UnicodeUTF8))
-        self.log.setText(QtGui.QApplication.translate("main", "&Logs", None, QtGui.QApplication.UnicodeUTF8))
+        self.log.setText(QtGui.QApplication.translate("main", "L&ogs", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application.", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setText(QtGui.QApplication.translate("main", "&Close", None, QtGui.QApplication.UnicodeUTF8))
+        self.remote.setStatusTip(QtGui.QApplication.translate("main", "Refresh internet databases.", None, QtGui.QApplication.UnicodeUTF8))
+        self.remote.setText(QtGui.QApplication.translate("main", "&Remote", None, QtGui.QApplication.UnicodeUTF8))
+        self.settings.setText(QtGui.QApplication.translate("main", "S&ettings", None, QtGui.QApplication.UnicodeUTF8))
+        self.local.setText(QtGui.QApplication.translate("main", "&Local", None, QtGui.QApplication.UnicodeUTF8))
 
