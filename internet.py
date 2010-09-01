@@ -14,83 +14,83 @@ class MetalArchives(QThread):
     def __init__(self,library):
         QThread.__init__(self)
         self.library=library
-        self.link=''
+        self.link=u''
     def setPaused(self,state):
         self.paused=state
     def disambigue(self,link):
         self.link=link
     def parse1(self,elem):
-        soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+elem['url']).read())
+        soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/'+elem[u'url']).read())
         return {
-                'choice':'',
-                'elem':elem,
-                'albums':[tag.contents[0] for tag in soup.findAll('a',attrs={'class':'album'})],
-                'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
+                u'choice':u'',
+                u'elem':elem,
+                u'albums':[tag.contents[0] for tag in soup.findAll(u'a',attrs={u'class':u'album'})],
+                u'years':[tag.contents[0][-4:] for tag in soup.findAll(u'td',attrs={u'class':u'album'})]
                 }
     def parse2(self,soup,elem):
-        if soup.findAll('script')[0].contents:
-            partial=[(elem['artist'],soup.findAll('script')[0].contents[0][18:-2])]
+        if soup.findAll(u'script')[0].contents:
+            partial=[(elem[u'artist'],soup.findAll(u'script')[0].contents[0][18:-2])]
         else:
-            partial=[(r.contents[0],r['href']) for r in soup.findAll('a') if (r.contents[0]+' (').startswith(elem['artist']+' (')]
+            partial=[(r.contents[0],r[u'href']) for r in soup.findAll(u'a') if (r.contents[0]+u' (').startswith(elem[u'artist']+u' (')]
         try:
             if len(partial)!=0:
                 if len(partial)==1:
-                    soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+partial[0][1]).read())
+                    soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/'+partial[0][1]).read())
                     self.link=partial[0][1]
                 else:
-                    self.disambiguation.emit(elem['artist'],partial)
+                    self.disambiguation.emit(elem[u'artist'],partial)
                     self.setPaused(True)
                     while(self.paused):
                         pass
-                    soup=BeautifulSoup(urllib2.urlopen('http://www.metal-archives.com/'+self.link).read())
+                    soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/'+self.link).read())
                 result={
-                        'choice':self.link,
-                        'elem':elem,
-                        'albums':[tag.contents[0] for tag in soup.findAll('a',attrs={'class':'album'})],
-                        'years':[tag.contents[0][-4:] for tag in soup.findAll('td',attrs={'class':'album'})]
+                        u'choice':self.link.decode('utf-8'),
+                        u'elem':elem,
+                        u'albums':[tag.contents[0] for tag in soup.findAll(u'a',attrs={u'class':u'album'})],
+                        u'years':[tag.contents[0][-4:] for tag in soup.findAll(u'td',attrs={u'class':u'album'})]
                         }
             else:
-                result={'choice':'no_band','elem':elem['artist']}
+                result={u'choice':u'no_band',u'elem':elem[u'artist']}
         except urllib2.HTTPError:
-            result={'choice':'error','elem':elem['artist']}
+            result={u'choice':u'error',u'elem':elem[u'artist']}
         return result
     def done(self,_,result):
         def exists(a,albums):
             state=False
             for alb in albums:
-                if a.lower()==alb['album'].lower():
+                if a.lower()==alb[u'album'].lower():
                     state=True
                     break
             return state
-        if result['choice']=='no_band':
-            self.message.emit(result['elem'],'no such band')
-        elif result['choice']!='error':
-            elem=self.library[self.library.index(result['elem'])]
-            self.message.emit(elem['artist'],'success')
-            if result['choice']:
-                elem['url']=result['choice']
-            for a,y in map(None,result['albums'],result['years']):
-                if not exists(a,elem['albums']):
-                    elem['albums'].append({'album':a,'year':y,'digital':False,'analog':False})
+        if result[u'choice']==u'no_band':
+            self.message.emit(result[u'elem'],u'no such band')
+        elif result[u'choice']!=u'error':
+            elem=self.library[self.library.index(result[u'elem'])]
+            self.message.emit(elem[u'artist'],u'success')
+            if result[u'choice']:
+                elem[u'url']=result[u'choice']
+            for a,y in map(None,result[u'albums'],result[u'years']):
+                if not exists(a,elem[u'albums']):
+                    elem[u'albums'].append({u'album':a,u'year':y,u'digital':False,u'analog':False})
         else:
-            self.message.emit(result['elem'],'failed with an error')
+            self.message.emit(result[u'elem'],u'failed with an error')
     def work(self,elem):
-        self.nextBand.emit(elem['artist'])
-        if elem['url']:
+        self.nextBand.emit(elem[u'artist'])
+        if elem[u'url']:
             result=self.parse1(elem)
         else:
-            artist=urllib2.quote(elem['artist'].encode('latin-1')).replace('%20','+')
+            artist=urllib2.quote(elem[u'artist'].encode(u'latin-1')).replace(u'%20','+')
             try:
                 soup=BeautifulSoup(urllib2.urlopen(
-                    'http://www.metal-archives.com/search.php?string='+artist+'&type=band').read())
+                    u'http://www.metal-archives.com/search.php?string='+artist+u'&type=band').read())
             except urllib2.HTTPError:
-                self.message.emit(elem['artist'],'first attempt failed, retrying')
+                self.message.emit(elem[u'artist'],u'first attempt failed, retrying')
                 self.sleep(60)
                 try:
                     soup=BeautifulSoup(urllib2.urlopen(
-                        'http://www.metal-archives.com/search.php?string='+artist+'&type=band').read())
+                        u'http://www.metal-archives.com/search.php?string='+artist+u'&type=band').read())
                 except urllib2.HTTPError:
-                    result={'choice':'error','elem':elem['artist']}
+                    result={u'choice':u'error',u'elem':elem[u'artist']}
                 else:
                     result=self.parse2(soup,elem)
             else:

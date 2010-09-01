@@ -18,5 +18,6 @@
 -Changed runtime behaviour: It will now refresh only local
 files and then allow you to tap 'refresh' to update
 from internet databases.
+-Fixed problems with non-ascii characters.
 
 #Still no discogs in this release, sorry.
