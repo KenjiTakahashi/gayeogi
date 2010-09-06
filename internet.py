@@ -4,6 +4,42 @@ import urllib2
 from BeautifulSoup import BeautifulSoup
 import threadpool
 from PyQt4.QtCore import QThread,pyqtSignal
+from re import sub
+from htmlentitydefs import name2codepoint
+
+def unescape(text):
+    """Removes HTML or XML character references 
+      and entities from a text string.
+      keep &amp;, &gt;, &lt; in the source code.
+   from Fredrik Lundh
+   http://effbot.org/zone/re-sub.htm#unescape-html
+   """
+    def fixup(m):
+        text = m.group(0)
+        if text[:2] == "&#":
+            # character reference
+            try:
+                if text[:3] == "&#x":
+                    return unichr(int(text[3:-1], 16))
+                else:
+                    return unichr(int(text[2:-1]))
+            except ValueError:
+                print "erreur de valeur"
+        else:
+            # named entity
+            try:
+                if text[1:-1] == "amp":
+                    text = "&amp;amp;"
+                elif text[1:-1] == "gt":
+                    text = "&amp;gt;"
+                elif text[1:-1] == "lt":
+                    text = "&amp;lt;"
+                else:
+                    text = unichr(name2codepoint[text[1:-1]])
+            except KeyError:
+                print "keyerror"
+        return text # leave as is
+    return sub("&#?\w+;", fixup, text)
 
 class MetalArchives(QThread):
     paused=False
@@ -24,8 +60,8 @@ class MetalArchives(QThread):
         return {
                 u'choice':u'',
                 u'elem':elem,
-                u'albums':[tag.contents[0] for tag in soup.findAll(u'a',attrs={u'class':u'album'})],
-                u'years':[tag.contents[0][-4:] for tag in soup.findAll(u'td',attrs={u'class':u'album'})]
+                u'albums':[unescape(tag.contents[0]) for tag in soup.findAll(u'a',attrs={u'class':u'album'}) if len(tag.contents)!=0],
+                u'years':[tag.contents[0][-4:] for tag in soup.findAll(u'td',attrs={u'class':u'album'}) if tag.contents[0][-4:]!=u'0000']
                 }
     def parse2(self,soup,elem):
         if soup.findAll(u'script')[0].contents:
@@ -46,7 +82,7 @@ class MetalArchives(QThread):
                 result={
                         u'choice':self.link.decode('utf-8'),
                         u'elem':elem,
-                        u'albums':[tag.contents[0] for tag in soup.findAll(u'a',attrs={u'class':u'album'})],
+                        u'albums':[unescape(tag.contents[0]) for tag in soup.findAll(u'a',attrs={u'class':u'album'})],
                         u'years':[tag.contents[0][-4:] for tag in soup.findAll(u'td',attrs={u'class':u'album'})]
                         }
             else:

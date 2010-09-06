@@ -119,28 +119,35 @@ class Filesystem(object):
     def update(self,directory,library):
         mainDirectories=[f for f in os.listdir(directory)
                 if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
+        def exists(d,t,l):
+            state=False
+            for e in l:
+                if e[t]==d:
+                    state=True
+                    break
+            return state
         for l in library:
             if l[u'artist'] not in mainDirectories:
                 del library[library.index(l)]
             elif os.stat(l[u'path']).st_mtime!=l[u'modified']:
-                l[u'albums']=self.__parseSubDirs(l[u'path'])
-        def exists(d,t):
-            state=False
-            for l in library:
-                if l[t]==d:
-                    state=True
-                    break
-            return state
+                subs=self.__parseSubDirs(l[u'path'])
+                for ll in l[u'albums']:
+                    if ll[u'digital']==1 and not exists(ll[u'album'],u'album',subs):
+                        del l[u'albums'][l[u'albums'].index(ll)]
+                subs.extend([f for f in l[u'albums'] if not exists(f[u'album'],u'album',subs)])
+                l[u'albums']=subs
+                l[u'modified']=os.stat(l[u'path']).st_mtime
         library.extend([{
             u'artist':d,
             u'path':os.path.join(directory,d),
             u'modified':os.stat(os.path.join(directory,d)).st_mtime,
             u'albums':self.__parseSubDirs(os.path.join(directory,d)),
             u'url':u''
-            } for d in mainDirectories if not exists(os.path.join(directory,d),u'path')])
+            } for d in mainDirectories if not exists(os.path.join(directory,d),u'path',library)])
     def __parseSubDirs(self,d):
         subDirectories=[f.split(' - ') for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
-        return [{u'album':len(d)>2 and d[1]+' - '+d[2] or d[1],u'year':d[0],u'digital':True,u'analog':False} for d in subDirectories]
+        return [{u'album':len(d)>2 and d[1]+' - '+d[2] or d[1],u'year':d[0],u'digital':True,u'analog':False}
+                for d in subDirectories]
 
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):
@@ -257,7 +264,7 @@ class Main(QtGui.QMainWindow):
         self.metalThread.setPaused(False)
     def update(self):
         self.db.write(self.library)
-        self.statusBar().showMessage('')
+        self.statusBar().showMessage(u'')
         self.ui.artists.setRowCount(0) # invalidate old content
         self.ui.artists.setRowCount(len(self.library))
         statistics=self.db.getStatistics()

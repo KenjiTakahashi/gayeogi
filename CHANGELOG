@@ -21,7 +21,10 @@ from internet databases.
 -Fixed problems with non-ascii characters.
 -Switching analog option is working (Just double-click or
 ENTER the album you want).
--Note: Local and Settings buttons does nothing so far,
+-Catched incorrect page rendering on metal-archives.
+It rendered link to an empty album-template. It only
+heppened to me once, but who knows...
+-Note: Local and Settings buttons do nothing so far,
 stay calm for next release :).
 
 #Still no discogs in this release, sorry.
