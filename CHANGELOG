@@ -26,6 +26,7 @@ It rendered link to an empty album-template. It only
 heppened to me once, but who knows...
 -Slashes ('/') are now replaces by spaces (' '). You won't
 use them in dir names anyway, would you?
+-Setup script.
 -Note: Local and Settings buttons do nothing so far,
 stay calm for next release :).
 

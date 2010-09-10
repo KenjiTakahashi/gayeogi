@@ -1,0 +1,6 @@
+== INSTALL ==
+
+=== LINUX ===
+
+Just type 'python setup.py install' while in
+package main directory and you should be set.
