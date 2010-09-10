@@ -327,7 +327,7 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.sortItems(0)
         self.ui.albums.resizeColumnsToContents()
 
-if __name__=='__main__':
+def run():
     app=QtGui.QApplication(sys.argv)
     main=Main()
     main.show()
