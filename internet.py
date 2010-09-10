@@ -60,7 +60,7 @@ class MetalArchives(QThread):
         return {
                 u'choice':u'',
                 u'elem':elem,
-                u'albums':[unescape(tag.contents[0]) for tag in soup.findAll(u'a',attrs={u'class':u'album'}) if len(tag.contents)!=0],
+                u'albums':[unescape(tag.contents[0].replace('/',' ')) for tag in soup.findAll(u'a',attrs={u'class':u'album'}) if len(tag.contents)!=0],
                 u'years':[tag.contents[0][-4:] for tag in soup.findAll(u'td',attrs={u'class':u'album'}) if tag.contents[0][-4:]!=u'0000']
                 }
     def parse2(self,soup,elem):
@@ -82,7 +82,7 @@ class MetalArchives(QThread):
                 result={
                         u'choice':self.link.decode('utf-8'),
                         u'elem':elem,
-                        u'albums':[unescape(tag.contents[0]) for tag in soup.findAll(u'a',attrs={u'class':u'album'})],
+                        u'albums':[unescape(tag.contents[0].replace('/',' ')) for tag in soup.findAll(u'a',attrs={u'class':u'album'})],
                         u'years':[tag.contents[0][-4:] for tag in soup.findAll(u'td',attrs={u'class':u'album'})]
                         }
             else:
