@@ -6,9 +6,18 @@ import sqlite3
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList,Qt
 
+if sys.platform=='win32':
+    import ctypes
+    dll=ctypes.windll.shell32
+    buf=ctypes.create_string_buffer(300)
+    dll.SHGetSpecialFolderPathA(None,buf,0x0005,False)
+    dbPath=buf.value+'\\fetcher'
+else: # Most POSIX systems, there may be more elifs in future.
+    dbPath=os.path.expanduser(u'~/.config/fetcher')
+
 class Sqlite(object):
     def __init__(self):
-        self.__connector=sqlite3.connect(os.path.expanduser(u'~/.config/fetcher/db.sqlite3'))
+        self.__connector=sqlite3.connect(os.path.join(dbPath,u'db.sqlite3'))
         self.cursor=self.__connector.cursor()
         self.cursor.execute(u"create table if not exists settings(main_path text,metal_archives boolean,discogs boolean)")
         self.cursor.execute(u"""create table if not exists artists(
@@ -168,14 +177,14 @@ class Main(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         self.metalThread=None
-        if not os.path.exists(os.path.expanduser(u'~/.config/fetcher')):
-            os.mkdir(os.path.expanduser(u'~/.config/fetcher'))
+        if not os.path.exists(dbPath):
+            os.mkdir(dbPath)
         self.fs=Filesystem()
-        if not os.path.exists(os.path.expanduser(u'~/.config/fetcher/db.sqlite3')):
+        if not os.path.exists(os.path.join(dbPath,u'db.sqlite3')):
             dialog=FirstRun()
             dialog.exec_()
             self.db=Sqlite()
-            self.settings=(str(dialog.ui.directory.text()).decode('utf-8'),dialog.ui.metalArchives.isChecked(),dialog.ui.discogs.isChecked())
+            self.settings=(str(dialog.ui.directory.text()).decode(u'utf-8'),dialog.ui.metalArchives.isChecked(),dialog.ui.discogs.isChecked())
             self.library=self.fs.create(self.settings[0])
             self.db.setSettings(self.settings)
         else:
