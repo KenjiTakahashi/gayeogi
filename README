@@ -7,18 +7,31 @@ PyQt>=4.x
 BeautifulSoup>=3.0
 threadpool>=1.2.5 (here: http://chrisarndt.de/projects/threadpool/)
 
+Note: Windows installer provides all that
+dependencies to you, don't bother getting
+them separately (unless you want to build
+from source, of course).
+
 === LINUX ===
 
-Just type 'python setup.py install' while in
-package main directory and you should be set.
+Just type 'python setup.py install' while
+in package main directory and you should
+be set.
+
+=== WINDOWS ===
+
+You should have no problems with provided
+installer (just few clicks ;). If you want
+to build it on your own then... you're on
+your own.
 
 === UPGRADE FROM 0.2 ===
 
-You should recreate database, because there were
-some non-compatible changes made. To do this just
-remove:
+You should recreate database, because there
+were some non-compatible changes made. To do
+this just remove:
 $HOME/.config/fetcher/db.sqlite3 (on Linux),
 Documents\fetcher\db.sqlite3 (on Windows)
 and re-run the application.
-Sorry about this, I hope it won't happen in the
-future.
+Sorry about this, I hope it won't happen in
+the future.
