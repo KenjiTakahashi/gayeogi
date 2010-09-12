@@ -245,6 +245,38 @@ class Main(QtGui.QMainWindow):
                 self.ui.albums.item(item.row(),i).setBackground(Qt.red)
             self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
             self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())+1))
+        artists={}
+        for i in range(self.ui.albums.rowCount()):
+            item=self.ui.albums.item(i,3)
+            artist=item.artist
+            state=str(item.background().color().name())
+            if artist in artists:
+                if state in artists[artist]:
+                    artists[artist][state]+=1
+                else:
+                    artists[artist][state]=1
+                if artists[artist][u'analog']!=u'NO' and item.text()==u'NO':
+                    artists[artist][u'analog']=u'NO'
+            else:
+                artists[artist]={state:1}
+                if item.text()==u'YES':
+                    artists[artist][u'analog']=u'YES'
+                else:
+                    artists[artist][u'analog']=u'NO'
+        def setColor(artist,qcolor,analogState):
+            for r in self.ui.artists.selectedRanges():
+                if self.ui.artists.item(r.topRow(),r.leftColumn()).text()==artist:
+                    for i in range(3):
+                        self.ui.artists.item(r.topRow(),i).setBackground(qcolor)
+                    self.ui.artists.item(r.topRow(),2).setText(analogState)
+                    break
+        for artist,states in artists.items():
+            if u'#ff0000' in states:
+                setColor(artist,Qt.red,states[u'analog'])
+            elif u'#ffff00' in states:
+                setColor(artist,Qt.yellow,states[u'analog'])
+            else:
+                setColor(artist,Qt.green,states[u'analog'])
     def refresh(self):
         if self.settings[1]:
             self.ui.log.setEnabled(False)

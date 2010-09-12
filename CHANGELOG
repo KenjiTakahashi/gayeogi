@@ -16,8 +16,8 @@
 -'Ownage' statistics (green, yellow, red).
 -First ('artists') table is properly filled and colored.
 -Changed runtime behaviour: It will now refresh only local
-files and then allow you to tap 'refresh' to update
-from internet databases.
+files and then allow you to tap 'remote' to update from
+internet databases.
 -Fixed problems with non-ascii characters.
 -Switching analog option is working (Just double-click or
 ENTER the album you want).
@@ -25,9 +25,9 @@ ENTER the album you want).
 It rendered link to an empty album-template. It only
 heppened to me once, but who knows...
 -Slashes ('/') are now replaces by spaces (' '). You won't
-use them in dir names anyway, would you?
+use them in dir names anyway, will you?
 -Setup script.
--Windows-based fixes.
+-Windows-based fixes. (Yes, it runs on Windows now)
 -Note: Local and Settings buttons do nothing so far,
 stay calm for next release :).
 

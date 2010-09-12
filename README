@@ -35,3 +35,15 @@ Documents\fetcher\db.sqlite3 (on Windows)
 and re-run the application.
 Sorry about this, I hope it won't happen in
 the future.
+
+== USAGE ==
+
+=== DIRECTORIES STRUCTURE ===
+
+For now your dirs structure should look sth
+like this:
+<root>
+    <artist>
+        <year> - <album>
+In the future, this will be changeable in
+settings.
