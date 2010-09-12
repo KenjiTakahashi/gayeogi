@@ -6,6 +6,7 @@ import sqlite3
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList,Qt
 
+version='0.3'
 if sys.platform=='win32':
     import ctypes
     dll=ctypes.windll.shell32
@@ -167,7 +168,7 @@ class FirstRun(QtGui.QDialog):
         self.ui.browse.clicked.connect(self.__browse)
         self.ui.cancel.clicked.connect(sys.exit)
         self.ui.ok.clicked.connect(self.close)
-        self.setWindowTitle(u'Fetcher 0.2 - First Run Configuration')
+        self.setWindowTitle(u'Fetcher '+version+' - First Run Configuration')
     def __browse(self):
         dialog=QtGui.QFileDialog()
         self.ui.directory.setText(dialog.getExistingDirectory())
@@ -206,7 +207,7 @@ class Main(QtGui.QMainWindow):
         self.ui.save.clicked.connect(self.save)
         self.ui.log.clicked.connect(self.showLogs)
         self.statusBar()
-        self.setWindowTitle(u'Fetcher 0.2')
+        self.setWindowTitle(u'Fetcher '+version)
     def setAnalog(self,item):
         digital=self.ui.albums.item(item.row(),2).text()
         analog=self.ui.albums.item(item.row(),3)
