@@ -32,3 +32,8 @@ use them in dir names anyway, will you?
 stay calm for next release :).
 
 #Still no discogs in this release, sorry.
+
+0.4:
+-Fixed bug when you had 'analog'='YES' and 'digital'='NO'
+and then switching 'digital' switched 'analog' too.
+-Added setup.nsi to source tarball.

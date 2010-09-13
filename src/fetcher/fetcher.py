@@ -123,24 +123,22 @@ class Filesystem(object):
             u'artist':d,
             u'path':os.path.join(directory,d),
             u'modified':os.stat(os.path.join(directory,d)).st_mtime,
-            u'albums':self.__parseSubDirs(os.path.join(directory,d)),
+            u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
             u'url':u''
             } for d in mainDirectories]
     def update(self,directory,library):
         mainDirectories=[f for f in os.listdir(directory)
                 if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
         def exists(d,t,l):
-            state=False
             for e in l:
                 if e[t]==d:
-                    state=True
-                    break
-            return state
+                    return True
+            return False
         for l in library:
             if l[u'artist'] not in mainDirectories:
                 del library[library.index(l)]
             elif os.stat(l[u'path']).st_mtime!=l[u'modified']:
-                subs=self.__parseSubDirs(l[u'path'])
+                subs=self.__parseSubDirs(l[u'path'],l[u'albums'])
                 for ll in l[u'albums']:
                     if ll[u'digital']==1 and not exists(ll[u'album'],u'album',subs):
                         del l[u'albums'][l[u'albums'].index(ll)]
@@ -151,13 +149,23 @@ class Filesystem(object):
             u'artist':d,
             u'path':os.path.join(directory,d),
             u'modified':os.stat(os.path.join(directory,d)).st_mtime,
-            u'albums':self.__parseSubDirs(os.path.join(directory,d)),
+            u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
             u'url':u''
             } for d in mainDirectories if not exists(os.path.join(directory,d),u'path',library)])
-    def __parseSubDirs(self,d):
+    def __parseSubDirs(self,d,albums):
+        def getAnalog(album):
+            for a in albums:
+                if album==a[u'album'] and a[u'analog']:
+                    return True
+            return False
         subDirectories=[f.split(' - ') for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
-        return [{u'album':len(d)>2 and d[1]+' - '+d[2] or d[1],u'year':d[0],u'digital':True,u'analog':False}
-                for d in subDirectories]
+        retrieveAlbum=lambda x:len(x)>2 and x[1]+' - '+x[2] or x[1]
+        return [{
+            u'album':retrieveAlbum(d),
+            u'year':d[0],
+            u'digital':True,
+            u'analog':getAnalog(retrieveAlbum(d))
+            } for d in subDirectories]
 
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):
@@ -374,3 +382,6 @@ def run():
     main=Main()
     main.show()
     sys.exit(app.exec_())
+
+if __name__=='__main__':
+    run()
