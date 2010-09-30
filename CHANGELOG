@@ -37,3 +37,7 @@ stay calm for next release :).
 -Fixed bug when you had 'analog'='YES' and 'digital'='NO'
 and then switching 'digital' switched 'analog' too.
 -Added setup.nsi to source tarball.
+-Fixed bug which prevented storing two releases with same
+name and year. After update you'll need to tap brand-new
+"update pre-0.4 db" button, because I needed to change
+albums table primary key.

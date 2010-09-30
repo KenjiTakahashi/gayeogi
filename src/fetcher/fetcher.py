@@ -6,7 +6,7 @@ import sqlite3
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList,Qt
 
-version='0.3'
+version='0.4'
 if sys.platform=='win32':
     import ctypes
     dll=ctypes.windll.shell32
@@ -31,7 +31,7 @@ class Sqlite(object):
                 album text,
                 year text,
                 digital boolean,
-                analog boolean,primary key(album,year))""")
+                analog boolean,primary key(artist,album,year))""")
     def setSettings(self,settings):
         self.cursor.execute(u'insert into settings values(?,?,?)',settings)
         self.__connector.commit()
@@ -112,6 +112,27 @@ class Sqlite(object):
                         self.cursor.execute(u'delete from albums where artist=? and album=?',(artist,album))
     def commit(self):
         self.__connector.commit()
+    def updatePre04(self):
+        self.cursor.execute(u"""create temporary table albums_backup(
+                artist text,
+                album text,
+                year text,
+                digital boolean,
+                analog boolean,
+                primary key(artist,album,year))""")
+        self.cursor.execute(u'insert into albums_backup select * from albums')
+        self.cursor.execute(u'drop table albums')
+        self.cursor.execute(u"""create table albums(
+                artist text,
+                album text,
+                year text,
+                digital boolean,
+                analog boolean,
+                primary key(artist,album,year))""")
+        self.cursor.execute(u'insert into albums select * from albums_backup')
+        self.cursor.execute(u'drop table albums_backup')
+        self.__connector.commit()
+        print "Pre-0.4 db updated to current scheme."
 
 class Filesystem(object):
     def __init__(self):
@@ -210,6 +231,7 @@ class Main(QtGui.QMainWindow):
         self.update()
         self.ui.albums.setHorizontalHeaderLabels(QStringList([u'Year',u'Album',u'Digital',u'Analog']))
         self.ui.albums.itemActivated.connect(self.setAnalog)
+        self.ui.pre04.clicked.connect(self.db.updatePre04)
         self.ui.remote.clicked.connect(self.refresh)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
