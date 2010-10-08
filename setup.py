@@ -6,7 +6,7 @@ if platform=='win32':
     import py2exe
 
 setup(name='Fetcher',
-        version='0.3',
+        version='0.3.1',
         description='',
         author='Karol Woźniak',
         author_email='wozniakk@gmail.com',
