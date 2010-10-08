@@ -6,7 +6,7 @@ import sqlite3
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList,Qt
 
-version='0.4'
+version='0.3.1'
 if sys.platform=='win32':
     import ctypes
     dll=ctypes.windll.shell32
@@ -137,26 +137,32 @@ class Sqlite(object):
 class Filesystem(object):
     def __init__(self):
         self.ignores=[u'$RECYCLE.BIN',u'System Volume Information',u'Incoming',u'msdownld.tmp']
+        self.syntax=[((u'',u''),(u'---',u' - ',u''),(u'year',u'album'))]
+    def __clean(self,string,lgi,rgi):
+        for s in self.syntax:
+            string=string.lstrip(s[lgi[0]][lgi[1]]).rstrip(s[rgi[0]][rgi[1]])
+        return string
     def create(self,directory):
         mainDirectories=[f for f in os.listdir(directory)
                 if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
         return [{
-            u'artist':d,
+            u'artist':self.__clean(d,(0,0),(0,1)),
             u'path':os.path.join(directory,d),
             u'modified':os.stat(os.path.join(directory,d)).st_mtime,
             u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
             u'url':u''
             } for d in mainDirectories]
     def update(self,directory,library):
-        mainDirectories=[f for f in os.listdir(directory)
-                if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
         def exists(d,t,l):
             for e in l:
                 if e[t]==d:
                     return True
             return False
+        mainDirectories=[f for f in os.listdir(directory)
+                if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
+        parsedDirectories=[self.__clean(f,(0,0),(0,1)) for f in mainDirectories]
         for l in library:
-            if l[u'artist'] not in mainDirectories:
+            if l[u'artist'] not in parsedDirectories:
                 del library[library.index(l)]
             elif os.stat(l[u'path']).st_mtime!=l[u'modified']:
                 subs=self.__parseSubDirs(l[u'path'],l[u'albums'])
@@ -167,7 +173,7 @@ class Filesystem(object):
                 l[u'albums']=subs
                 l[u'modified']=os.stat(l[u'path']).st_mtime
         library.extend([{
-            u'artist':d,
+            u'artist':self.__clean(d,(0,0),(0,1)),
             u'path':os.path.join(directory,d),
             u'modified':os.stat(os.path.join(directory,d)).st_mtime,
             u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
@@ -179,14 +185,31 @@ class Filesystem(object):
                 if album==a[u'album'] and a[u'analog']:
                     return True
             return False
-        subDirectories=[f.split(' - ') for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
-        retrieveAlbum=lambda x:len(x)>2 and x[1]+' - '+x[2] or x[1]
-        return [{
-            u'album':retrieveAlbum(d),
-            u'year':d[0],
-            u'digital':True,
-            u'analog':getAnalog(retrieveAlbum(d))
-            } for d in subDirectories]
+        subDirectories=[f for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
+        results=[]
+        errors=[]
+        for sd in subDirectories:
+            sdy=self.__clean(sd,(1,0),(1,2))
+            for syn in self.syntax:
+                splitted=sdy.split(syn[1][1])
+                year=splitted[0]
+                del splitted[0]
+                album=syn[1][1].join(splitted)
+                if album:
+                    results.append({
+                        u'year':year,
+                        u'album':album,
+                        u'digital':True,
+                        u'analog':getAnalog(album)
+                        })
+                else:
+                    path=os.path.join(d,sd)
+                    errors.append(path)
+        if errors:
+            from interfaces.errordialog import ErrorDialog
+            dialog=ErrorDialog(errors)
+            dialog.exec_()
+        return results
 
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):

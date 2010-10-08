@@ -33,7 +33,7 @@ stay calm for next release :).
 
 #Still no discogs in this release, sorry.
 
-0.4:
+0.3.1:
 -Fixed bug when you had 'analog'='YES' and 'digital'='NO'
 and then switching 'digital' switched 'analog' too.
 -Added setup.nsi to source tarball.
@@ -41,3 +41,6 @@ and then switching 'digital' switched 'analog' too.
 name and year. After update you'll need to tap brand-new
 "update pre-0.4 db" button, because I needed to change
 albums table primary key.
+-When you have some directories that could not be parsed
+it will leave them and let you know which ones they are,
+instead of failing instantly. (Fixes #3080361)
