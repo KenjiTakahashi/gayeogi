@@ -138,6 +138,7 @@ class Filesystem(object):
     def __init__(self):
         self.ignores=[u'$RECYCLE.BIN',u'System Volume Information',u'Incoming',u'msdownld.tmp']
         self.syntax=[((u'',u''),(u'---',u' - ',u''),(u'year',u'album'))]
+        self.errors=[]
     def __clean(self,string,lgi,rgi):
         for s in self.syntax:
             string=string.lstrip(s[lgi[0]][lgi[1]]).rstrip(s[rgi[0]][rgi[1]])
@@ -145,13 +146,18 @@ class Filesystem(object):
     def create(self,directory):
         mainDirectories=[f for f in os.listdir(directory)
                 if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
-        return [{
+        results=[{
             u'artist':self.__clean(d,(0,0),(0,1)),
             u'path':os.path.join(directory,d),
             u'modified':os.stat(os.path.join(directory,d)).st_mtime,
             u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
             u'url':u''
             } for d in mainDirectories]
+        if self.errors:
+            from interfaces.errordialog import ErrorDialog
+            dialog=ErrorDialog(self.errors)
+            dialog.exec_()
+        return results
     def update(self,directory,library):
         def exists(d,t,l):
             for e in l:
@@ -179,6 +185,10 @@ class Filesystem(object):
             u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
             u'url':u''
             } for d in mainDirectories if not exists(os.path.join(directory,d),u'path',library)])
+        if self.errors:
+            from interfaces.errordialog import ErrorDialog
+            dialog=ErrorDialog(self.errors)
+            dialog.exec_()
     def __parseSubDirs(self,d,albums):
         def getAnalog(album):
             for a in albums:
@@ -187,7 +197,7 @@ class Filesystem(object):
             return False
         subDirectories=[f for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
         results=[]
-        errors=[]
+        self.errors=[]
         for sd in subDirectories:
             sdy=self.__clean(sd,(1,0),(1,2))
             for syn in self.syntax:
@@ -204,11 +214,7 @@ class Filesystem(object):
                         })
                 else:
                     path=os.path.join(d,sd)
-                    errors.append(path)
-        if errors:
-            from interfaces.errordialog import ErrorDialog
-            dialog=ErrorDialog(errors)
-            dialog.exec_()
+                    self.errors.append(path)
         return results
 
 class FirstRun(QtGui.QDialog):
