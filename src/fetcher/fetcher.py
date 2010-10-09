@@ -265,8 +265,13 @@ class Main(QtGui.QMainWindow):
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.log.clicked.connect(self.showLogs)
+        self.ui.settings.clicked.connect(self.showSettings)
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
+    def showSettings(self):
+        from interfaces.settings import Settings
+        dialog=Settings()
+        dialog.exec_()
     def setAnalog(self,item):
         digital=self.ui.albums.item(item.row(),2).text()
         analog=self.ui.albums.item(item.row(),3)

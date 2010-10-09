@@ -44,3 +44,7 @@ albums table primary key.
 -When you have some directories that could not be parsed
 it will leave them and let you know which ones they are,
 instead of failing instantly. (Fixes #3080361)
+
+0.4:
+-Pattern error dialog pop-ups only once with all errors
+included.
