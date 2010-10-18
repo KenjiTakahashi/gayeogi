@@ -92,12 +92,10 @@ class MetalArchives(QThread):
         return result
     def done(self,_,result):
         def exists(a,albums):
-            state=False
             for alb in albums:
                 if a.lower()==alb[u'album'].lower():
-                    state=True
-                    break
-            return state
+                    return True
+            return False
         if result[u'choice']==u'no_band':
             self.message.emit(result[u'elem'],u'no such band')
         elif result[u'choice']!=u'error':
@@ -142,39 +140,3 @@ class MetalArchives(QThread):
         for req in requests:
             main.putRequest(req)
         main.wait()
-
-class Discogs(object):
-    def update(self,library):
-        def exists(a,lib):
-            state=False
-            for l in lib:
-                if l['album']==a:
-                    state=True
-                    break
-            return state
-        from gzip import GzipFile
-        from cStringIO import StringIO
-        from xml.dom import minidom
-        for l in library:
-            request=urllib2.Request('http://www.discogs.com/artist/'+l['artist'].replace(' ','+')+'?f=xml&api_key=95b787be0c')
-            request.add_header('Accept-Encoding','gzip')
-            try:
-                try:
-                    data=GzipFile(fileobj=StringIO(urllib2.urlopen(request).read())).read()
-                except IOError:
-                    data=urllib2.urlopen(request).read()
-            except urllib2.HTTPError:
-                pass
-            else:
-                xml=minidom.parseString(data)
-                releases=[]
-                years=[]
-                types=('CD, Album','LP, Album')
-                for r in xml.getElementsByTagName('release'):
-                    if r.childNodes[1].firstChild.data in types and r.firstChild.firstChild.data not in releases:
-                        releases.append(r.firstChild.firstChild.data)
-                        if len(r.childNodes)>3:
-                            years.append(r.childNodes[3].firstChild.data)
-                for a,y in map(None,releases,years):
-                    if not exists(a,l['albums']):
-                        l['albums'].append({'album':a,'year':y,'digital':False,'analog':False})

@@ -345,7 +345,7 @@ class Main(QtGui.QMainWindow):
     def refresh(self):
         if self.settings[1]:
             self.ui.log.setEnabled(False)
-            from internet import MetalArchives
+            from db.metalArchives import MetalArchives
             self.metalThread=MetalArchives(self.library)
             self.metalThread.disambiguation.connect(self.chooser)
             self.metalThread.finished.connect(self.update)
