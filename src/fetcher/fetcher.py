@@ -236,6 +236,7 @@ class Main(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         self.metalThread=None
+        self.discogsThread=None
         if not os.path.exists(dbPath):
             os.mkdir(dbPath)
         self.fs=Filesystem()
@@ -256,11 +257,10 @@ class Main(QtGui.QMainWindow):
         widget=QtGui.QWidget()
         self.ui.setupUi(widget)
         self.setCentralWidget(widget)
-        self.ui.artists.setHorizontalHeaderLabels(QStringList([u'Artist',u'Digital',u'Analog']))
+        self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
         self.update()
-        self.ui.albums.setHorizontalHeaderLabels(QStringList([u'Year',u'Album',u'Digital',u'Analog']))
+        self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album', u'Digital', u'Analog']))
         self.ui.albums.itemActivated.connect(self.setAnalog)
-        self.ui.pre04.clicked.connect(self.db.updatePre04)
         self.ui.remote.clicked.connect(self.refresh)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
@@ -273,67 +273,70 @@ class Main(QtGui.QMainWindow):
         dialog=Settings()
         dialog.exec_()
     def setAnalog(self,item):
-        digital=self.ui.albums.item(item.row(),2).text()
-        analog=self.ui.albums.item(item.row(),3)
-        if analog.text()==u'NO':
-            self.ui.albums.item(item.row(),3).setText(u'YES')
+        digital = item.text(2)
+        analog = item.text(3)
+        if analog == u'NO':
+            item.setText(3, u'YES')
+            analog = u'YES'
         else:
-            self.ui.albums.item(item.row(),3).setText(u'NO')
-        album=self.ui.albums.item(item.row(),1).text()
+            item.setText(3, u'NO')
+            analog = u'NO'
+        album = item.text(1)
         for l in self.library:
-            if l[u'artist']==analog.artist:
+            if l[u'artist'] == item.artist:
                 for a in l[u'albums']:
                     if a[u'album']==album:
-                        if analog.text()==u'YES':
+                        if analog == u'YES':
                             a[u'analog']=1
                         else:
                             a[u'analog']=0
                         break
                 break
-        if digital==u'YES' and analog.text()==u'YES':
+        if digital == u'YES' and analog == u'YES':
             for i in range(4):
-                self.ui.albums.item(item.row(),i).setBackground(Qt.green)
+                item.setBackground(i, Qt.green)
             self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
             self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())+1))
         elif digital=='YES':
             for i in range(4):
-                self.ui.albums.item(item.row(),i).setBackground(Qt.yellow)
+                item.setBackground(i, Qt.yellow)
             self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())-1))
             self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
-        elif analog.text()==u'YES':
+        elif analog == u'YES':
             for i in range(4):
-                self.ui.albums.item(item.row(),i).setBackground(Qt.yellow)
+                item.setBackground(i, Qt.yellow)
             self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())-1))
             self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
         else:
             for i in range(4):
-                self.ui.albums.item(item.row(),i).setBackground(Qt.red)
+                item.setBackground(i, Qt.red)
             self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
             self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())+1))
         artists={}
-        for i in range(self.ui.albums.rowCount()):
-            item=self.ui.albums.item(i,3)
-            artist=item.artist
-            state=str(item.background().color().name())
+        item = self.ui.albums.topLevelItem(0)
+        while item:
+            artist = item.artist
+            state = str(item.background(0).color().name())
             if artist in artists:
                 if state in artists[artist]:
-                    artists[artist][state]+=1
+                    artists[artist][state] += 1
                 else:
-                    artists[artist][state]=1
-                if artists[artist][u'analog']!=u'NO' and item.text()==u'NO':
-                    artists[artist][u'analog']=u'NO'
+                    artists[artist][state] = 1
+                if artists[artist][u'analog'] != u'NO' and item.text(3) == u'NO':
+                    artists[artist][u'analog'] = u'NO'
             else:
-                artists[artist]={state:1}
-                if item.text()==u'YES':
-                    artists[artist][u'analog']=u'YES'
+                artists[artist] = {state: 1}
+                if item.text(3) == u'YES':
+                    artists[artist][u'analog'] = u'YES'
                 else:
-                    artists[artist][u'analog']=u'NO'
+                    artists[artist][u'analog'] = u'NO'
+            item = self.ui.albums.itemBelow(item)
         def setColor(artist,qcolor,analogState):
-            for r in self.ui.artists.selectedRanges():
-                if self.ui.artists.item(r.topRow(),r.leftColumn()).text()==artist:
+            for item in self.ui.artists.selectedItems():
+                if item.text(0) == artist:
                     for i in range(3):
-                        self.ui.artists.item(r.topRow(),i).setBackground(qcolor)
-                    self.ui.artists.item(r.topRow(),2).setText(analogState)
+                        item.setBackground(i, qcolor)
+                    item.setText(2, analogState)
                     break
         for artist,states in artists.items():
             if u'#ff0000' in states:
@@ -352,7 +355,15 @@ class Main(QtGui.QMainWindow):
             self.metalThread.nextBand.connect(self.statusBar().showMessage)
             self.metalThread.message.connect(self.addLogEntry)
             self.metalThread.start()
-        #if self.settings[2]: # discogs here
+        if self.settings[2]:
+            self.ui.log.setEnabled(False)
+            from db.discogs import Discogs
+            self.discogsThread=Discogs(self.library)
+            self.discogsThread.disambiguation.connect(self.chooser)
+            self.discogsThread.finished.connect(self.update)
+            self.discogsThread.nextBand.connect(self.statusBar().showMessage)
+            self.discogsThread.message.connect(self.addLogEntry)
+            self.discogsThread.start()
     def showLogs(self):
         from interfaces.logsview import LogsView
         dialog=LogsView(self.log)
@@ -371,26 +382,28 @@ class Main(QtGui.QMainWindow):
     def update(self):
         self.db.write(self.library)
         self.statusBar().showMessage(u'')
-        self.ui.artists.setRowCount(0) # invalidate old content
-        self.ui.artists.setRowCount(len(self.library))
+        self.ui.artists.clear()
         statistics=self.db.getStatistics()
         self.ui.artists.setSortingEnabled(False)
         for i,l in enumerate(self.library):
-            self.ui.artists.setItem(i,0,QtGui.QTableWidgetItem(l[u'artist']))
-            self.ui.artists.setItem(i,1,QtGui.QTableWidgetItem(statistics[u'detailed'][i][0] and u'YES' or u'NO'))
-            self.ui.artists.setItem(i,2,QtGui.QTableWidgetItem(statistics[u'detailed'][i][1] and u'YES' or u'NO'))
+            item = QtGui.QTreeWidgetItem(QStringList([
+                l[u'artist'],
+                statistics[u'detailed'][i][0] and u'YES' or u'NO',
+                statistics[u'detailed'][i][1] and u'YES' or u'NO'
+                ]))
             if statistics[u'detailed'][i][0] and statistics[u'detailed'][i][1]:
                 for j in range(3):
-                    self.ui.artists.item(i,j).setBackground(Qt.green)
+                    item.setBackground(j, Qt.green)
             elif statistics[u'detailed'][i][0] or statistics[u'detailed'][i][1]:
                 for j in range(3):
-                    self.ui.artists.item(i,j).setBackground(Qt.yellow)
+                    item.setBackground(j, Qt.yellow)
             else:
                 for j in range(3):
-                    self.ui.artists.item(i,j).setBackground(Qt.red)
+                    item.setBackground(j, Qt.red)
+            self.ui.artists.insertTopLevelItem(i, item)
         self.ui.artists.setSortingEnabled(True)
-        self.ui.artists.sortItems(0)
-        self.ui.artists.resizeColumnsToContents()
+        self.ui.artists.sortItems(0, 0)
+        self.ui.artists.resizeColumnToContents(0)
         self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
         statistics=self.db.getStatistics()
         self.ui.artistsGreen.setText(statistics[u'artists'][0])
@@ -405,33 +418,34 @@ class Main(QtGui.QMainWindow):
         self.db.commit()
         self.statusBar().showMessage(u'Saved')
     def fillAlbums(self):
-        self.ui.albums.setRowCount(0)
+        self.ui.albums.clear()
         items=self.ui.artists.selectedItems()
         self.ui.albums.setSortingEnabled(False)
         for l in self.library:
             for i in items:
-                if i.text()==l[u'artist']:
-                    for a in l[u'albums']:
-                        rows=self.ui.albums.rowCount()
-                        self.ui.albums.setRowCount(rows+1)
-                        self.ui.albums.setItem(rows,0,QtGui.QTableWidgetItem(a[u'year'] or u'<None>'))
-                        self.ui.albums.setItem(rows,1,QtGui.QTableWidgetItem(a[u'album']))
-                        self.ui.albums.setItem(rows,2,QtGui.QTableWidgetItem(a[u'digital'] and u'YES' or u'NO'))
-                        item=QtGui.QTableWidgetItem(a[u'analog'] and u'YES' or u'NO')
-                        item.artist=l[u'artist']
-                        self.ui.albums.setItem(rows,3,item)
+                if i.text(0)==l[u'artist']:
+                    for k, a in enumerate(l[u'albums']):
+                        item = QtGui.QTreeWidgetItem(QStringList([
+                            a[u'year'],
+                            a[u'album'],
+                            a[u'digital'] and u'YES' or u'NO',
+                            a[u'analog'] and u'YES' or u'NO'
+                            ]))
+                        item.artist = l[u'artist']
                         if a[u'digital'] and a[u'analog']:
                             for i in range(4):
-                                self.ui.albums.item(rows,i).setBackground(Qt.green)
+                                item.setBackground(i, Qt.green)
                         elif a[u'digital'] or a[u'analog']:
                             for i in range(4):
-                                self.ui.albums.item(rows,i).setBackground(Qt.yellow)
+                                item.setBackground(i, Qt.yellow)
                         else:
                             for i in range(4):
-                                self.ui.albums.item(rows,i).setBackground(Qt.red)
+                                item.setBackground(i, Qt.red)
+                        self.ui.albums.insertTopLevelItem(k, item)
         self.ui.albums.setSortingEnabled(True)
-        self.ui.albums.sortItems(0)
-        self.ui.albums.resizeColumnsToContents()
+        self.ui.albums.sortItems(0, 0)
+        self.ui.albums.resizeColumnToContents(0)
+        self.ui.albums.resizeColumnToContents(1)
 
 def run():
     app=QtGui.QApplication(sys.argv)

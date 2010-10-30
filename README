@@ -17,6 +17,9 @@ from source, of course).
 Just type 'python setup.py install' while
 in package main directory and you should
 be set.
+Also check out your distribution repository,
+Fetcher is surely available in Arch Linux
+(through Aur).
 
 === WINDOWS ===
 
