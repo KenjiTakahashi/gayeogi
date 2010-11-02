@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from PyQt4.QtCore import QThread
+from PyQt4.QtCore import QThread, pyqtSignal
 from mutagen.id3 import ID3
 from mutagen.flac import FLAC
 from mutagen.asf import ASF
@@ -10,8 +10,16 @@ from mutagen.wavpack import WavPack
 from mutagen import File
 
 class Filesystem(QThread):
+    created = pyqtSignal(tuple)
+    updated = pyqtSignal()
+    stepped = pyqtSignal(unicode)
     def __init__(self):
         QThread.__init__(self)
+        self.directory = None
+        self.library = []
+        self.paths = []
+        self.doUpdate = False
+        self.exceptions = []
     def appendToLibrary(self,
             artist,
             album,
@@ -35,7 +43,6 @@ class Filesystem(QThread):
                             if rTitle[u'title'] == title:
                                 trackSwitch = True
                             elif not os.path.exists(rTitle[u'path']):
-                                print rTitle
                                 del rAlbum[u'tracks']\
                                         [rAlbum[u'tracks'].index(rTitle)]
                         if not trackSwitch:
@@ -142,6 +149,7 @@ class Filesystem(QThread):
                     ext = os.path.splitext(filename)[1]
                     if ext == u'.mp3':
                         path = os.path.join(root, filename)
+                        self.stepped.emit(path)
                         f = ID3(path)
                         try:
                             self.appendToLibrary(
@@ -156,21 +164,21 @@ class Filesystem(QThread):
                         except KeyError:
                             exceptions.append(path)
                     else:
+                        path = os.path.join(root, filename)
                         if ext == u'.flac':
-                            path = os.path.join(root, filename)
                             f = FLAC(path)
-                            __append(f, path, root)
                         elif ext == u'.asf':
                             f = ASF(path)
-                            __append(f, path, root)
                         elif ext == u'.wv':
                             f = WavPack(path)
-                            __append(f, path, root)
                         elif ext == u'.mpc' or ext == u'.mpp' or ext == u'.mp+':
                             f = Musepack(path)
-                            __append(f, path, root)
                         elif ext == u'.ogg' or ext == u'.ape': # different .ogg and .ape files
                             f = File(path)
+                        else:
+                            f = None
+                        if f:
+                            self.stepped.emit(path)
                             __append(f, path, root)
     def __exists(self, value, keys):
         for key in keys:
@@ -178,3 +186,17 @@ class Filesystem(QThread):
             if prefix in keys:
                 return True
         return False
+    def setDirectory(self, directory):
+        self.directory = directory
+    def setArgs(self, library, paths, update = False):
+        self.library = library
+        self.paths = paths
+        self.doUpdate = update
+    def run(self):
+        self.exceptions.clear()
+        if self.doUpdate:
+            self.update(self.library, self.paths)
+            self.updated.emit()
+        else:
+            result = self.create(self.directory)
+            self.created.emit(result)
