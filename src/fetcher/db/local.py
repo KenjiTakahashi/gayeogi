@@ -8,7 +8,7 @@ from mutagen.flac import FLAC
 class Filesystem(QThread):
     def __init__(self):
         QThread.__init__(self)
-    def appendToLibrary(self, artist, album, date, title, tracknumber, library):
+    def appendToLibrary(self, artist, album, date, title, tracknumber, library, path):
         artistSwitch = False
         albumSwitch = False
         trackSwitch = False
@@ -18,6 +18,7 @@ class Filesystem(QThread):
                 for rAlbum in lib[u'albums']:
                     if rAlbum[u'album'] == album:
                         albumSwitch = True
+                        rAlbum[u'digital'] = True
                         for rTitle in rAlbum[u'tracks']:
                             if rTitle[u'title'] == title:
                                 trackSwitch = True
@@ -35,7 +36,11 @@ class Filesystem(QThread):
                         u'tracks': [{
                             u'title': title,
                             u'tracknumber': tracknumber
-                            }]
+                            }],
+                        u'path': path,
+                        u'digital': True,
+                        u'analog': False,
+                        u'remote': False
                         })
                 break
         if not artistSwitch:
@@ -48,7 +53,11 @@ class Filesystem(QThread):
                     u'tracks': [{
                         u'title': title,
                         u'tracknumber': tracknumber
-                        }]
+                        }],
+                    u'path': path,
+                    u'digital': True,
+                    u'analog': False,
+                    u'remote': False
                     }]
                 })
     def appendToPaths(self, path, paths):
@@ -59,6 +68,15 @@ class Filesystem(QThread):
                 prefix = os.path.commonprefix([path, k])
                 if prefix == k:
                     self.appendToPaths(path, paths[prefix])
+    def attemptToRemove(self, library, path):
+        for lib in library:
+            for album in lib[u'albums']:
+                if album[u'path'] == path:
+                    if album[u'analog'] == False and album[u'remote'] == False:
+                        del lib[u'albums'][lib[u'albums'].index(album)]
+            if not lib[u'albums']:
+                del library[library.index(lib)]
+                #can i break here? dunno now...
     def create(self, directory):
         exceptions = []
         library = []
@@ -67,15 +85,18 @@ class Filesystem(QThread):
         return (library, paths)
     def update(self, library, paths):
         for k, v in paths.iteritems():
-            if os.stat(k).st_mtime != v[u'modified']:
-                if v.keys() == [u'modified']:
-                    self.__traverse(k, library, paths)
-                else:
-                    k[u'modified'] = os.stat(k).st_mtime #?
-                    self.update(library, v)
+            if os.path.exists(k):
+                if os.stat(k).st_mtime != v[u'modified']:
+                    if v.keys() == [u'modified']:
+                        self.__traverse(k, library, paths)
+                    else:
+                        v[u'modified'] = os.stat(k).st_mtime #?
+                        self.update(library, v)
+            else:
+                self.attemptToRemove(library, k)
     def __traverse(self, directory, library, paths):
         exceptions = []
-        def __append(f, path):
+        def __append(f, path, root):
             try:
                 self.appendToLibrary(
                         f[u'artist'][0],
@@ -83,7 +104,8 @@ class Filesystem(QThread):
                         f[u'date'][0],
                         f[u'title'][0],
                         f[u'tracknumber'][0],
-                        library
+                        library,
+                        root
                         )
             except KeyError:
                 exceptions.append(path)
@@ -101,7 +123,8 @@ class Filesystem(QThread):
                                 f[u'TDRC'].text[0],
                                 f[u'TIT2'].text[0],
                                 f[u'TRCK'].text[0],
-                                library
+                                library,
+                                root
                                 )
                     except KeyError:
                         exceptions.append(path)
@@ -109,7 +132,7 @@ class Filesystem(QThread):
                     if ext == u'.flac':
                         path = os.path.join(root, filename)
                         f = FLAC(path)
-                        __append(f, path)
+                        __append(f, path, root)
     def __exists(self, value, keys):
         for key in keys:
             prefix = os.path.commonprefix([value, key])
