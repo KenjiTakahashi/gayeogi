@@ -4,6 +4,10 @@ import os
 from PyQt4.QtCore import QThread
 from mutagen.id3 import ID3
 from mutagen.flac import FLAC
+from mutagen.asf import ASF
+from mutagen.musepack import Musepack
+from mutagen.wavpack import WavPack
+from mutagen import File
 
 class Filesystem(QThread):
     def __init__(self):
@@ -132,6 +136,18 @@ class Filesystem(QThread):
                     if ext == u'.flac':
                         path = os.path.join(root, filename)
                         f = FLAC(path)
+                        __append(f, path, root)
+                    elif ext == u'.asf':
+                        f = ASF(path)
+                        __append(f, path, root)
+                    elif ext == u'.wv':
+                        f = WavPack(path)
+                        __append(f, path, root)
+                    elif ext == u'.mpc' or ext == u'.mpp' or ext == u'.mp+':
+                        f = Musepack(path)
+                        __append(f, path, root)
+                    elif ext == u'.ogg' or ext == u'.ape': # different .ogg and .ape files
+                        f = File(path)
                         __append(f, path, root)
     def __exists(self, value, keys):
         for key in keys:

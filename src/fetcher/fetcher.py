@@ -4,7 +4,7 @@ import sys
 import os
 import sqlite3
 from PyQt4 import QtGui
-from PyQt4.QtCore import QStringList,Qt
+from PyQt4.QtCore import QStringList, Qt, QSettings
 
 version='0.3.1'
 if sys.platform=='win32':
