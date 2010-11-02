@@ -2,9 +2,10 @@
 
 import sys
 import os
-import sqlite3
+import cPickle
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings
+from db.local import Filesystem
 
 version='0.4'
 if sys.platform=='win32':
@@ -19,206 +20,209 @@ if sys.platform=='win32':
 else: # Most POSIX systems, there may be more elifs in future.
     dbPath=os.path.expanduser(u'~/.config/fetcher')
 
-class Sqlite(object):
+class DB(object):
     def __init__(self):
-        self.__connector=sqlite3.connect(os.path.join(dbPath,u'db.sqlite3'))
-        self.cursor=self.__connector.cursor()
-        self.cursor.execute(u"create table if not exists settings(main_path text,metal_archives boolean,discogs boolean)")
-        self.cursor.execute(u"""create table if not exists artists(
-                artist text,
-                path text,
-                modified float,
-                url text,primary key(artist,url))""")
-        self.cursor.execute(u"""create table if not exists albums(
-                artist text,
-                album text,
-                year text,
-                digital boolean,
-                analog boolean,primary key(artist,album,year))""")
-    def setSettings(self,settings):
-        self.cursor.execute(u'insert into settings values(?,?,?)',settings)
-        self.__connector.commit()
-    def getSettings(self):
-        return self.cursor.execute(u'select * from settings').fetchone()
-    def getStatistics(self):
-        (red,yellow,green)=(0,0,0)
-        colors=[]
-        for artist in self.cursor.execute(u'select artist from artists').fetchall():
-            if self.cursor.execute(u'select count(*) from albums where artist=? and digital=0 and analog=0',artist).fetchone()[0]!=0:
-                red+=1
-                colors.append((0,0))
-            elif self.cursor.execute(u'select count(*) from albums where artist=? and (digital=1 or analog=1)',artist).fetchone()[0]!=0:
-                yellow+=1
-                if self.cursor.execute(u'select digital from albums where artist=?',artist).fetchone()[0]==1:
-                    colors.append((1,0))
-                else:
-                    colors.append((0,1))
-            else:
-                green+=1
-                colors.append((1,1))
-        return {
-                u'artists':(str(green),str(yellow),str(red)),
-                u'albums':(
-                    str(self.cursor.execute(u'select count(*) from albums where digital=1 and analog=1').fetchone()[0]),
-                    str(self.cursor.execute(u'select count(*) from albums where digital=1 or analog=1').fetchone()[0]),
-                    str(self.cursor.execute(u'select count(*) from albums where digital=0 and analog=0').fetchone()[0])
-                    ),
-                u'detailed':colors
-                }
-    def read(self):
-        def __getAlbums(artist):
-            albums=self.cursor.execute(u'select album,year,digital,analog from albums where artist=?',(artist,))
-            return [{
-                u'album':a,
-                u'year':y,
-                u'digital':d,
-                u'analog':anal
-                } for a,y,d,anal in albums]
-        artists=self.cursor.execute(u'select * from artists').fetchall()
-        return [{
-            u'artist':a,
-            u'path':p,
-            u'modified':m,
-            u'albums':__getAlbums(a),
-            u'url':h
-            } for a,p,m,h in artists]
-    def write(self,data):
-        for d in data:
-            if (u'',) in self.cursor.execute(u'select url from artists where artist=?',(d[u'artist'],)).fetchall():
-                self.cursor.execute(u'delete from artists where artist=? and url=?',(d[u'artist'],''))
-            self.cursor.execute(u'replace into artists values(?,?,?,?)',(d['artist'],d[u'path'],d[u'modified'],d[u'url']))
-            for a in d[u'albums']:
-                self.cursor.execute('replace into albums values(?,?,?,?,?)',
-                        (d[u'artist'],a[u'album'],a[u'year'],a[u'digital'],a[u'analog']))
-        def exists1(a):
-            state=False
-            for d in data:
-                if d[u'artist']==a:
-                    state=True
-                    break
-            return state
-        def exists2(a):
-            state=False
-            for d in data:
-                for alb in d[u'albums']:
-                    if a==alb[u'album']:
-                        state=True
-                        break
-            return state
-        for artist, in self.cursor.execute(u'select artist from artists').fetchall():
-            if not exists1(artist):
-                self.cursor.execute(u'delete from artists where artist=?',(artist,))
-                self.cursor.execute(u'delete from albums where artist=?',(artist,))
-            else:
-                for album, in self.cursor.execute(u'select album from albums where artist=?',(artist,)):
-                    if not exists2(album):
-                        self.cursor.execute(u'delete from albums where artist=? and album=?',(artist,album))
-    def commit(self):
-        self.__connector.commit()
-    def updatePre04(self):
-        self.cursor.execute(u"""create temporary table albums_backup(
-                artist text,
-                album text,
-                year text,
-                digital boolean,
-                analog boolean,
-                primary key(artist,album,year))""")
-        self.cursor.execute(u'insert into albums_backup select * from albums')
-        self.cursor.execute(u'drop table albums')
-        self.cursor.execute(u"""create table albums(
-                artist text,
-                album text,
-                year text,
-                digital boolean,
-                analog boolean,
-                primary key(artist,album,year))""")
-        self.cursor.execute(u'insert into albums select * from albums_backup')
-        self.cursor.execute(u'drop table albums_backup')
-        self.__connector.commit()
-        print "Pre-0.4 db updated to current scheme."
-
-class Filesystem(object):
-    def __init__(self):
-        self.ignores=[u'$RECYCLE.BIN',u'System Volume Information',u'Incoming',u'msdownld.tmp']
-        self.syntax=[((u'',u''),(u'---',u' - ',u''),(u'year',u'album'))]
-        self.errors=[]
-    def __clean(self,string,lgi,rgi):
-        for s in self.syntax:
-            string=string.lstrip(s[lgi[0]][lgi[1]]).rstrip(s[rgi[0]][rgi[1]])
-        return string
-    def create(self,directory):
-        mainDirectories=[f for f in os.listdir(directory)
-                if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
-        results=[{
-            u'artist':self.__clean(d,(0,0),(0,1)),
-            u'path':os.path.join(directory,d),
-            u'modified':os.stat(os.path.join(directory,d)).st_mtime,
-            u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
-            u'url':u''
-            } for d in mainDirectories]
-        if self.errors:
-            from interfaces.errordialog import ErrorDialog
-            dialog=ErrorDialog(self.errors)
-            dialog.exec_()
-        return results
-    def update(self,directory,library):
-        def exists(d,t,l):
-            for e in l:
-                if e[t]==d:
-                    return True
-            return False
-        mainDirectories=[f for f in os.listdir(directory)
-                if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
-        parsedDirectories=[self.__clean(f,(0,0),(0,1)) for f in mainDirectories]
-        for l in library:
-            if l[u'artist'] not in parsedDirectories:
-                del library[library.index(l)]
-            elif os.stat(l[u'path']).st_mtime!=l[u'modified']:
-                subs=self.__parseSubDirs(l[u'path'],l[u'albums'])
-                for ll in l[u'albums']:
-                    if ll[u'digital']==1 and not exists(ll[u'album'],u'album',subs):
-                        del l[u'albums'][l[u'albums'].index(ll)]
-                subs.extend([f for f in l[u'albums'] if not exists(f[u'album'],u'album',subs)])
-                l[u'albums']=subs
-                l[u'modified']=os.stat(l[u'path']).st_mtime
-        library.extend([{
-            u'artist':self.__clean(d,(0,0),(0,1)),
-            u'path':os.path.join(directory,d),
-            u'modified':os.stat(os.path.join(directory,d)).st_mtime,
-            u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
-            u'url':u''
-            } for d in mainDirectories if not exists(os.path.join(directory,d),u'path',library)])
-        if self.errors:
-            from interfaces.errordialog import ErrorDialog
-            dialog=ErrorDialog(self.errors)
-            dialog.exec_()
-    def __parseSubDirs(self,d,albums):
-        def getAnalog(album):
-            for a in albums:
-                if album==a[u'album'] and a[u'analog']:
-                    return True
-            return False
-        subDirectories=[f for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
-        results=[]
-        self.errors=[]
-        for sd in subDirectories:
-            sdy=self.__clean(sd,(1,0),(1,2))
-            for syn in self.syntax:
-                splitted=sdy.split(syn[1][1])
-                year=splitted[0]
-                del splitted[0]
-                album=syn[1][1].join(splitted)
-                if album:
-                    results.append({
-                        u'year':year,
-                        u'album':album,
-                        u'digital':True,
-                        u'analog':getAnalog(album)
-                        })
-                else:
-                    path=os.path.join(d,sd)
-                    self.errors.append(path)
-        return results
+        pass
+#class Sqlite(object):
+#    def __init__(self):
+#        self.__connector=sqlite3.connect(os.path.join(dbPath,u'db.sqlite3'))
+#        self.cursor=self.__connector.cursor()
+#        self.cursor.execute(u"create table if not exists settings(main_path text,metal_archives boolean,discogs boolean)")
+#        self.cursor.execute(u"""create table if not exists artists(
+#                artist text,
+#                path text,
+#                modified float,
+#                url text,primary key(artist,url))""")
+#        self.cursor.execute(u"""create table if not exists albums(
+#                artist text,
+#                album text,
+#                year text,
+#                digital boolean,
+#                analog boolean,primary key(artist,album,year))""")
+#    def setSettings(self,settings):
+#        self.cursor.execute(u'insert into settings values(?,?,?)',settings)
+#        self.__connector.commit()
+#    def getSettings(self):
+#        return self.cursor.execute(u'select * from settings').fetchone()
+#    def getStatistics(self):
+#        (red,yellow,green)=(0,0,0)
+#        colors=[]
+#        for artist in self.cursor.execute(u'select artist from artists').fetchall():
+#            if self.cursor.execute(u'select count(*) from albums where artist=? and digital=0 and analog=0',artist).fetchone()[0]!=0:
+#                red+=1
+#                colors.append((0,0))
+#            elif self.cursor.execute(u'select count(*) from albums where artist=? and (digital=1 or analog=1)',artist).fetchone()[0]!=0:
+#                yellow+=1
+#                if self.cursor.execute(u'select digital from albums where artist=?',artist).fetchone()[0]==1:
+#                    colors.append((1,0))
+#                else:
+#                    colors.append((0,1))
+#            else:
+#                green+=1
+#                colors.append((1,1))
+#        return {
+#                u'artists':(str(green),str(yellow),str(red)),
+#                u'albums':(
+#                    str(self.cursor.execute(u'select count(*) from albums where digital=1 and analog=1').fetchone()[0]),
+#                    str(self.cursor.execute(u'select count(*) from albums where digital=1 or analog=1').fetchone()[0]),
+#                    str(self.cursor.execute(u'select count(*) from albums where digital=0 and analog=0').fetchone()[0])
+#                    ),
+#                u'detailed':colors
+#                }
+#    def read(self):
+#        def __getAlbums(artist):
+#            albums=self.cursor.execute(u'select album,year,digital,analog from albums where artist=?',(artist,))
+#            return [{
+#                u'album':a,
+#                u'year':y,
+#                u'digital':d,
+#                u'analog':anal
+#                } for a,y,d,anal in albums]
+#        artists=self.cursor.execute(u'select * from artists').fetchall()
+#        return [{
+#            u'artist':a,
+#            u'path':p,
+#            u'modified':m,
+#            u'albums':__getAlbums(a),
+#            u'url':h
+#            } for a,p,m,h in artists]
+#    def write(self,data):
+#        for d in data:
+#            if (u'',) in self.cursor.execute(u'select url from artists where artist=?',(d[u'artist'],)).fetchall():
+#                self.cursor.execute(u'delete from artists where artist=? and url=?',(d[u'artist'],''))
+#            self.cursor.execute(u'replace into artists values(?,?,?,?)',(d['artist'],d[u'path'],d[u'modified'],d[u'url']))
+#            for a in d[u'albums']:
+#                self.cursor.execute('replace into albums values(?,?,?,?,?)',
+#                        (d[u'artist'],a[u'album'],a[u'year'],a[u'digital'],a[u'analog']))
+#        def exists1(a):
+#            state=False
+#            for d in data:
+#                if d[u'artist']==a:
+#                    state=True
+#                    break
+#            return state
+#        def exists2(a):
+#            state=False
+#            for d in data:
+#                for alb in d[u'albums']:
+#                    if a==alb[u'album']:
+#                        state=True
+#                        break
+#            return state
+#        for artist, in self.cursor.execute(u'select artist from artists').fetchall():
+#            if not exists1(artist):
+#                self.cursor.execute(u'delete from artists where artist=?',(artist,))
+#                self.cursor.execute(u'delete from albums where artist=?',(artist,))
+#            else:
+#                for album, in self.cursor.execute(u'select album from albums where artist=?',(artist,)):
+#                    if not exists2(album):
+#                        self.cursor.execute(u'delete from albums where artist=? and album=?',(artist,album))
+#    def commit(self):
+#        self.__connector.commit()
+#    def updatePre04(self):
+#        self.cursor.execute(u"""create temporary table albums_backup(
+#                artist text,
+#                album text,
+#                year text,
+#                digital boolean,
+#                analog boolean,
+#                primary key(artist,album,year))""")
+#        self.cursor.execute(u'insert into albums_backup select * from albums')
+#        self.cursor.execute(u'drop table albums')
+#        self.cursor.execute(u"""create table albums(
+#                artist text,
+#                album text,
+#                year text,
+#                digital boolean,
+#                analog boolean,
+#                primary key(artist,album,year))""")
+#        self.cursor.execute(u'insert into albums select * from albums_backup')
+#        self.cursor.execute(u'drop table albums_backup')
+#        self.__connector.commit()
+#        print "Pre-0.4 db updated to current scheme."
+#
+#class Filesystem(object):
+#    def __init__(self):
+#        self.ignores=[u'$RECYCLE.BIN',u'System Volume Information',u'Incoming',u'msdownld.tmp']
+#        self.syntax=[((u'',u''),(u'---',u' - ',u''),(u'year',u'album'))]
+#        self.errors=[]
+#    def __clean(self,string,lgi,rgi):
+#        for s in self.syntax:
+#            string=string.lstrip(s[lgi[0]][lgi[1]]).rstrip(s[rgi[0]][rgi[1]])
+#        return string
+#    def create(self,directory):
+#        mainDirectories=[f for f in os.listdir(directory)
+#                if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
+#        results=[{
+#            u'artist':self.__clean(d,(0,0),(0,1)),
+#            u'path':os.path.join(directory,d),
+#            u'modified':os.stat(os.path.join(directory,d)).st_mtime,
+#            u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
+#            u'url':u''
+#            } for d in mainDirectories]
+#        if self.errors:
+#            from interfaces.errordialog import ErrorDialog
+#            dialog=ErrorDialog(self.errors)
+#            dialog.exec_()
+#        return results
+#    def update(self,directory,library):
+#        def exists(d,t,l):
+#            for e in l:
+#                if e[t]==d:
+#                    return True
+#            return False
+#        mainDirectories=[f for f in os.listdir(directory)
+#                if os.path.isdir(os.path.join(directory,f)) and f not in self.ignores]
+#        parsedDirectories=[self.__clean(f,(0,0),(0,1)) for f in mainDirectories]
+#        for l in library:
+#            if l[u'artist'] not in parsedDirectories:
+#                del library[library.index(l)]
+#            elif os.stat(l[u'path']).st_mtime!=l[u'modified']:
+#                subs=self.__parseSubDirs(l[u'path'],l[u'albums'])
+#                for ll in l[u'albums']:
+#                    if ll[u'digital']==1 and not exists(ll[u'album'],u'album',subs):
+#                        del l[u'albums'][l[u'albums'].index(ll)]
+#                subs.extend([f for f in l[u'albums'] if not exists(f[u'album'],u'album',subs)])
+#                l[u'albums']=subs
+#                l[u'modified']=os.stat(l[u'path']).st_mtime
+#        library.extend([{
+#            u'artist':self.__clean(d,(0,0),(0,1)),
+#            u'path':os.path.join(directory,d),
+#            u'modified':os.stat(os.path.join(directory,d)).st_mtime,
+#            u'albums':self.__parseSubDirs(os.path.join(directory,d),[]),
+#            u'url':u''
+#            } for d in mainDirectories if not exists(os.path.join(directory,d),u'path',library)])
+#        if self.errors:
+#            from interfaces.errordialog import ErrorDialog
+#            dialog=ErrorDialog(self.errors)
+#            dialog.exec_()
+#    def __parseSubDirs(self,d,albums):
+#        def getAnalog(album):
+#            for a in albums:
+#                if album==a[u'album'] and a[u'analog']:
+#                    return True
+#            return False
+#        subDirectories=[f for f in os.listdir(d) if os.path.isdir(os.path.join(d,f))]
+#        results=[]
+#        self.errors=[]
+#        for sd in subDirectories:
+#            sdy=self.__clean(sd,(1,0),(1,2))
+#            for syn in self.syntax:
+#                splitted=sdy.split(syn[1][1])
+#                year=splitted[0]
+#                del splitted[0]
+#                album=syn[1][1].join(splitted)
+#                if album:
+#                    results.append({
+#                        u'year':year,
+#                        u'album':album,
+#                        u'digital':True,
+#                        u'analog':getAnalog(album)
+#                        })
+#                else:
+#                    path=os.path.join(d,sd)
+#                    self.errors.append(path)
+#        return results
 
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):
@@ -236,25 +240,27 @@ class FirstRun(QtGui.QDialog):
 
 class Main(QtGui.QMainWindow):
     log=[]
+    __settings = QSettings(u'fetcher', u'Fetcher')
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         self.metalThread=None
         self.discogsThread=None
         if not os.path.exists(dbPath):
             os.mkdir(dbPath)
-        self.fs=Filesystem()
-        if not os.path.exists(os.path.join(dbPath,u'db.sqlite3')):
+        self.fs = Filesystem()
+        self.db = DB()
+        if not os.path.exists(os.path.join(dbPath,u'db.p')):
             dialog=FirstRun()
             dialog.exec_()
-            self.db=Sqlite()
-            self.settings=(str(dialog.ui.directory.text()).decode(u'utf-8'),dialog.ui.metalArchives.isChecked(),dialog.ui.discogs.isChecked())
-            self.library=self.fs.create(self.settings[0])
-            self.db.setSettings(self.settings)
+            directory = str(dialog.ui.directory.text()).decode(u'utf-8')
+            self.__settings.setValue(u'directory', directory)
+            self.__settings.setValue(u'metalArchives', dialog.ui.metalArchives.isChecked())
+            self.__settings.setValue(u'discogs', dialog.ui.discogs.isChecked())
+            self.fs.setDirectory(directory)
         else:
-            self.db=Sqlite()
-            self.library=self.db.read()
-            self.settings=self.db.getSettings()
-            self.fs.update(self.settings[0],self.library)
+            (self.library, self.paths)=self.db.read()
+            self.fs.setDirectory(str(self.__settings.value(u'directory').toString()).decode(u'utf-8'))
+            self.fs.setArgs(self.library, self.paths, True)
         from interfaces.main import Ui_main
         self.ui=Ui_main()
         widget=QtGui.QWidget()

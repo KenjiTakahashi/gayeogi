@@ -1,7 +1,7 @@
 !include "MUI2.nsh"
 
 Name "Fetcher"
-OutFile "Fetcher-0.3-x86.exe"
+OutFile "Fetcher-0.4-x86.exe"
 
 InstallDir "$PROGRAMFILES\Fetcher"
 

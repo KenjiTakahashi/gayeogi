@@ -52,3 +52,6 @@ included.
 -Windows: Files are stored in DataLocation now, also it
 is determined using Qt interface instead of windll and
 ctypes.
+-Completely re-designed local.Filesystem module. It now
+reads tags and also stores track names/numbers. It's
+much slower, but directory pattern independent.
