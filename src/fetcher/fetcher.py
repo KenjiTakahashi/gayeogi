@@ -6,13 +6,16 @@ import sqlite3
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings
 
-version='0.3.1'
+version='0.4'
 if sys.platform=='win32':
-    import ctypes
-    dll=ctypes.windll.shell32
-    buf=ctypes.create_string_buffer(300)
-    dll.SHGetSpecialFolderPathA(None,buf,0x0005,False)
-    dbPath=buf.value+'\\fetcher'
+    from PyQt4.QtGui import QDesktopServices
+    handler = QDesktopServices()
+    dbPath = handler.storageLocation(9) + '\\fetcher'
+#    import ctypes
+#    dll=ctypes.windll.shell32
+#    buf=ctypes.create_string_buffer(300)
+#    dll.SHGetSpecialFolderPathA(None,buf,0x0005,False)
+#    dbPath=buf.value+'\\fetcher'
 else: # Most POSIX systems, there may be more elifs in future.
     dbPath=os.path.expanduser(u'~/.config/fetcher')
 

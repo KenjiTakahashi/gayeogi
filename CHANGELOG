@@ -48,3 +48,7 @@ instead of failing instantly. (Fixes #3080361)
 0.4:
 -Pattern error dialog pop-ups only once with all errors
 included.
+-Re-designed interface for new features.
+-Windows: Files are stored in DataLocation now, also it
+is determined using Qt interface instead of windll and
+ctypes.
