@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../../../ui/main.ui'
 #
-# Created: Tue Nov  2 00:18:22 2010
+# Created: Tue Nov  2 01:54:08 2010
 #      by: PyQt4 UI code generator 4.8
 #
 # WARNING! All changes made in this file will be lost!
@@ -54,12 +54,10 @@ class Ui_main(object):
         self.tracks = QtGui.QTreeWidget(self.splitter)
         self.tracks.setIndentation(0)
         self.tracks.setItemsExpandable(False)
-        self.tracks.setColumnCount(4)
+        self.tracks.setColumnCount(2)
         self.tracks.setObjectName(_fromUtf8("tracks"))
         self.tracks.headerItem().setText(0, _fromUtf8("1"))
         self.tracks.headerItem().setText(1, _fromUtf8("2"))
-        self.tracks.headerItem().setText(2, _fromUtf8("3"))
-        self.tracks.headerItem().setText(3, _fromUtf8("4"))
         self.horizontalLayout.addWidget(self.splitter)
         self.verticalLayout.addWidget(self.widget)
         self.widget_3 = QtGui.QWidget(main)

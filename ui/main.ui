@@ -114,7 +114,7 @@
           <bool>true</bool>
          </property>
          <property name="columnCount">
-          <number>4</number>
+          <number>2</number>
          </property>
          <column>
           <property name="text">
@@ -124,16 +124,6 @@
          <column>
           <property name="text">
            <string notr="true">2</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string notr="true">3</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string notr="true">4</string>
           </property>
          </column>
         </widget>

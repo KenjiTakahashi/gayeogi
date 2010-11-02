@@ -71,6 +71,7 @@ class Filesystem(QThread):
                 if v.keys() == [u'modified']:
                     self.__traverse(k, library, paths)
                 else:
+                    k[u'modified'] = os.stat(k).st_mtime #?
                     self.update(library, v)
     def __traverse(self, directory, library, paths):
         exceptions = []

@@ -260,7 +260,7 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
         self.update()
         self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album', u'Digital', u'Analog']))
-        self.ui.tracks.setHeaderLabels(QStringList([u'#', u'Title', u'Digital', u'Analog']))
+        self.ui.tracks.setHeaderLabels(QStringList([u'#', u'Title']))
         self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.remote.clicked.connect(self.refresh)
         self.ui.close.clicked.connect(self.close)
