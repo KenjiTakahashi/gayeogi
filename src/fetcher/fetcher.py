@@ -10,8 +10,8 @@ from db.local import Filesystem
 version='0.4'
 if sys.platform=='win32':
     from PyQt4.QtGui import QDesktopServices
-    handler = QDesktopServices()
-    dbPath = handler.storageLocation(9) + '\\fetcher'
+    service = QDesktopServices()
+    dbPath = service.storageLocation(9) + '\\fetcher'
 #    import ctypes
 #    dll=ctypes.windll.shell32
 #    buf=ctypes.create_string_buffer(300)
@@ -22,28 +22,59 @@ else: # Most POSIX systems, there may be more elifs in future.
 
 class DB(object):
     def __init__(self):
+        self.dbPath = os.path.join(dbPath, u'db.pkl')
+        self.stPath = os.path.join(dbPath, u'st.pkl')
+    def write(self, data):
+        handler = open(self.dbPath, u'wb')
+        cPickle.dump(data, handler, -1)
+        handler.close()
+    def read(self):
+        handler = open(self.dbPath, u'rb')
+        result = cPickle.load(handler)
+        handler.close()
+        return result
+    def setStatistics(self, statistics):
+        artists = albums = (0, 0, 0)
+        detailed = []
+        for s in statistics:
+            for a in s[u'albums']:
+                if a[u'digital'] == 0 and a[u'analog'] == 0:
+                    artists[0] += 1
+                    albums[0] += 1
+                    detailed.append((0, 0))
+                elif a[u'digital'] == 1 or a[u'analog'] == 1:
+                    artists[1] += 1
+                    albums[1] += 1
+                    if a[u'digital'] == 1:
+                        detailed.append((1, 0))
+                    else:
+                        detailed.append((0, 1))
+                else:
+                    artists[2] += 1
+                    albums[2] += 1
+        data = {
+                u'artists': (str(artists[0]), str(artists[1]), str(artists[2])),
+                u'albums': (str(albums[0]), str(albums[1]), str(albums[2])),
+                u'detailed': detailed
+                }
+        handler = open(self.stPath, u'wb')
+        cPickle.dump(data, handler, -1)
+        handler.close()
+#        return {
+#                u'artists':(str(green),str(yellow),str(red)),
+#                u'albums':(
+#                    str(self.cursor.execute(u'select count(*) from albums where digital=1 and analog=1').fetchone()[0]),
+#                    str(self.cursor.execute(u'select count(*) from albums where digital=1 or analog=1').fetchone()[0]),
+#                    str(self.cursor.execute(u'select count(*) from albums where digital=0 and analog=0').fetchone()[0])
+#                    ),
+#                u'detailed':colors
+#                }
         pass
-#class Sqlite(object):
-#    def __init__(self):
-#        self.__connector=sqlite3.connect(os.path.join(dbPath,u'db.sqlite3'))
-#        self.cursor=self.__connector.cursor()
-#        self.cursor.execute(u"create table if not exists settings(main_path text,metal_archives boolean,discogs boolean)")
-#        self.cursor.execute(u"""create table if not exists artists(
-#                artist text,
-#                path text,
-#                modified float,
-#                url text,primary key(artist,url))""")
-#        self.cursor.execute(u"""create table if not exists albums(
-#                artist text,
-#                album text,
-#                year text,
-#                digital boolean,
-#                analog boolean,primary key(artist,album,year))""")
-#    def setSettings(self,settings):
-#        self.cursor.execute(u'insert into settings values(?,?,?)',settings)
-#        self.__connector.commit()
-#    def getSettings(self):
-#        return self.cursor.execute(u'select * from settings').fetchone()
+    def getStatistics(self):
+        handler = open(self.stPath, u'rb')
+        result = cPickle.load(handler)
+        handler.close()
+        return result
 #    def getStatistics(self):
 #        (red,yellow,green)=(0,0,0)
 #        colors=[]
@@ -249,7 +280,7 @@ class Main(QtGui.QMainWindow):
             os.mkdir(dbPath)
         self.fs = Filesystem()
         self.db = DB()
-        if not os.path.exists(os.path.join(dbPath,u'db.p')):
+        if not os.path.exists(os.path.join(dbPath,u'db.pkl')):
             dialog=FirstRun()
             dialog.exec_()
             directory = str(dialog.ui.directory.text()).decode(u'utf-8')

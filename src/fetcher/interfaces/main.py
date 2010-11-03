@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../../../ui/main.ui'
 #
-# Created: Tue Nov  2 01:54:08 2010
+# Created: Wed Nov  3 11:40:55 2010
 #      by: PyQt4 UI code generator 4.8
 #
 # WARNING! All changes made in this file will be lost!
@@ -140,41 +140,6 @@ class Ui_main(object):
         self.albumsRed.setObjectName(_fromUtf8("albumsRed"))
         self.formLayout_2.setWidget(2, QtGui.QFormLayout.LabelRole, self.albumsRed)
         self.horizontalLayout_2.addWidget(self.albumsStats)
-        self.tracksStats = QtGui.QGroupBox(self.widget_3)
-        self.tracksStats.setObjectName(_fromUtf8("tracksStats"))
-        self.formLayout_4 = QtGui.QFormLayout(self.tracksStats)
-        self.formLayout_4.setObjectName(_fromUtf8("formLayout_4"))
-        self.frame_7 = QtGui.QFrame(self.tracksStats)
-        self.frame_7.setMinimumSize(QtCore.QSize(30, 30))
-        self.frame_7.setStyleSheet(_fromUtf8("background-color: green;"))
-        self.frame_7.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.frame_7.setFrameShadow(QtGui.QFrame.Raised)
-        self.frame_7.setObjectName(_fromUtf8("frame_7"))
-        self.formLayout_4.setWidget(0, QtGui.QFormLayout.FieldRole, self.frame_7)
-        self.tracksGreen = QtGui.QLabel(self.tracksStats)
-        self.tracksGreen.setObjectName(_fromUtf8("tracksGreen"))
-        self.formLayout_4.setWidget(0, QtGui.QFormLayout.LabelRole, self.tracksGreen)
-        self.frame_8 = QtGui.QFrame(self.tracksStats)
-        self.frame_8.setMinimumSize(QtCore.QSize(30, 30))
-        self.frame_8.setStyleSheet(_fromUtf8("background-color: yellow;"))
-        self.frame_8.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.frame_8.setFrameShadow(QtGui.QFrame.Raised)
-        self.frame_8.setObjectName(_fromUtf8("frame_8"))
-        self.formLayout_4.setWidget(1, QtGui.QFormLayout.FieldRole, self.frame_8)
-        self.tracksYellow = QtGui.QLabel(self.tracksStats)
-        self.tracksYellow.setObjectName(_fromUtf8("tracksYellow"))
-        self.formLayout_4.setWidget(1, QtGui.QFormLayout.LabelRole, self.tracksYellow)
-        self.frame_9 = QtGui.QFrame(self.tracksStats)
-        self.frame_9.setMinimumSize(QtCore.QSize(30, 30))
-        self.frame_9.setStyleSheet(_fromUtf8("background-color: red;"))
-        self.frame_9.setFrameShape(QtGui.QFrame.StyledPanel)
-        self.frame_9.setFrameShadow(QtGui.QFrame.Raised)
-        self.frame_9.setObjectName(_fromUtf8("frame_9"))
-        self.formLayout_4.setWidget(2, QtGui.QFormLayout.FieldRole, self.frame_9)
-        self.tracksRed = QtGui.QLabel(self.tracksStats)
-        self.tracksRed.setObjectName(_fromUtf8("tracksRed"))
-        self.formLayout_4.setWidget(2, QtGui.QFormLayout.LabelRole, self.tracksRed)
-        self.horizontalLayout_2.addWidget(self.tracksStats)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem)
         self.widget_2 = QtGui.QWidget(self.widget_3)
@@ -219,7 +184,6 @@ class Ui_main(object):
         self.tracks.setSortingEnabled(True)
         self.artistsStats.setTitle(QtGui.QApplication.translate("main", "Artists", None, QtGui.QApplication.UnicodeUTF8))
         self.albumsStats.setTitle(QtGui.QApplication.translate("main", "Albums", None, QtGui.QApplication.UnicodeUTF8))
-        self.tracksStats.setTitle(QtGui.QApplication.translate("main", "Tracks", None, QtGui.QApplication.UnicodeUTF8))
         self.local.setText(QtGui.QApplication.translate("main", "&Local", None, QtGui.QApplication.UnicodeUTF8))
         self.settings.setText(QtGui.QApplication.translate("main", "S&ettings", None, QtGui.QApplication.UnicodeUTF8))
         self.remote.setStatusTip(QtGui.QApplication.translate("main", "Refresh internet databases.", None, QtGui.QApplication.UnicodeUTF8))
