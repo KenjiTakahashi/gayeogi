@@ -121,31 +121,46 @@ class Main(QtGui.QMainWindow):
                 for a in l[u'albums']:
                     if a[u'album']==album:
                         if analog == u'YES':
-                            a[u'analog']=1
+                            a[u'analog'] = True
                         else:
-                            a[u'analog']=0
+                            a[u'analog'] = False
                         break
                 break
+        self.computeStats()
+        self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
+        self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
+        self.ui.artistsRed.setText(self.statistics[u'artists'][2])
+        self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
+        self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
+        self.ui.albumsRed.setText(self.statistics[u'albums'][2])
         if digital == u'YES' and analog == u'YES':
             for i in range(4):
                 item.setBackground(i, Qt.green)
-            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
-            self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())+1))
+#            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
+#            self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())+1))
+#            self.statistics[u'albums'][1] -= 1
+#            self.statistics[u'albums'][2] += 1
         elif digital=='YES':
             for i in range(4):
                 item.setBackground(i, Qt.yellow)
-            self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())-1))
-            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
+#            self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())-1))
+#            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
+#            self.statistics[u'albums'][2] -= 1
+#            self.statistics[u'albums'][1] += 1
         elif analog == u'YES':
             for i in range(4):
                 item.setBackground(i, Qt.yellow)
-            self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())-1))
-            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
+#            self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())-1))
+#            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
+#            self.statistics[u'albums'][0] -= 1
+#            self.staitstics[u'albums'][1] += 1
         else:
             for i in range(4):
                 item.setBackground(i, Qt.red)
-            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
-            self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())+1))
+#            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
+#            self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())+1))
+#            self.statistics[u'albums'][1] -= 1
+#            self.statistics[u'albums'][0] += 1
         artists={}
         item = self.ui.albums.topLevelItem(0)
         while item:
@@ -237,6 +252,8 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.setSortingEnabled(True)
         self.ui.artists.sortItems(0, 0)
         self.ui.artists.resizeColumnToContents(0)
+        self.ui.artists.resizeColumnToContents(1)
+        self.ui.artists.resizeColumnToContents(2)
         self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
         self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
         self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
@@ -277,6 +294,8 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.sortItems(0, 0)
         self.ui.albums.resizeColumnToContents(0)
         self.ui.albums.resizeColumnToContents(1)
+        self.ui.albums.resizeColumnToContents(2)
+        self.ui.albums.resizeColumnToContents(3)
         self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
     def fillTracks(self):
         self.ui.tracks.clear()
@@ -290,10 +309,6 @@ class Main(QtGui.QMainWindow):
                         for album in albums:
                             if album.text(1) == ll[u'album']:
                                 for k, a in enumerate(ll[u'tracks']):
-                                    #item = QtGui.QTreeWidgetItem(QStringList([
-                                    #    a[u'tracknumber'],
-                                    #    a[u'title']
-                                    #    ]))
                                     item = NumericTreeWidgetItem(QStringList([
                                         a[u'tracknumber'],
                                         a[u'title']
@@ -309,19 +324,19 @@ class Main(QtGui.QMainWindow):
         detailed = []
         for l in self.library:
             for a in l[u'albums']:
-                if a[u'digital'] == 0 and a[u'analog'] == 0:
+                if not a[u'digital'] and not a[u'analog']:
                     artist = 0
-                    albums[0] += 1
+                    albums[2] += 1
                     detailed.append((0, 0))
-                elif a[u'digital'] == 1 or a[u'analog'] == 1:
+                elif a[u'digital'] and a[u'analog']:
+                    artist = 3
+                    albums[0] += 1
+                else:
                     albums[1] += 1
-                    if a[u'digital'] == 1:
+                    if a[u'digital']:
                         artist = 1
                     else:
                         artist = 2
-                else:
-                    artist = 3
-                    albums[2] += 1
             if artist == 3:
                 artists[0] += 1
                 detailed.append((1, 1))
