@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../../../ui/main.ui'
 #
-# Created: Wed Nov  3 20:22:43 2010
+# Created: Wed Nov  3 21:54:06 2010
 #      by: PyQt4 UI code generator 4.8
 #
 # WARNING! All changes made in this file will be lost!
@@ -17,7 +17,7 @@ except AttributeError:
 class Ui_main(object):
     def setupUi(self, main):
         main.setObjectName(_fromUtf8("main"))
-        main.resize(723, 591)
+        main.resize(723, 588)
         self.verticalLayout = QtGui.QVBoxLayout(main)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
         self.widget = QtGui.QWidget(main)
@@ -70,8 +70,38 @@ class Ui_main(object):
         self.horizontalLayout_2 = QtGui.QHBoxLayout(self.widget_3)
         self.horizontalLayout_2.setMargin(0)
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
-        spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_2.addItem(spacerItem)
+        self.groupBox = QtGui.QGroupBox(self.widget_3)
+        self.groupBox.setObjectName(_fromUtf8("groupBox"))
+        self.verticalLayout_2 = QtGui.QVBoxLayout(self.groupBox)
+        self.verticalLayout_2.setContentsMargins(-1, -1, -1, 0)
+        self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
+        self.logs = QtGui.QTreeWidget(self.groupBox)
+        self.logs.setMaximumSize(QtCore.QSize(16777215, 178))
+        self.logs.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.logs.setAlternatingRowColors(True)
+        self.logs.setIndentation(0)
+        self.logs.setItemsExpandable(False)
+        self.logs.setColumnCount(4)
+        self.logs.setObjectName(_fromUtf8("logs"))
+        self.logs.headerItem().setText(0, _fromUtf8("1"))
+        self.logs.headerItem().setText(1, _fromUtf8("2"))
+        self.logs.headerItem().setText(2, _fromUtf8("3"))
+        self.logs.headerItem().setText(3, _fromUtf8("4"))
+        self.verticalLayout_2.addWidget(self.logs)
+        self.widget_4 = QtGui.QWidget(self.groupBox)
+        self.widget_4.setObjectName(_fromUtf8("widget_4"))
+        self.horizontalLayout_3 = QtGui.QHBoxLayout(self.widget_4)
+        self.horizontalLayout_3.setMargin(0)
+        self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))
+        self.clearLogs = QtGui.QPushButton(self.widget_4)
+        self.clearLogs.setObjectName(_fromUtf8("clearLogs"))
+        self.horizontalLayout_3.addWidget(self.clearLogs)
+        spacerItem = QtGui.QSpacerItem(162, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem)
+        self.verticalLayout_2.addWidget(self.widget_4)
+        self.horizontalLayout_2.addWidget(self.groupBox)
+        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout_2.addItem(spacerItem1)
         self.widget_2 = QtGui.QWidget(self.widget_3)
         self.widget_2.setObjectName(_fromUtf8("widget_2"))
         self.formLayout_3 = QtGui.QFormLayout(self.widget_2)
@@ -190,9 +220,6 @@ class Ui_main(object):
         self.save = QtGui.QPushButton(self.widget_2)
         self.save.setObjectName(_fromUtf8("save"))
         self.formLayout_3.setWidget(2, QtGui.QFormLayout.LabelRole, self.save)
-        self.log = QtGui.QPushButton(self.widget_2)
-        self.log.setObjectName(_fromUtf8("log"))
-        self.formLayout_3.setWidget(3, QtGui.QFormLayout.FieldRole, self.log)
         self.close = QtGui.QPushButton(self.widget_2)
         self.close.setObjectName(_fromUtf8("close"))
         self.formLayout_3.setWidget(3, QtGui.QFormLayout.LabelRole, self.close)
@@ -206,6 +233,9 @@ class Ui_main(object):
         self.artists.setSortingEnabled(True)
         self.albums.setSortingEnabled(True)
         self.tracks.setSortingEnabled(True)
+        self.groupBox.setTitle(QtGui.QApplication.translate("main", "Logs", None, QtGui.QApplication.UnicodeUTF8))
+        self.logs.setSortingEnabled(True)
+        self.clearLogs.setText(QtGui.QApplication.translate("main", "Clear", None, QtGui.QApplication.UnicodeUTF8))
         self.artistsStats.setTitle(QtGui.QApplication.translate("main", "Artists", None, QtGui.QApplication.UnicodeUTF8))
         self.albumsStats.setTitle(QtGui.QApplication.translate("main", "Albums", None, QtGui.QApplication.UnicodeUTF8))
         self.local.setText(QtGui.QApplication.translate("main", "&Local", None, QtGui.QApplication.UnicodeUTF8))
@@ -214,8 +244,6 @@ class Ui_main(object):
         self.remote.setText(QtGui.QApplication.translate("main", "&Remote", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk. (Do it if you don\'t like your changes to be lost!)", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setText(QtGui.QApplication.translate("main", "&Save", None, QtGui.QApplication.UnicodeUTF8))
-        self.log.setStatusTip(QtGui.QApplication.translate("main", "Access internet refreshing logs.", None, QtGui.QApplication.UnicodeUTF8))
-        self.log.setText(QtGui.QApplication.translate("main", "L&ogs", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application.", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setText(QtGui.QApplication.translate("main", "&Close", None, QtGui.QApplication.UnicodeUTF8))
 

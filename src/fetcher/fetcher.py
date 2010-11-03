@@ -13,7 +13,7 @@ if sys.platform=='win32':
     service = QDesktopServices()
     dbPath = service.storageLocation(9) + '\\fetcher'
 else: # Most POSIX systems, there may be more elifs in future.
-    dbPath=os.path.expanduser(u'~/.fetcher')
+    dbPath=os.path.expanduser(u'~/.config/fetcher')
 
 class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __init__(self, parent = None):
@@ -24,7 +24,6 @@ class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
 class DB(object):
     def __init__(self):
         self.dbPath = os.path.join(dbPath, u'db.pkl')
-        self.stPath = os.path.join(dbPath, u'st.pkl')
     def write(self, data):
         handler = open(self.dbPath, u'wb')
         cPickle.dump(data, handler, -1)
@@ -50,7 +49,6 @@ class FirstRun(QtGui.QDialog):
         self.ui.directory.setText(dialog.getExistingDirectory())
 
 class Main(QtGui.QMainWindow):
-    log=[]
     __settings = QSettings(u'fetcher', u'Fetcher')
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -63,7 +61,13 @@ class Main(QtGui.QMainWindow):
         self.fs.stepped.connect(self.statusBar().showMessage)
         self.fs.created.connect(self.create)
         self.fs.updated.connect(self.update)
+        self.fs.errors.connect(self.logs)
         self.db = DB()
+        from interfaces.main import Ui_main
+        self.ui=Ui_main()
+        widget=QtGui.QWidget()
+        self.ui.setupUi(widget)
+        self.setCentralWidget(widget)
         if not os.path.exists(os.path.join(dbPath, u'db.pkl')):
             dialog=FirstRun()
             dialog.exec_()
@@ -79,20 +83,15 @@ class Main(QtGui.QMainWindow):
             self.fs.setArgs(self.library, self.paths, True)
             self.computeStats()
             self.update()
-        from interfaces.main import Ui_main
-        self.ui=Ui_main()
-        widget=QtGui.QWidget()
-        self.ui.setupUi(widget)
-        self.setCentralWidget(widget)
         self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
         self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album', u'Digital', u'Analog']))
         self.ui.tracks.setHeaderLabels(QStringList([u'#', u'Title']))
+        self.ui.logs.setHeaderLabels(QStringList([u'Database', u'Type', u'File/Entry', u'Message']))
         self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.local.clicked.connect(self.fs.start)
         self.ui.remote.clicked.connect(self.refresh)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
-        self.ui.log.clicked.connect(self.showLogs)
         self.ui.settings.clicked.connect(self.showSettings)
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
@@ -106,6 +105,16 @@ class Main(QtGui.QMainWindow):
         from interfaces.settings import Settings
         dialog=Settings()
         dialog.exec_()
+    def logs(self, db,  kind, filenames, message):
+        # filter kinds by __settings :)
+        for filename in filenames:
+            item = QtGui.QTreeWidgetItem(QStringList([
+                db,
+                kind,
+                filename,
+                message
+                ]))
+            self.ui.logs.insertTopLevelItem(item)
     def setAnalog(self,item):
         digital = item.text(2)
         analog = item.text(3)
@@ -136,31 +145,15 @@ class Main(QtGui.QMainWindow):
         if digital == u'YES' and analog == u'YES':
             for i in range(4):
                 item.setBackground(i, Qt.green)
-#            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
-#            self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())+1))
-#            self.statistics[u'albums'][1] -= 1
-#            self.statistics[u'albums'][2] += 1
         elif digital=='YES':
             for i in range(4):
                 item.setBackground(i, Qt.yellow)
-#            self.ui.albumsGreen.setText(str(int(self.ui.albumsGreen.text())-1))
-#            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
-#            self.statistics[u'albums'][2] -= 1
-#            self.statistics[u'albums'][1] += 1
         elif analog == u'YES':
             for i in range(4):
                 item.setBackground(i, Qt.yellow)
-#            self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())-1))
-#            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())+1))
-#            self.statistics[u'albums'][0] -= 1
-#            self.staitstics[u'albums'][1] += 1
         else:
             for i in range(4):
                 item.setBackground(i, Qt.red)
-#            self.ui.albumsYellow.setText(str(int(self.ui.albumsYellow.text())-1))
-#            self.ui.albumsRed.setText(str(int(self.ui.albumsRed.text())+1))
-#            self.statistics[u'albums'][1] -= 1
-#            self.statistics[u'albums'][0] += 1
         artists={}
         item = self.ui.albums.topLevelItem(0)
         while item:
@@ -196,7 +189,6 @@ class Main(QtGui.QMainWindow):
                 setColor(artist,Qt.green,states[u'analog'])
     def refresh(self):
         if self.settings[1]:
-            self.ui.log.setEnabled(False)
             from db.metalArchives import MetalArchives
             self.metalThread=MetalArchives(self.library)
             self.metalThread.disambiguation.connect(self.chooser)
@@ -205,7 +197,6 @@ class Main(QtGui.QMainWindow):
             self.metalThread.message.connect(self.addLogEntry)
             self.metalThread.start()
         if self.settings[2]:
-            self.ui.log.setEnabled(False)
             from db.discogs import Discogs
             self.discogsThread=Discogs(self.library)
             self.discogsThread.disambiguation.connect(self.chooser)
@@ -213,12 +204,6 @@ class Main(QtGui.QMainWindow):
             self.discogsThread.nextBand.connect(self.statusBar().showMessage)
             self.discogsThread.message.connect(self.addLogEntry)
             self.discogsThread.start()
-    def showLogs(self):
-        from interfaces.logsview import LogsView
-        dialog=LogsView(self.log)
-        dialog.exec_()
-    def addLogEntry(self,artist,message):
-        self.log.append((artist,message))
     def chooser(self,artist,partial):
         from interfaces import chooser
         dialog=chooser.Chooser()
@@ -261,9 +246,8 @@ class Main(QtGui.QMainWindow):
         self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
         self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
         self.ui.albumsRed.setText(self.statistics[u'albums'][2])
-        self.ui.log.setEnabled(True)
     def save(self):
-        self.db.write(self.library)
+        self.db.write((self.library, self.paths))
         self.statusBar().showMessage(u'Saved')
     def fillAlbums(self):
         self.ui.albums.clear()

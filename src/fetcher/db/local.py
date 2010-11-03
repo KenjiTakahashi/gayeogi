@@ -13,6 +13,7 @@ class Filesystem(QThread):
     created = pyqtSignal(tuple)
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
+    errors = pyqtSignal(unicode, unicode, list, unicode)
     def __init__(self):
         QThread.__init__(self)
         self.directory = None
@@ -199,4 +200,8 @@ class Filesystem(QThread):
             result = self.create(self.directory)
             self.created.emit(result)
         if self.exceptions:
-            pass
+            self.errors.emit(
+                    u'local',
+                    u'error',
+                    self.exceptions,
+                    u"You're probably missing some tags")
