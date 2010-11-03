@@ -155,7 +155,7 @@ class Filesystem(QThread):
                             self.appendToLibrary(
                                     f[u'TPE1'].text[0],
                                     f[u'TALB'].text[0],
-                                    f[u'TDRC'].text[0],
+                                    str(f[u'TDRC'].text[0]),
                                     f[u'TIT2'].text[0],
                                     f[u'TRCK'].text[0],
                                     library,
@@ -193,7 +193,7 @@ class Filesystem(QThread):
         self.paths = paths
         self.doUpdate = update
     def run(self):
-        self.exceptions.clear()
+        del self.exceptions[:]
         if self.doUpdate:
             self.update(self.library, self.paths)
             self.updated.emit()

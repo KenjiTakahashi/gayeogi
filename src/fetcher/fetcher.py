@@ -12,13 +12,8 @@ if sys.platform=='win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()
     dbPath = service.storageLocation(9) + '\\fetcher'
-#    import ctypes
-#    dll=ctypes.windll.shell32
-#    buf=ctypes.create_string_buffer(300)
-#    dll.SHGetSpecialFolderPathA(None,buf,0x0005,False)
-#    dbPath=buf.value+'\\fetcher'
 else: # Most POSIX systems, there may be more elifs in future.
-    dbPath=os.path.expanduser(u'~/.config/fetcher')
+    dbPath=os.path.expanduser(u'~/.fetcher')
 
 class DB(object):
     def __init__(self):
@@ -33,38 +28,38 @@ class DB(object):
         result = cPickle.load(handler)
         handler.close()
         return result
-    def setStatistics(self, statistics):
-        artists = albums = (0, 0, 0)
-        detailed = []
-        for s in statistics:
-            for a in s[u'albums']:
-                if a[u'digital'] == 0 and a[u'analog'] == 0:
-                    artists[0] += 1
-                    albums[0] += 1
-                    detailed.append((0, 0))
-                elif a[u'digital'] == 1 or a[u'analog'] == 1:
-                    artists[1] += 1
-                    albums[1] += 1
-                    if a[u'digital'] == 1:
-                        detailed.append((1, 0))
-                    else:
-                        detailed.append((0, 1))
-                else:
-                    artists[2] += 1
-                    albums[2] += 1
-        data = {
-                u'artists': (str(artists[0]), str(artists[1]), str(artists[2])),
-                u'albums': (str(albums[0]), str(albums[1]), str(albums[2])),
-                u'detailed': detailed
-                }
-        handler = open(self.stPath, u'wb')
-        cPickle.dump(data, handler, -1)
-        handler.close()
-    def getStatistics(self):
-        handler = open(self.stPath, u'rb')
-        result = cPickle.load(handler)
-        handler.close()
-        return result
+#    def setStatistics(self, statistics):
+#        artists = albums = [0, 0, 0]
+#        detailed = []
+#        for s in statistics:
+#            for a in s[u'albums']:
+#                if a[u'digital'] == 0 and a[u'analog'] == 0:
+#                    artists[0] += 1
+#                    albums[0] += 1
+#                    detailed.append((0, 0))
+#                elif a[u'digital'] == 1 or a[u'analog'] == 1:
+#                    artists[1] += 1
+#                    albums[1] += 1
+#                    if a[u'digital'] == 1:
+#                        detailed.append((1, 0))
+#                    else:
+#                        detailed.append((0, 1))
+#                else:
+#                    artists[2] += 1
+#                    albums[2] += 1
+#        data = {
+#                u'artists': (str(artists[0]), str(artists[1]), str(artists[2])),
+#                u'albums': (str(albums[0]), str(albums[1]), str(albums[2])),
+#                u'detailed': detailed
+#                }
+#        handler = open(self.stPath, u'wb')
+#        cPickle.dump(data, handler, -1)
+#        handler.close()
+#    def getStatistics(self):
+#        handler = open(self.stPath, u'rb')
+#        result = cPickle.load(handler)
+#        handler.close()
+#        return result
 
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):
@@ -85,13 +80,17 @@ class Main(QtGui.QMainWindow):
     __settings = QSettings(u'fetcher', u'Fetcher')
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        self.metalThread=None
-        self.discogsThread=None
+        self.metalThread = None
+        self.discogsThread = None
+        self.statistics = None
         if not os.path.exists(dbPath):
             os.mkdir(dbPath)
         self.fs = Filesystem()
+        self.fs.stepped.connect(self.statusBar().showMessage)
+        self.fs.created.connect(self.create)
+        self.fs.updated.connect(self.update)
         self.db = DB()
-        if not os.path.exists(os.path.join(dbPath,u'db.pkl')):
+        if not os.path.exists(os.path.join(dbPath, u'db.pkl')):
             dialog=FirstRun()
             dialog.exec_()
             directory = str(dialog.ui.directory.text()).decode(u'utf-8')
@@ -99,17 +98,19 @@ class Main(QtGui.QMainWindow):
             self.__settings.setValue(u'metalArchives', dialog.ui.metalArchives.isChecked())
             self.__settings.setValue(u'discogs', dialog.ui.discogs.isChecked())
             self.fs.setDirectory(directory)
+            self.fs.start()
         else:
             (self.library, self.paths)=self.db.read()
             self.fs.setDirectory(str(self.__settings.value(u'directory').toString()).decode(u'utf-8'))
             self.fs.setArgs(self.library, self.paths, True)
+            self.computeStats()
+            self.update()
         from interfaces.main import Ui_main
         self.ui=Ui_main()
         widget=QtGui.QWidget()
         self.ui.setupUi(widget)
         self.setCentralWidget(widget)
         self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
-        self.update()
         self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album', u'Digital', u'Analog']))
         self.ui.tracks.setHeaderLabels(QStringList([u'#', u'Title']))
         self.ui.albums.itemActivated.connect(self.setAnalog)
@@ -120,6 +121,11 @@ class Main(QtGui.QMainWindow):
         self.ui.settings.clicked.connect(self.showSettings)
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
+    def create(self, (library, paths)):
+        self.library = library
+        self.paths = paths
+        self.computeStats()
+        self.update()
     def showSettings(self):
         from interfaces.settings import Settings
         dialog=Settings()
@@ -232,21 +238,19 @@ class Main(QtGui.QMainWindow):
         self.metalThread.disambigue(dialog.getChoice())
         self.metalThread.setPaused(False)
     def update(self):
-        self.db.write(self.library)
         self.statusBar().showMessage(u'')
         self.ui.artists.clear()
-        statistics=self.db.getStatistics()
         self.ui.artists.setSortingEnabled(False)
         for i,l in enumerate(self.library):
             item = QtGui.QTreeWidgetItem(QStringList([
                 l[u'artist'],
-                statistics[u'detailed'][i][0] and u'YES' or u'NO',
-                statistics[u'detailed'][i][1] and u'YES' or u'NO'
+                self.statistics[u'detailed'][i][0] and u'YES' or u'NO',
+                self.statistics[u'detailed'][i][1] and u'YES' or u'NO'
                 ]))
-            if statistics[u'detailed'][i][0] and statistics[u'detailed'][i][1]:
+            if self.statistics[u'detailed'][i][0] and self.statistics[u'detailed'][i][1]:
                 for j in range(3):
                     item.setBackground(j, Qt.green)
-            elif statistics[u'detailed'][i][0] or statistics[u'detailed'][i][1]:
+            elif self.statistics[u'detailed'][i][0] or self.statistics[u'detailed'][i][1]:
                 for j in range(3):
                     item.setBackground(j, Qt.yellow)
             else:
@@ -257,17 +261,15 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.sortItems(0, 0)
         self.ui.artists.resizeColumnToContents(0)
         self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
-        statistics=self.db.getStatistics()
-        self.ui.artistsGreen.setText(statistics[u'artists'][0])
-        self.ui.artistsYellow.setText(statistics[u'artists'][1])
-        self.ui.artistsRed.setText(statistics[u'artists'][2])
-        self.ui.albumsGreen.setText(statistics[u'albums'][0])
-        self.ui.albumsYellow.setText(statistics[u'albums'][1])
-        self.ui.albumsRed.setText(statistics[u'albums'][2])
+        self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
+        self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
+        self.ui.artistsRed.setText(self.statistics[u'artists'][2])
+        self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
+        self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
+        self.ui.albumsRed.setText(self.statistics[u'albums'][2])
         self.ui.log.setEnabled(True)
     def save(self):
         self.db.write(self.library)
-        self.db.commit()
         self.statusBar().showMessage(u'Saved')
     def fillAlbums(self):
         self.ui.albums.clear()
@@ -278,7 +280,7 @@ class Main(QtGui.QMainWindow):
                 if i.text(0)==l[u'artist']:
                     for k, a in enumerate(l[u'albums']):
                         item = QtGui.QTreeWidgetItem(QStringList([
-                            a[u'year'],
+                            a[u'date'],
                             a[u'album'],
                             a[u'digital'] and u'YES' or u'NO',
                             a[u'analog'] and u'YES' or u'NO'
@@ -298,6 +300,42 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.sortItems(0, 0)
         self.ui.albums.resizeColumnToContents(0)
         self.ui.albums.resizeColumnToContents(1)
+    def computeStats(self):
+        artists = [0, 0, 0]
+        albums = [0, 0, 0]
+        detailed = []
+        for l in self.library:
+            for a in l[u'albums']:
+                if a[u'digital'] == 0 and a[u'analog'] == 0:
+                    artist = 0
+                    albums[0] += 1
+                    detailed.append((0, 0))
+                elif a[u'digital'] == 1 or a[u'analog'] == 1:
+                    albums[1] += 1
+                    if a[u'digital'] == 1:
+                        artist = 1
+                    else:
+                        artist = 2
+                else:
+                    artist = 3
+                    albums[2] += 1
+            if artist == 3:
+                artists[0] += 1
+                detailed.append((1, 1))
+            elif not artist:
+                artists[2] += 1
+                detailed.append((0, 0))
+            else:
+                artists[1] += 1
+                if artist == 1:
+                    detailed.append((1, 0))
+                else:
+                    detailed.append((0, 1))
+        self.statistics = {
+                u'artists': (str(artists[0]), str(artists[1]), str(artists[2])),
+                u'albums': (str(albums[0]), str(albums[1]), str(albums[2])),
+                u'detailed': detailed
+                }
 
 def run():
     app=QtGui.QApplication(sys.argv)
