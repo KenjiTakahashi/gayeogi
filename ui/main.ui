@@ -104,6 +104,9 @@
          </column>
         </widget>
         <widget class="QTreeWidget" name="tracks">
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
          <property name="indentation">
           <number>0</number>
          </property>

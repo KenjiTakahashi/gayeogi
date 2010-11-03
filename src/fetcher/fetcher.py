@@ -15,6 +15,12 @@ if sys.platform=='win32':
 else: # Most POSIX systems, there may be more elifs in future.
     dbPath=os.path.expanduser(u'~/.fetcher')
 
+class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
+    def __init__(self, parent = None):
+        QtGui.QTreeWidgetItem.__init__(self, parent)
+    def __lt__(self, qtreewidgetitem):
+        return self.text(0).toInt()[0] < qtreewidgetitem.text(0).toInt()[0]
+
 class DB(object):
     def __init__(self):
         self.dbPath = os.path.join(dbPath, u'db.pkl')
@@ -28,38 +34,6 @@ class DB(object):
         result = cPickle.load(handler)
         handler.close()
         return result
-#    def setStatistics(self, statistics):
-#        artists = albums = [0, 0, 0]
-#        detailed = []
-#        for s in statistics:
-#            for a in s[u'albums']:
-#                if a[u'digital'] == 0 and a[u'analog'] == 0:
-#                    artists[0] += 1
-#                    albums[0] += 1
-#                    detailed.append((0, 0))
-#                elif a[u'digital'] == 1 or a[u'analog'] == 1:
-#                    artists[1] += 1
-#                    albums[1] += 1
-#                    if a[u'digital'] == 1:
-#                        detailed.append((1, 0))
-#                    else:
-#                        detailed.append((0, 1))
-#                else:
-#                    artists[2] += 1
-#                    albums[2] += 1
-#        data = {
-#                u'artists': (str(artists[0]), str(artists[1]), str(artists[2])),
-#                u'albums': (str(albums[0]), str(albums[1]), str(albums[2])),
-#                u'detailed': detailed
-#                }
-#        handler = open(self.stPath, u'wb')
-#        cPickle.dump(data, handler, -1)
-#        handler.close()
-#    def getStatistics(self):
-#        handler = open(self.stPath, u'rb')
-#        result = cPickle.load(handler)
-#        handler.close()
-#        return result
 
 class FirstRun(QtGui.QDialog):
     def __init__(self,parent=None):
@@ -114,6 +88,7 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album', u'Digital', u'Analog']))
         self.ui.tracks.setHeaderLabels(QStringList([u'#', u'Title']))
         self.ui.albums.itemActivated.connect(self.setAnalog)
+        self.ui.local.clicked.connect(self.fs.start)
         self.ui.remote.clicked.connect(self.refresh)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
@@ -126,6 +101,7 @@ class Main(QtGui.QMainWindow):
         self.paths = paths
         self.computeStats()
         self.update()
+        self.fs.setArgs(self.library, self.paths, True)
     def showSettings(self):
         from interfaces.settings import Settings
         dialog=Settings()
@@ -238,6 +214,7 @@ class Main(QtGui.QMainWindow):
         self.metalThread.disambigue(dialog.getChoice())
         self.metalThread.setPaused(False)
     def update(self):
+        self.computeStats()
         self.statusBar().showMessage(u'')
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
@@ -300,6 +277,32 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.sortItems(0, 0)
         self.ui.albums.resizeColumnToContents(0)
         self.ui.albums.resizeColumnToContents(1)
+        self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
+    def fillTracks(self):
+        self.ui.tracks.clear()
+        artists = self.ui.artists.selectedItems()
+        albums = self.ui.albums.selectedItems()
+        self.ui.tracks.setSortingEnabled(False)
+        for l in self.library:
+            for artist in artists:
+                if artist.text(0) == l[u'artist']:
+                    for ll in l[u'albums']:
+                        for album in albums:
+                            if album.text(1) == ll[u'album']:
+                                for k, a in enumerate(ll[u'tracks']):
+                                    #item = QtGui.QTreeWidgetItem(QStringList([
+                                    #    a[u'tracknumber'],
+                                    #    a[u'title']
+                                    #    ]))
+                                    item = NumericTreeWidgetItem(QStringList([
+                                        a[u'tracknumber'],
+                                        a[u'title']
+                                        ]))
+                                    self.ui.tracks.insertTopLevelItem(k, item)
+        self.ui.tracks.setSortingEnabled(True)
+        self.ui.tracks.sortItems(0, 0)
+        self.ui.tracks.resizeColumnToContents(0)
+        self.ui.tracks.resizeColumnToContents(1)
     def computeStats(self):
         artists = [0, 0, 0]
         albums = [0, 0, 0]

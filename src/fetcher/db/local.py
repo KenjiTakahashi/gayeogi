@@ -104,7 +104,6 @@ class Filesystem(QThread):
                 del library[library.index(lib)]
                 #can i break here? dunno now...
     def create(self, directory):
-        exceptions = []
         library = []
         paths = []
         self.__traverse(directory, library, paths)
@@ -127,7 +126,6 @@ class Filesystem(QThread):
 #            else:
 #                self.attemptToRemove(library, k)
     def __traverse(self, directory, library, paths):
-        exceptions = []
         def __append(f, path, root):
             try:
                 self.appendToLibrary(
@@ -140,7 +138,7 @@ class Filesystem(QThread):
                         root,
                         path)
             except KeyError:
-                exceptions.append(path)
+                self.exceptions.append(path)
         for root, _, filenames in os.walk(directory):
             if root not in paths or\
                     os.stat(root).st_mtime != paths[paths.index(paths)][1]:
@@ -162,7 +160,7 @@ class Filesystem(QThread):
                                     root,
                                     path)
                         except KeyError:
-                            exceptions.append(path)
+                            self.exceptions.append(path)
                     else:
                         path = os.path.join(root, filename)
                         if ext == u'.flac':
@@ -200,3 +198,5 @@ class Filesystem(QThread):
         else:
             result = self.create(self.directory)
             self.created.emit(result)
+        if self.exceptions:
+            pass
