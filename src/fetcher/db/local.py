@@ -21,8 +21,6 @@ class Filesystem(QThread):
         self.paths = []
         self.doUpdate = False
         self.exceptions = []
-        #moznaby zrobic tak: aktualizujemy badz usuwamy pliki bedace w paths
-        #potem "przelatujemy" caly katalog w poszukiwaniu nowosci <- to bedzie wolne pewnie ;/
     def append(self, tags, library):
         artistSem = False
         albumSem = False
@@ -173,7 +171,7 @@ class Filesystem(QThread):
                                 elif tags[u'title'] != track[u'title']:
                                     track[u'title'] = tags[u'title']
                                     track[u'modified'] = modified
-                    else:
+                    elif track[u'path']:
                         toDelete.append(track)
                 for d in toDelete:
                     del album[u'tracks'][album[u'tracks'].index(d)]

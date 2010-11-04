@@ -46,8 +46,6 @@ it will leave them and let you know which ones they are,
 instead of failing instantly. (Fixes #3080361)
 
 0.4:
--Pattern error dialog pop-ups only once with all errors
-included.
 -Re-designed interface for new features.
 -Windows: Files are stored in DataLocation now, also it
 is determined using Qt interface instead of windll and
@@ -55,3 +53,6 @@ ctypes.
 -Completely re-designed local.Filesystem module. It now
 reads tags and also stores track names/numbers. It's
 much slower, but directory pattern independent.
+-Logs display in main window (yea, no more pop-ups on
+errors ;). Also possibility to save logs to file.
+-'Local' button is finally working :).
