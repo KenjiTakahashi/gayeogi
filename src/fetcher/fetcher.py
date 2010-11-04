@@ -93,6 +93,7 @@ class Main(QtGui.QMainWindow):
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
+        self.ui.clearLogs.clicked.connect(self.ui.logs.clear)
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
     def create(self, (library, paths)):
@@ -107,14 +108,17 @@ class Main(QtGui.QMainWindow):
         dialog.exec_()
     def logs(self, db,  kind, filenames, message):
         # filter kinds by __settings :)
-        for filename in filenames:
+        self.ui.logs.clear()
+        for i, filename in enumerate(filenames):
             item = QtGui.QTreeWidgetItem(QStringList([
                 db,
                 kind,
                 filename,
                 message
                 ]))
-            self.ui.logs.insertTopLevelItem(item)
+            self.ui.logs.insertTopLevelItem(i, item)
+        for i in range(4):
+            self.ui.logs.resizeColumnToContents(i)
     def setAnalog(self,item):
         digital = item.text(2)
         analog = item.text(3)
@@ -276,10 +280,8 @@ class Main(QtGui.QMainWindow):
                         self.ui.albums.insertTopLevelItem(k, item)
         self.ui.albums.setSortingEnabled(True)
         self.ui.albums.sortItems(0, 0)
-        self.ui.albums.resizeColumnToContents(0)
-        self.ui.albums.resizeColumnToContents(1)
-        self.ui.albums.resizeColumnToContents(2)
-        self.ui.albums.resizeColumnToContents(3)
+        for i in range(4):
+            self.ui.albums.resizeColumnToContents(i)
         self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
     def fillTracks(self):
         self.ui.tracks.clear()

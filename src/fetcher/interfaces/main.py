@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../../../ui/main.ui'
 #
-# Created: Wed Nov  3 21:54:06 2010
+# Created: Thu Nov  4 18:27:04 2010
 #      by: PyQt4 UI code generator 4.8
 #
 # WARNING! All changes made in this file will be lost!
@@ -70,13 +70,12 @@ class Ui_main(object):
         self.horizontalLayout_2 = QtGui.QHBoxLayout(self.widget_3)
         self.horizontalLayout_2.setMargin(0)
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
-        self.groupBox = QtGui.QGroupBox(self.widget_3)
-        self.groupBox.setObjectName(_fromUtf8("groupBox"))
-        self.verticalLayout_2 = QtGui.QVBoxLayout(self.groupBox)
-        self.verticalLayout_2.setContentsMargins(-1, -1, -1, 0)
+        self.widget_4 = QtGui.QWidget(self.widget_3)
+        self.widget_4.setObjectName(_fromUtf8("widget_4"))
+        self.verticalLayout_2 = QtGui.QVBoxLayout(self.widget_4)
+        self.verticalLayout_2.setMargin(0)
         self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
-        self.logs = QtGui.QTreeWidget(self.groupBox)
-        self.logs.setMaximumSize(QtCore.QSize(16777215, 178))
+        self.logs = QtGui.QTreeWidget(self.widget_4)
         self.logs.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.logs.setAlternatingRowColors(True)
         self.logs.setIndentation(0)
@@ -88,18 +87,18 @@ class Ui_main(object):
         self.logs.headerItem().setText(2, _fromUtf8("3"))
         self.logs.headerItem().setText(3, _fromUtf8("4"))
         self.verticalLayout_2.addWidget(self.logs)
-        self.widget_4 = QtGui.QWidget(self.groupBox)
-        self.widget_4.setObjectName(_fromUtf8("widget_4"))
-        self.horizontalLayout_3 = QtGui.QHBoxLayout(self.widget_4)
+        self.widget_5 = QtGui.QWidget(self.widget_4)
+        self.widget_5.setObjectName(_fromUtf8("widget_5"))
+        self.horizontalLayout_3 = QtGui.QHBoxLayout(self.widget_5)
         self.horizontalLayout_3.setMargin(0)
         self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))
-        self.clearLogs = QtGui.QPushButton(self.widget_4)
+        self.clearLogs = QtGui.QPushButton(self.widget_5)
         self.clearLogs.setObjectName(_fromUtf8("clearLogs"))
         self.horizontalLayout_3.addWidget(self.clearLogs)
         spacerItem = QtGui.QSpacerItem(162, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem)
-        self.verticalLayout_2.addWidget(self.widget_4)
-        self.horizontalLayout_2.addWidget(self.groupBox)
+        self.verticalLayout_2.addWidget(self.widget_5)
+        self.horizontalLayout_2.addWidget(self.widget_4)
         spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem1)
         self.widget_2 = QtGui.QWidget(self.widget_3)
@@ -233,9 +232,8 @@ class Ui_main(object):
         self.artists.setSortingEnabled(True)
         self.albums.setSortingEnabled(True)
         self.tracks.setSortingEnabled(True)
-        self.groupBox.setTitle(QtGui.QApplication.translate("main", "Logs", None, QtGui.QApplication.UnicodeUTF8))
         self.logs.setSortingEnabled(True)
-        self.clearLogs.setText(QtGui.QApplication.translate("main", "Clear", None, QtGui.QApplication.UnicodeUTF8))
+        self.clearLogs.setText(QtGui.QApplication.translate("main", "Cle&ar", None, QtGui.QApplication.UnicodeUTF8))
         self.artistsStats.setTitle(QtGui.QApplication.translate("main", "Artists", None, QtGui.QApplication.UnicodeUTF8))
         self.albumsStats.setTitle(QtGui.QApplication.translate("main", "Albums", None, QtGui.QApplication.UnicodeUTF8))
         self.local.setText(QtGui.QApplication.translate("main", "&Local", None, QtGui.QApplication.UnicodeUTF8))

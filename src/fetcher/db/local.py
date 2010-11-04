@@ -21,170 +21,168 @@ class Filesystem(QThread):
         self.paths = []
         self.doUpdate = False
         self.exceptions = []
-    def appendToLibrary(self,
-            artist,
-            album,
-            date,
-            title,
-            tracknumber,
-            library,
-            path,
-            filename):
-        artistSwitch = False
-        albumSwitch = False
-        trackSwitch = False
-        for lib in library:
-            if lib[u'artist'] == artist:
-                artistSwitch = True
-                for rAlbum in lib[u'albums']:
-                    if rAlbum[u'album'] == album:
-                        albumSwitch = True
-                        rAlbum[u'digital'] = True
-                        for rTitle in rAlbum[u'tracks']:
-                            if rTitle[u'title'] == title:
-                                trackSwitch = True
-                            elif not os.path.exists(rTitle[u'path']):
-                                del rAlbum[u'tracks']\
-                                        [rAlbum[u'tracks'].index(rTitle)]
-                        if not trackSwitch:
-                            rAlbum[u'tracks'].append({
-                                u'title': title,
-                                u'tracknumber': tracknumber,
-                                u'path': filename
+        #moznaby zrobic tak: aktualizujemy badz usuwamy pliki bedace w paths
+        #potem "przelatujemy" caly katalog w poszukiwaniu nowosci <- to bedzie wolne pewnie ;/
+    def append(self, tags, library):
+        artistSem = False
+        albumSem = False
+        trackSem = False
+        for artist in library:
+            if artist[u'artist'] == tags[u'artist']:
+                artistSem = True
+                for album in artist[u'albums']:
+                    if album[u'album'] == tags[u'album']:
+                        albumSem = True
+                        for track in album[u'tracks']:
+                            if track[u'title'] == tags[u'title']:
+                                trackSem = True
+                                break
+                        if not trackSem:
+                            album[u'tracks'].append({
+                                u'title': tags[u'title'],
+                                u'tracknumber': tags[u'tracknumber'],
+                                u'path': tags[u'path'],
+                                u'modified': os.stat(tags[u'path']).st_mtime
                                 })
                         break
-                if not albumSwitch:
-                    lib[u'albums'].append({
-                        u'album': album,
-                        u'date': date,
+                if not albumSem:
+                    artist[u'albums'].append({
+                        u'album': tags[u'album'],
+                        u'date': tags[u'date'],
                         u'tracks': [{
-                            u'title': title,
-                            u'tracknumber': tracknumber,
-                            u'path': filename
+                            u'title': tags[u'title'],
+                            u'tracknumber': tags[u'tracknumber'],
+                            u'path': tags[u'path'],
+                            u'modified': os.stat(tags[u'path']).st_mtime
                             }],
-                        u'path': path,
                         u'digital': True,
-                        u'analog': False,
-                        u'remote': False
+                        u'analog': False
                         })
                 break
-        if not artistSwitch:
+        if not artistSem:
             library.append({
-                u'artist': artist,
-                u'url':None,
+                u'artist': tags[u'artist'],
                 u'albums': [{
-                    u'album': album,
-                    u'date': date,
+                    u'album': tags[u'album'],
+                    u'date': tags[u'date'],
                     u'tracks': [{
-                        u'title': title,
-                        u'tracknumber': tracknumber,
-                        u'path': filename
+                        u'title': tags[u'title'],
+                        u'tracknumber': tags[u'tracknumber'],
+                        u'path': tags[u'path'],
+                        u'modified': os.stat(tags[u'path']).st_mtime
                         }],
-                    u'path': path,
                     u'digital': True,
-                    u'analog': False,
-                    u'remote': False
-                    }]
+                    u'analog': False
+                    }],
+                u'url': None
                 })
-    def appendToPaths(self, path, paths):
-        paths.append((path, os.stat(path).st_mtime))
-#        if not self.__exists(path, paths.keys()):
-#            paths[path] = {u'modified': os.stat(path).st_mtime}
-#        else:
-#            for k in paths.keys():
-#                prefix = os.path.commonprefix([path, k])
-#                if prefix == k:
-#                    self.appendToPaths(path, paths[prefix])
-    def attemptToRemove(self, library, path):
-        for lib in library:
-            for album in lib[u'albums']:
-                if album[u'path'] == path:
-                    if album[u'analog'] == False and album[u'remote'] == False:
-                        del lib[u'albums'][lib[u'albums'].index(album)]
-            if not lib[u'albums']:
-                del library[library.index(lib)]
-                #can i break here? dunno now...
-    def create(self, directory):
+    def flyby(self, library, paths):
+        for root, _, filenames in os.walk(self.directory):
+            for filename in filenames:
+                path = os.path.join(root, filename)
+                if path not in paths:
+                    tags = self.tagsread(path)
+                    if tags:
+                        paths.append(path)
+                        self.append(tags, library)
+    def tagsread(self, filepath):
+        ext = os.path.splitext(filepath)[1]
+        if ext == u'.mp3':
+            self.stepped.emit(filepath)
+            f = ID3(filepath)
+            try:
+                return {
+                        u'artist': f[u'TPE1'].text[0],
+                        u'album': f[u'TALB'].text[0],
+                        u'date': str(f[u'TDRC'].text[0]),
+                        u'title': f[u'TIT2'].text[0],
+                        u'tracknumber': f[u'TRCK'].text[0],
+                        u'path': filepath
+                        }
+            except KeyError:
+                self.exceptions.append(filepath)
+        else:
+            if ext == u'.flac':
+                f = FLAC(filepath)
+            elif ext == u'.asf':
+                f = ASF(filepath)
+            elif ext == u'.wv':
+                f = WavPack(filepath)
+            elif ext == u'.mpc' or ext == u'.mpp' or ext == u'.mp+':
+                f = Musepack(filepath)
+            elif ext == u'.ogg' or ext == u'.ape': # different .ogg and .ape files
+                f = File(filepath)
+            else:
+                return False
+            self.stepped.emit(filepath)
+            try:
+                return {
+                        u'artist': f[u'artist'][0],
+                        u'album': f[u'album'][0],
+                        u'date': f[u'date'][0],
+                        u'title': f[u'title'][0],
+                        u'tracknumber': f[u'tracknumber'][0],
+                        u'path': filepath
+                        }
+            except KeyError:
+                self.exceptions.append(filepath)
+    def create(self):
         library = []
         paths = []
-        self.__traverse(directory, library, paths)
+        self.flyby(library, paths)
         return (library, paths)
     def update(self, library, paths):
-        for (path, time) in paths:
-            if os.path.exists(path):
-                if os.stat(path).st_mtime != time:
-                    self.__traverse(path, library, paths)
-            else:
-                self.attemptToRemove(library, path)
-#        for k, v in paths.iteritems():
-#            if os.path.exists(k):
-#                if os.stat(k).st_mtime != v[u'modified']:
-#                    if v.keys() == [u'modified']:
-#                        self.__traverse(k, library, paths)
-#                    else:
-#                        v[u'modified'] = os.stat(k).st_mtime
-#                        self.update(library, v)
-#            else:
-#                self.attemptToRemove(library, k)
-    def __traverse(self, directory, library, paths):
-        def __append(f, path, root):
-            try:
-                self.appendToLibrary(
-                        f[u'artist'][0],
-                        f[u'album'][0],
-                        f[u'date'][0],
-                        f[u'title'][0],
-                        f[u'tracknumber'][0],
-                        library,
-                        root,
-                        path)
-            except KeyError:
-                self.exceptions.append(path)
-        for root, _, filenames in os.walk(directory):
-            if root not in paths or\
-                    os.stat(root).st_mtime != paths[paths.index(paths)][1]:
-                self.appendToPaths(root, paths)
-                for filename in filenames:
-                    ext = os.path.splitext(filename)[1]
-                    if ext == u'.mp3':
-                        path = os.path.join(root, filename)
-                        self.stepped.emit(path)
-                        f = ID3(path)
-                        try:
-                            self.appendToLibrary(
-                                    f[u'TPE1'].text[0],
-                                    f[u'TALB'].text[0],
-                                    str(f[u'TDRC'].text[0]),
-                                    f[u'TIT2'].text[0],
-                                    f[u'TRCK'].text[0],
-                                    library,
-                                    root,
-                                    path)
-                        except KeyError:
-                            self.exceptions.append(path)
+        toDelete = []
+        for artist in library:
+            for album in artist[u'albums']:
+                for track in album[u'tracks']:
+                    if os.path.exists(track[u'path']):
+                        modified = os.stat(track[u'path']).st_mtime
+                        if modified != track[u'modified']:
+                            tags = self.tagsread(track[u'path'])
+                            if tags:
+                                if tags[u'artist'] != artist[u'artist']:
+                                    self.append(tags, library)
+                                    toDelete.append(track)
+                                elif tags[u'album'] != album[u'album']:
+                                    sem = False
+                                    for rAlbum in artist[u'albums']:
+                                        if rAlbum[u'album'] == tags[u'album']:
+                                            sem = True
+                                            rAlbum[u'tracks'].append({
+                                                u'title': tags[u'title'],
+                                                u'tracknumber': tags[u'tracknumber'],
+                                                u'path': tags[u'path'],
+                                                u'modified': modified
+                                                })
+                                            break
+                                    if not sem:
+                                        artist[u'albums'].append({
+                                            u'album': tags[u'album'],
+                                            u'date': tags[u'date'],
+                                            u'tracks': [{
+                                                u'title': tags[u'title'],
+                                                u'tracknumber': tags[u'tracknumber'],
+                                                u'path': tags[u'path'],
+                                                u'modified': modified
+                                                }],
+                                            u'digital': True,
+                                            u'analog': False
+                                            })
+                                    toDelete.append(track)
+                                elif tags[u'title'] != track[u'title']:
+                                    track[u'title'] = tags[u'title']
+                                    track[u'modified'] = modified
                     else:
-                        path = os.path.join(root, filename)
-                        if ext == u'.flac':
-                            f = FLAC(path)
-                        elif ext == u'.asf':
-                            f = ASF(path)
-                        elif ext == u'.wv':
-                            f = WavPack(path)
-                        elif ext == u'.mpc' or ext == u'.mpp' or ext == u'.mp+':
-                            f = Musepack(path)
-                        elif ext == u'.ogg' or ext == u'.ape': # different .ogg and .ape files
-                            f = File(path)
-                        else:
-                            f = None
-                        if f:
-                            self.stepped.emit(path)
-                            __append(f, path, root)
-    def __exists(self, value, keys):
-        for key in keys:
-            prefix = os.path.commonprefix([value, key])
-            if prefix in keys:
-                return True
-        return False
+                        toDelete.append(track)
+                for d in toDelete:
+                    del album[u'tracks'][album[u'tracks'].index(d)]
+                del toDelete[:]
+                if not album[u'tracks']:
+                    del artist[u'albums'][artist[u'albums'].index(album)]
+            if not artist[u'albums']:
+                del library[library.index(artist)]
+        self.flyby(library, paths)
     def setDirectory(self, directory):
         self.directory = directory
     def setArgs(self, library, paths, update = False):
@@ -197,7 +195,7 @@ class Filesystem(QThread):
             self.update(self.library, self.paths)
             self.updated.emit()
         else:
-            result = self.create(self.directory)
+            result = self.create()
             self.created.emit(result)
         if self.exceptions:
             self.errors.emit(
