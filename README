@@ -28,7 +28,7 @@ installer (just few clicks ;). If you want
 to build it on your own then... you're on
 your own.
 
-=== UPGRADE FROM 0.2 ===
+=== UPGRADE FROM 0.2 TO 0.3.x ===
 
 You should recreate database, because there
 were some non-compatible changes made. To do
@@ -41,12 +41,4 @@ the future.
 
 == USAGE ==
 
-=== DIRECTORIES STRUCTURE ===
-
-For now your dirs structure should look sth
-like this:
-<root>
-    <artist>
-        <year> - <album>
-In the future, this will be changeable in
-settings.
+TODO :)

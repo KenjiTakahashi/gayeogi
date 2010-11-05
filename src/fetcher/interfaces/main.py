@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file '../../../ui/main.ui'
 #
-# Created: Thu Nov  4 18:27:04 2010
-#      by: PyQt4 UI code generator 4.8
+# Created: Thu Nov  4 23:37:04 2010
+#      by: PyQt4 UI code generator 4.8.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -95,6 +95,9 @@ class Ui_main(object):
         self.clearLogs = QtGui.QPushButton(self.widget_5)
         self.clearLogs.setObjectName(_fromUtf8("clearLogs"))
         self.horizontalLayout_3.addWidget(self.clearLogs)
+        self.saveLogs = QtGui.QPushButton(self.widget_5)
+        self.saveLogs.setObjectName(_fromUtf8("saveLogs"))
+        self.horizontalLayout_3.addWidget(self.saveLogs)
         spacerItem = QtGui.QSpacerItem(162, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem)
         self.verticalLayout_2.addWidget(self.widget_5)
@@ -234,6 +237,7 @@ class Ui_main(object):
         self.tracks.setSortingEnabled(True)
         self.logs.setSortingEnabled(True)
         self.clearLogs.setText(QtGui.QApplication.translate("main", "Cle&ar", None, QtGui.QApplication.UnicodeUTF8))
+        self.saveLogs.setText(QtGui.QApplication.translate("main", "Sa&ve", None, QtGui.QApplication.UnicodeUTF8))
         self.artistsStats.setTitle(QtGui.QApplication.translate("main", "Artists", None, QtGui.QApplication.UnicodeUTF8))
         self.albumsStats.setTitle(QtGui.QApplication.translate("main", "Albums", None, QtGui.QApplication.UnicodeUTF8))
         self.local.setText(QtGui.QApplication.translate("main", "&Local", None, QtGui.QApplication.UnicodeUTF8))

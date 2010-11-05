@@ -42,6 +42,7 @@ class Filesystem(QThread):
                                 u'path': tags[u'path'],
                                 u'modified': os.stat(tags[u'path']).st_mtime
                                 })
+                        album[u'digital'] = True
                         break
                 if not albumSem:
                     artist[u'albums'].append({
