@@ -87,12 +87,17 @@ class Settings(QtGui.QDialog):
         dialog = QtGui.QFileDialog()
         self.fsDir.setText(dialog.getExistingDirectory())
     def save(self):
-        self.__settings.setValue(u'metalArchives', self.dbList.item(0).checkState())
-        self.__settings.setValue(u'discogs', self.dbList.item(1).checkState())
-        self.__settings.setValue(u'directory', self.fsDir.text())
-        ignores = [(v.text(), v.checkState()) for v
-                in self.fsIgnores.findItems(u'*', Qt.MatchWildcard)]
-        self.__settings.setValue(u'ignores', ignores)
-        self.__settings.setValue(u'logs/errors', self.logsList.item(0).checkState())
-        self.__settings.setValue(u'logs/info', self.logsList.item(1).checkState())
-        self.close()
+        directory = self.fsDir.text()
+        if directory == u'':
+            dialog = QtGui.QMessageBox()
+            dialog.setText(u'Directory field cannot be empty!')
+        else:
+            self.__settings.setValue(u'directory', self.fsDir.text())
+            self.__settings.setValue(u'metalArchives', self.dbList.item(0).checkState())
+            self.__settings.setValue(u'discogs', self.dbList.item(1).checkState())
+            ignores = [(v.text(), v.checkState()) for v
+                    in self.fsIgnores.findItems(u'*', Qt.MatchWildcard)]
+            self.__settings.setValue(u'ignores', ignores)
+            self.__settings.setValue(u'logs/errors', self.logsList.item(0).checkState())
+            self.__settings.setValue(u'logs/info', self.logsList.item(1).checkState())
+            self.close()
