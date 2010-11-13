@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from fnmatch import fnmatch
 from PyQt4.QtCore import QThread, pyqtSignal
 from mutagen.id3 import ID3
 from mutagen.flac import FLAC
@@ -10,6 +11,7 @@ from mutagen.wavpack import WavPack
 from mutagen import File
 
 class Filesystem(QThread):
+    u"""Create/Update local file info library"""
     created = pyqtSignal(tuple)
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
@@ -21,7 +23,9 @@ class Filesystem(QThread):
         self.paths = []
         self.doUpdate = False
         self.exceptions = []
+        self.ignores = []
     def append(self, tags, library):
+        u"""Append new entry to the library"""
         artistSem = False
         albumSem = False
         trackSem = False
@@ -75,16 +79,25 @@ class Filesystem(QThread):
                     }],
                 u'url': None
                 })
+    def ignored(self, root):
+        for ignore in self.ignores:
+            if fnmatch(root, u'*/' + ignore + u'/*'):
+                return True
+        return False
     def flyby(self, library, paths):
+        u"""Create new library from scratch, going through every
+        sub-directory or add new directories to an existing library"""
         for root, _, filenames in os.walk(self.directory):
-            for filename in filenames:
-                path = os.path.join(root, filename)
-                if path not in paths:
-                    tags = self.tagsread(path)
-                    if tags:
-                        paths.append(path)
-                        self.append(tags, library)
+            if not self.ignored(root):
+                for filename in filenames:
+                    path = os.path.join(root, filename)
+                    if path not in paths:
+                        tags = self.tagsread(path)
+                        if tags:
+                            paths.append(path)
+                            self.append(tags, library)
     def tagsread(self, filepath):
+        u"""Read needed tags (metadata/ID3) from specified file"""
         ext = os.path.splitext(filepath)[1]
         if ext == u'.mp3':
             self.stepped.emit(filepath)
@@ -126,16 +139,18 @@ class Filesystem(QThread):
             except KeyError:
                 self.exceptions.append(filepath)
     def create(self):
+        u"""Create new library"""
         library = []
         paths = []
         self.flyby(library, paths)
         return (library, paths)
     def update(self, library, paths):
+        u"""Check existing library entries for changes and update"""
         toDelete = []
         for artist in library:
             for album in artist[u'albums']:
                 for track in album[u'tracks']:
-                    if os.path.exists(track[u'path']):
+                    if os.path.exists(track[u'path']) and not self.ignored(track[u'path']):
                         modified = os.stat(track[u'path']).st_mtime
                         if modified != track[u'modified']:
                             tags = self.tagsread(track[u'path'])
@@ -183,12 +198,17 @@ class Filesystem(QThread):
                 del library[library.index(artist)]
         self.flyby(library, paths)
     def setDirectory(self, directory):
+        u"""Set library directory"""
         self.directory = directory
-    def setArgs(self, library, paths, update = False):
+    def setArgs(self, library, paths, ignores, update = False):
+        u"""Set library object, paths list, ignores list and
+        update state (whether to update or create new library)"""
         self.library = library
         self.paths = paths
         self.doUpdate = update
+        self.ignores = [v for (v, _) in ignores]
     def run(self):
+        u"""Run the creating/updating process (or rather a thread ;)"""
         del self.exceptions[:]
         if self.doUpdate:
             self.update(self.library, self.paths)
@@ -199,6 +219,6 @@ class Filesystem(QThread):
         if self.exceptions:
             self.errors.emit(
                     u'local',
-                    u'error',
+                    u'errors',
                     self.exceptions,
                     u"You're probably missing some tags")

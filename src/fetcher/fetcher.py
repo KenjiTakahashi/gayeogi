@@ -80,7 +80,8 @@ class Main(QtGui.QMainWindow):
         else:
             (self.library, self.paths)=self.db.read()
             self.fs.setDirectory(str(self.__settings.value(u'directory').toString()).decode(u'utf-8'))
-            self.fs.setArgs(self.library, self.paths, True)
+            self.ignores = self.__settings.value(u'ignores', []).toPyObject()
+            self.fs.setArgs(self.library, self.paths, self.ignores, True)
             self.computeStats()
             self.update()
         self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
@@ -94,19 +95,27 @@ class Main(QtGui.QMainWindow):
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
         self.ui.clearLogs.clicked.connect(self.ui.logs.clear)
+        self.ui.saveLogs.clicked.connect(self.saveLogs)
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
+    def saveLogs(self):
+        pass
     def create(self, (library, paths)):
         self.library = library
         self.paths = paths
         self.computeStats()
         self.update()
-        self.fs.setArgs(self.library, self.paths, True)
+        self.fs.setArgs(self.library, self.paths, self.ignores, True)
     def showSettings(self):
         from interfaces.settings import Settings
         dialog=Settings()
         dialog.exec_()
-    def logs(self, db,  kind, filenames, message):
+        directory = str(self.__settings.value(u'directory', u'').toString())
+        if self.fs.directory != directory:
+            self.fs.setDirectory(directory)
+            self.ignores = self.__settings.value(u'ignores', []).toPyObject()
+            self.fs.setArgs([], [], self.ignores, False)
+    def logs(self, db, kind, filenames, message):
         # filter kinds by __settings :)
         self.ui.logs.clear()
         for i, filename in enumerate(filenames):
