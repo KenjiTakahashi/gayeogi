@@ -3,14 +3,19 @@
 === REQUIRES ===
 
 python>=2.6
-PyQt>=4.x
+PyQt>=4.6
 BeautifulSoup>=3.0
 threadpool>=1.2.5 (here: http://chrisarndt.de/projects/threadpool/)
+mutagen>=1.20
 
 Note: Windows installer provides all that
 dependencies to you, don't bother getting
 them separately (unless you want to build
 from source, of course).
+
+Note2: Versions specified here are "known
+to work", but it may be possible, that an
+older one will fit too.
 
 === LINUX ===
 

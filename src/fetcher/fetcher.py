@@ -6,6 +6,7 @@ import cPickle
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings
 from db.local import Filesystem
+from interfaces.settings import Settings
 
 version='0.4'
 if sys.platform=='win32':
@@ -34,20 +35,6 @@ class DB(object):
         handler.close()
         return result
 
-class FirstRun(QtGui.QDialog):
-    def __init__(self,parent=None):
-        QtGui.QDialog.__init__(self,parent)
-        from interfaces.firstrun import Ui_firstRun
-        self.ui=Ui_firstRun()
-        self.ui.setupUi(self)
-        self.ui.browse.clicked.connect(self.__browse)
-        self.ui.cancel.clicked.connect(sys.exit)
-        self.ui.ok.clicked.connect(self.close)
-        self.setWindowTitle(u'Fetcher '+version+' - First Run Configuration')
-    def __browse(self):
-        dialog=QtGui.QFileDialog()
-        self.ui.directory.setText(dialog.getExistingDirectory())
-
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'fetcher', u'Fetcher')
     def __init__(self):
@@ -68,19 +55,16 @@ class Main(QtGui.QMainWindow):
         widget=QtGui.QWidget()
         self.ui.setupUi(widget)
         self.setCentralWidget(widget)
-        if not os.path.exists(os.path.join(dbPath, u'db.pkl')):
-            dialog=FirstRun()
+        firstStart = not os.path.exists(os.path.join(dbPath, u'db.pkl'))
+        if firstStart:
+            dialog = Settings()
             dialog.exec_()
-            directory = str(dialog.ui.directory.text()).decode(u'utf-8')
-            self.__settings.setValue(u'directory', directory)
-            self.__settings.setValue(u'metalArchives', dialog.ui.metalArchives.isChecked())
-            self.__settings.setValue(u'discogs', dialog.ui.discogs.isChecked())
-            self.fs.setDirectory(directory)
-            self.fs.start()
+        self.fs.setDirectory(str(self.__settings.value(u'directory').toString()).decode(u'utf-8'))
+        self.ignores = self.__settings.value(u'ignores', []).toPyObject()
+        if firstStart:
+            self.fs.setArgs([], [], self.ignores, False)
         else:
-            (self.library, self.paths)=self.db.read()
-            self.fs.setDirectory(str(self.__settings.value(u'directory').toString()).decode(u'utf-8'))
-            self.ignores = self.__settings.value(u'ignores', []).toPyObject()
+            (self.library, self.paths) = self.db.read()
             self.fs.setArgs(self.library, self.paths, self.ignores, True)
             self.computeStats()
             self.update()
@@ -107,7 +91,6 @@ class Main(QtGui.QMainWindow):
         self.update()
         self.fs.setArgs(self.library, self.paths, self.ignores, True)
     def showSettings(self):
-        from interfaces.settings import Settings
         dialog=Settings()
         dialog.exec_()
         directory = str(self.__settings.value(u'directory', u'').toString())

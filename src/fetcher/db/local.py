@@ -196,6 +196,9 @@ class Filesystem(QThread):
                     del artist[u'albums'][artist[u'albums'].index(album)]
             if not artist[u'albums']:
                 del library[library.index(artist)]
+        for path in paths:
+            if self.ignored(path):
+                del paths[paths.index(path)]
         self.flyby(library, paths)
     def setDirectory(self, directory):
         u"""Set library directory"""

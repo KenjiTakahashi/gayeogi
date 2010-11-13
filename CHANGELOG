@@ -56,3 +56,7 @@ much slower, but directory pattern independent.
 -Logs display in main window (yea, no more pop-ups on
 errors ;). Also possibility to save logs to file.
 -'Local' button is finally working :).
+-User can specify directories/files to ignore during
+db creation.
+-At first run it's displaying "normal" Settings page,
+no more "special-first-run-configuration-things".
