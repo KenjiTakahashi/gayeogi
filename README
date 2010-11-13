@@ -44,6 +44,13 @@ and re-run the application.
 Sorry about this, I hope it won't happen in
 the future.
 
+=== UPGRADE TO 0.4.x ===
+
+There was a complete filesystem module
+rewrite and it's not compatible with older
+versions in any way. You don't have to do
+anything, it will start like new anyway.
+
 == USAGE ==
 
 TODO :)

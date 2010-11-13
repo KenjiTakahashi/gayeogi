@@ -15,14 +15,13 @@ class Filesystem(QThread):
     created = pyqtSignal(tuple)
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
-    errors = pyqtSignal(unicode, unicode, list, unicode)
+    errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self):
         QThread.__init__(self)
         self.directory = None
         self.library = []
         self.paths = []
         self.doUpdate = False
-        self.exceptions = []
         self.ignores = []
     def append(self, tags, library):
         u"""Append new entry to the library"""
@@ -112,7 +111,10 @@ class Filesystem(QThread):
                         u'path': filepath
                         }
             except KeyError:
-                self.exceptions.append(filepath)
+                self.errors.emit(u'local',
+                        u'errors',
+                        filepath,
+                        u"You're probably missing some tags")
         else:
             if ext == u'.flac':
                 f = FLAC(filepath)
@@ -137,7 +139,10 @@ class Filesystem(QThread):
                         u'path': filepath
                         }
             except KeyError:
-                self.exceptions.append(filepath)
+                self.errors.emit(u'local',
+                        u'errors',
+                        filepath,
+                        u"You're probably missing some tags")
     def create(self):
         u"""Create new library"""
         library = []
@@ -212,16 +217,9 @@ class Filesystem(QThread):
         self.ignores = [v for (v, _) in ignores]
     def run(self):
         u"""Run the creating/updating process (or rather a thread ;)"""
-        del self.exceptions[:]
         if self.doUpdate:
             self.update(self.library, self.paths)
             self.updated.emit()
         else:
             result = self.create()
             self.created.emit(result)
-        if self.exceptions:
-            self.errors.emit(
-                    u'local',
-                    u'errors',
-                    self.exceptions,
-                    u"You're probably missing some tags")

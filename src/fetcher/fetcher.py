@@ -98,17 +98,15 @@ class Main(QtGui.QMainWindow):
             self.fs.setDirectory(directory)
             self.ignores = self.__settings.value(u'ignores', []).toPyObject()
             self.fs.setArgs([], [], self.ignores, False)
-    def logs(self, db, kind, filenames, message):
-        # filter kinds by __settings :)
-        self.ui.logs.clear()
-        for i, filename in enumerate(filenames):
+    def logs(self, db, kind, filename, message):
+        if self.__settings.value(u'logs/' + kind).toInt()[0]:
             item = QtGui.QTreeWidgetItem(QStringList([
                 db,
                 kind,
                 filename,
                 message
                 ]))
-            self.ui.logs.insertTopLevelItem(i, item)
+            self.ui.logs.addTopLevelItem(item)
         for i in range(4):
             self.ui.logs.resizeColumnToContents(i)
     def setAnalog(self,item):
@@ -233,7 +231,6 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.setSortingEnabled(True)
         self.ui.artists.sortItems(0, 0)
         self.ui.artists.resizeColumnToContents(0)
-        self.ui.artists.resizeColumnToContents(1)
         self.ui.artists.resizeColumnToContents(2)
         self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
         self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
