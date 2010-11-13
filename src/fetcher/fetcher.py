@@ -195,7 +195,7 @@ class Main(QtGui.QMainWindow):
             else:
                 setColor(artist,Qt.green,states[u'analog'])
     def refresh(self):
-        if self.settings[1]:
+        if self.__settings.value(u'metalArchives', 0).toInt()[0]:
             from db.metalArchives import MetalArchives
             self.metalThread=MetalArchives(self.library)
             self.metalThread.disambiguation.connect(self.chooser)
@@ -203,7 +203,7 @@ class Main(QtGui.QMainWindow):
             self.metalThread.nextBand.connect(self.statusBar().showMessage)
             self.metalThread.message.connect(self.addLogEntry)
             self.metalThread.start()
-        if self.settings[2]:
+        if self.__settings.value(u'discogs', 0).toInt()[0]:
             from db.discogs import Discogs
             self.discogsThread=Discogs(self.library)
             self.discogsThread.disambiguation.connect(self.chooser)
