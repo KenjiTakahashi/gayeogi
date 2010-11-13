@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../../../ui/main.ui'
 #
-# Created: Thu Nov  4 23:37:04 2010
+# Created: Sat Nov 13 19:50:43 2010
 #      by: PyQt4 UI code generator 4.8.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -236,16 +236,20 @@ class Ui_main(object):
         self.albums.setSortingEnabled(True)
         self.tracks.setSortingEnabled(True)
         self.logs.setSortingEnabled(True)
+        self.clearLogs.setStatusTip(QtGui.QApplication.translate("main", "Clear logs table", None, QtGui.QApplication.UnicodeUTF8))
         self.clearLogs.setText(QtGui.QApplication.translate("main", "Cle&ar", None, QtGui.QApplication.UnicodeUTF8))
+        self.saveLogs.setStatusTip(QtGui.QApplication.translate("main", "Save logs to file", None, QtGui.QApplication.UnicodeUTF8))
         self.saveLogs.setText(QtGui.QApplication.translate("main", "Sa&ve", None, QtGui.QApplication.UnicodeUTF8))
         self.artistsStats.setTitle(QtGui.QApplication.translate("main", "Artists", None, QtGui.QApplication.UnicodeUTF8))
         self.albumsStats.setTitle(QtGui.QApplication.translate("main", "Albums", None, QtGui.QApplication.UnicodeUTF8))
+        self.local.setStatusTip(QtGui.QApplication.translate("main", "Refresh local filesystem", None, QtGui.QApplication.UnicodeUTF8))
         self.local.setText(QtGui.QApplication.translate("main", "&Local", None, QtGui.QApplication.UnicodeUTF8))
+        self.settings.setStatusTip(QtGui.QApplication.translate("main", "Change settings", None, QtGui.QApplication.UnicodeUTF8))
         self.settings.setText(QtGui.QApplication.translate("main", "S&ettings", None, QtGui.QApplication.UnicodeUTF8))
-        self.remote.setStatusTip(QtGui.QApplication.translate("main", "Refresh internet databases.", None, QtGui.QApplication.UnicodeUTF8))
+        self.remote.setStatusTip(QtGui.QApplication.translate("main", "Refresh internet databases", None, QtGui.QApplication.UnicodeUTF8))
         self.remote.setText(QtGui.QApplication.translate("main", "&Remote", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk. (Do it if you don\'t like your changes to be lost!)", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setText(QtGui.QApplication.translate("main", "&Save", None, QtGui.QApplication.UnicodeUTF8))
-        self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application.", None, QtGui.QApplication.UnicodeUTF8))
+        self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setText(QtGui.QApplication.translate("main", "&Close", None, QtGui.QApplication.UnicodeUTF8))
 

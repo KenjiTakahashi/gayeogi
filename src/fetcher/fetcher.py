@@ -83,7 +83,20 @@ class Main(QtGui.QMainWindow):
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
     def saveLogs(self):
-        pass
+        dialog = QtGui.QFileDialog()
+        filename = dialog.getSaveFileName()
+        if filename:
+            fh = open(filename, u'w')
+            fh.write(u'Database:Type:File/Entry:Message')
+            for i in range(self.ui.logs.topLevelItemCount()):
+                item = self.ui.logs.topLevelItem(i)
+                for c in range(4):
+                    fh.write(item.text(c))
+                    if c != 3:
+                        fh.write(u':')
+                fh.write(u'\n')
+            fh.close()
+            self.statusBar().showMessage(u'Saved logs')
     def create(self, (library, paths)):
         self.library = library
         self.paths = paths

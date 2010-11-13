@@ -200,6 +200,9 @@
             </property>
             <item>
              <widget class="QPushButton" name="clearLogs">
+              <property name="statusTip">
+               <string>Clear logs table</string>
+              </property>
               <property name="text">
                <string>Cle&amp;ar</string>
               </property>
@@ -207,6 +210,9 @@
             </item>
             <item>
              <widget class="QPushButton" name="saveLogs">
+              <property name="statusTip">
+               <string>Save logs to file</string>
+              </property>
               <property name="text">
                <string>Sa&amp;ve</string>
               </property>
@@ -441,6 +447,9 @@
          </item>
          <item row="1" column="0">
           <widget class="QPushButton" name="local">
+           <property name="statusTip">
+            <string>Refresh local filesystem</string>
+           </property>
            <property name="text">
             <string>&amp;Local</string>
            </property>
@@ -448,6 +457,9 @@
          </item>
          <item row="1" column="1">
           <widget class="QPushButton" name="settings">
+           <property name="statusTip">
+            <string>Change settings</string>
+           </property>
            <property name="text">
             <string>S&amp;ettings</string>
            </property>
@@ -456,7 +468,7 @@
          <item row="2" column="0">
           <widget class="QPushButton" name="remote">
            <property name="statusTip">
-            <string>Refresh internet databases.</string>
+            <string>Refresh internet databases</string>
            </property>
            <property name="text">
             <string>&amp;Remote</string>
@@ -476,7 +488,7 @@
          <item row="3" column="1">
           <widget class="QPushButton" name="close">
            <property name="statusTip">
-            <string>Close the application.</string>
+            <string>Close the application</string>
            </property>
            <property name="text">
             <string>&amp;Close</string>
