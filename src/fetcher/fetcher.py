@@ -59,8 +59,10 @@ class Main(QtGui.QMainWindow):
         if firstStart:
             dialog = Settings()
             dialog.exec_()
-        self.fs.setDirectory(str(self.__settings.value(u'directory').toString()).decode(u'utf-8'))
-        self.ignores = self.__settings.value(u'ignores', []).toPyObject()
+        self.fs.setDirectory(unicode(self.__settings.value(u'directory').toPyObject()))
+        self.ignores = self.__settings.value(u'ignores').toPyObject()
+        if not self.ignores:
+            self.ignores = []
         if firstStart:
             self.fs.setArgs([], [], self.ignores, False)
         else:
@@ -341,7 +343,6 @@ class Main(QtGui.QMainWindow):
                 u'albums': (str(albums[0]), str(albums[1]), str(albums[2])),
                 u'detailed': detailed
                 }
-        print self.statistics
 
 def run():
     app=QtGui.QApplication(sys.argv)

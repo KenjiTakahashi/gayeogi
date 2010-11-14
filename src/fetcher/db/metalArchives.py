@@ -110,7 +110,7 @@ class MetalArchives(QThread):
             self.errors.emit(u'metal-archives.com',
                     u'info',
                     elem[u'artist'],
-                    u'Successfully downloaded band contents')
+                    u'Successfully retrieved band contents')
             if result[u'choice']:
                 elem[u'url']=result[u'choice']
             for a,y in map(None,result[u'albums'],result[u'years']):
@@ -118,6 +118,7 @@ class MetalArchives(QThread):
                     elem[u'albums'].append({
                         u'album': a,
                         u'date': y,
+                        u'tracks': [],
                         u'digital': False,
                         u'analog': False
                         })
