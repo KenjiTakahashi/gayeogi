@@ -121,6 +121,11 @@ class MetalArchives(QThread):
                 if a.lower()==alb[u'album'].lower():
                     return True
             return False
+        def exists2(a, albums):
+            for album in albums:
+                if a.lower() == album.lower():
+                    return True
+            return False
         if result[u'choice']==u'no_band':
             self.errors.emit(u'metal-archives.com',
                     u'errors',
@@ -140,6 +145,10 @@ class MetalArchives(QThread):
             if result[u'choice']:
                 elem[u'url']=result[u'choice']
             for a,y in map(None,result[u'albums'],result[u'years']):
+                for album in elem[u'albums']:
+                    if not album[u'digital'] and not album[u'analog']\
+                            and not exists2(album[u'album'], result[u'albums']):
+                        del elem[u'albums'][elem[u'albums'].index(album)]
                 if not exists(a,elem[u'albums']):
                     elem[u'albums'].append({
                         u'album': a,
