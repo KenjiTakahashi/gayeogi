@@ -44,9 +44,8 @@ def unescape(text):
 class MetalArchives(QThread):
     paused=False
     disambiguation=pyqtSignal(str,list)
-    error=pyqtSignal(str)
-    nextBand=pyqtSignal(str)
-    message=pyqtSignal(str,str)
+    errors = pyqtSignal(unicode, unicode, unicode, unicode)
+    stepped = pyqtSignal(unicode)
     def __init__(self,library):
         QThread.__init__(self)
         self.library=library
@@ -97,19 +96,33 @@ class MetalArchives(QThread):
                     return True
             return False
         if result[u'choice']==u'no_band':
-            self.message.emit(result[u'elem'],u'no such band')
-        elif result[u'choice']!=u'error':
+            self.errors.emit(u'metal-archives.com',
+                    u'errors',
+                    result[u'elem'],
+                    u'No such band has been found')
+        elif result[u'choice'] == u'error':
+            self.errors.emit(u'metal-archives.com',
+                    u'errors',
+                    result[u'elem'],
+                    u'An unknown error occured (no internet?)')
+        elif result[u'choice'] != u'block':
             elem=self.library[self.library.index(result[u'elem'])]
-            self.message.emit(elem[u'artist'],u'success')
+            self.errors.emit(u'metal-archives.com',
+                    u'info',
+                    elem[u'artist'],
+                    u'Successfully downloaded band contents')
             if result[u'choice']:
                 elem[u'url']=result[u'choice']
             for a,y in map(None,result[u'albums'],result[u'years']):
                 if not exists(a,elem[u'albums']):
-                    elem[u'albums'].append({u'album':a,u'year':y,u'digital':False,u'analog':False})
-        else:
-            self.message.emit(result[u'elem'],u'failed with an error')
+                    elem[u'albums'].append({
+                        u'album': a,
+                        u'date': y,
+                        u'digital': False,
+                        u'analog': False
+                        })
     def work(self,elem):
-        self.nextBand.emit(elem[u'artist'])
+        self.stepped.emit(elem[u'artist'])
         if elem[u'url']:
             result=self.parse1(elem)
         else:
@@ -118,25 +131,23 @@ class MetalArchives(QThread):
                 soup=BeautifulSoup(urllib2.urlopen(
                     u'http://www.metal-archives.com/search.php?string='+artist+u'&type=band').read())
             except urllib2.HTTPError:
-                self.message.emit(elem[u'artist'],u'first attempt failed, retrying')
+                result = {u'choice': u'block', u'elem': elem[u'artist']}
+                self.errors.emit(u'metal-archives.com',
+                        u'errors',
+                        result[u'elem'],
+                        u'No internet or blocked by upstream (Delaying for 60 secs)')
+                self.stepped.emit(u'Waiting...')
                 self.sleep(60)
-                try:
-                    soup=BeautifulSoup(urllib2.urlopen(
-                        u'http://www.metal-archives.com/search.php?string='+artist+u'&type=band').read())
-                except urllib2.HTTPError:
-                    result={u'choice':u'error',u'elem':elem[u'artist']}
-                else:
-                    result=self.parse2(soup,elem)
             else:
                 result=self.parse2(soup,elem)
         return result
     def run(self):
-        requests=threadpool.makeRequests(self.work,self.library,self.done)
+        requests = threadpool.makeRequests(self.work, self.library, self.done)
         # metal-archives is blocking members on high load, that's why I use only 1 thread here.
         # (It sometimes gets blocked anyway).
         # If they'll ever get a pack of decent servers, this will be fixed by just changing the
         # number below.
-        main=threadpool.ThreadPool(1)
+        main = threadpool.ThreadPool(1)
         for req in requests:
             main.putRequest(req)
         main.wait()

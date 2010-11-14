@@ -200,8 +200,8 @@ class Main(QtGui.QMainWindow):
             self.metalThread=MetalArchives(self.library)
             self.metalThread.disambiguation.connect(self.chooser)
             self.metalThread.finished.connect(self.update)
-            self.metalThread.nextBand.connect(self.statusBar().showMessage)
-            self.metalThread.message.connect(self.addLogEntry)
+            self.metalThread.stepped.connect(self.statusBar().showMessage)
+            self.metalThread.errors.connect(self.logs)
             self.metalThread.start()
         if self.__settings.value(u'discogs', 0).toInt()[0]:
             from db.discogs import Discogs
@@ -315,7 +315,6 @@ class Main(QtGui.QMainWindow):
                 if not a[u'digital'] and not a[u'analog']:
                     artist = 0
                     albums[2] += 1
-                    detailed.append((0, 0))
                 elif a[u'digital'] and a[u'analog']:
                     artist = 3
                     albums[0] += 1
@@ -342,6 +341,7 @@ class Main(QtGui.QMainWindow):
                 u'albums': (str(albums[0]), str(albums[1]), str(albums[2])),
                 u'detailed': detailed
                 }
+        print self.statistics
 
 def run():
     app=QtGui.QApplication(sys.argv)

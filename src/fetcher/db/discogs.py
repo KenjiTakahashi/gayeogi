@@ -10,7 +10,6 @@ from PyQt4.QtCore import QThread,pyqtSignal
 class Discogs(QThread):
     paused=False
     disambiguation=pyqtSignal(str,list)
-    error=pyqtSignal(str)
     nextBand=pyqtSignal(str)
     message=pyqtSignal(str,str)
     def __init__(self,library):
