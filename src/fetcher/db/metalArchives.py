@@ -41,19 +41,52 @@ def unescape(text):
         return text # leave as is
     return sub("&#?\w+;", fixup, text)
 
+class Bandsensor(object):
+    def __init__(self, artists, albums):
+        self.artists = artists
+        self.albums = albums
+        self.results = {}
+    def sense(self, data):
+        soup = BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/' + data).read())
+        albums = [unescape(tag.contents[0])
+                for tag in soup.findAll(u'a', attrs = {u'class': u'album'})]
+        years = [tag.contents[0][-4:]
+                for tag in soup.findAll(u'td', attrs={u'class': u'album'})]
+        for album in albums:
+            for eAlbum in self.albums:
+                if album.lower() == eAlbum[u'album'].lower():
+                    return {data: (albums, years)}
+    def finish(self, _, result):
+        if result:
+            self.results[result.keys()[0]] = result.values()[0]
+    def run(self):
+        requests = threadpool.makeRequests(self.sense, self.artists, self.finish)
+        main = threadpool.ThreadPool(3)
+        for req in requests:
+            main.putRequest(req)
+        main.wait()
+        values = {}
+        for data, (albums, _) in self.results.items():
+            for album in albums:
+                for eAlbum in self.albums:
+                    if album.lower() == eAlbum[u'album'].lower():
+                        if data in values.keys():
+                            values[data] += 1
+                        else:
+                            values[data] = 1
+        if values.keys():
+            best = values.keys()[0]
+            for k, v in values.items():
+                if v > values[best]:
+                    best = k
+            return (best, self.results[best])
+
 class MetalArchives(QThread):
-    paused=False
-    disambiguation=pyqtSignal(str,list)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     stepped = pyqtSignal(unicode)
     def __init__(self,library):
         QThread.__init__(self)
         self.library=library
-        self.link=u''
-    def setPaused(self,state):
-        self.paused=state
-    def disambigue(self,link):
-        self.link=link
     def parse1(self,elem):
         soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/'+elem[u'url']).read())
         return {
@@ -64,28 +97,21 @@ class MetalArchives(QThread):
                 }
     def parse2(self,soup,elem):
         if soup.findAll(u'script')[0].contents:
-            partial=[(elem[u'artist'],soup.findAll(u'script')[0].contents[0][18:-2])]
+            partial=[soup.findAll(u'script')[0].contents[0][18:-2]]
         else:
-            partial=[(r.contents[0],r[u'href']) for r in soup.findAll(u'a') if (r.contents[0]+u' (').startswith(elem[u'artist']+u' (')]
+            partial=[r[u'href'] for r in soup.findAll(u'a') if (r.contents[0]+u' (').startswith(elem[u'artist']+u' (')]
         try:
-            if len(partial)!=0:
-                if len(partial)==1:
-                    soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/'+partial[0][1]).read())
-                    self.link=partial[0][1]
-                else:
-                    self.disambiguation.emit(elem[u'artist'],partial)
-                    self.setPaused(True)
-                    while(self.paused):
-                        pass
-                    soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/'+self.link).read())
-                result={
-                        u'choice':self.link.decode('utf-8'),
-                        u'elem':elem,
-                        u'albums':[unescape(tag.contents[0].replace('/',' ')) for tag in soup.findAll(u'a',attrs={u'class':u'album'})],
-                        u'years':[tag.contents[0][-4:] for tag in soup.findAll(u'td',attrs={u'class':u'album'})]
+            sensor = Bandsensor(partial, elem[u'albums'])
+            data = sensor.run()
+            if data:
+                result = {
+                        u'choice': data[0],
+                        u'elem': elem,
+                        u'albums': data[1][0],
+                        u'years': data[1][1]
                         }
             else:
-                result={u'choice':u'no_band',u'elem':elem[u'artist']}
+                result = {u'choice': u'no_band', u'elem': elem[u'artist']}
         except urllib2.HTTPError:
             result={u'choice':u'error',u'elem':elem[u'artist']}
         return result

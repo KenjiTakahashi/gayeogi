@@ -60,3 +60,6 @@ errors ;). Also possibility to save logs to file.
 db creation.
 -At first run it's displaying "normal" Settings page,
 no more "special-first-run-configuration-things".
+-Introduced The Great'n'Mighty Band Sensor, to
+automatically sense with band to choose, so the user
+might just run'n'leave and things will get done.

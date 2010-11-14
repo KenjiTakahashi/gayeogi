@@ -122,6 +122,7 @@ class Main(QtGui.QMainWindow):
                 message
                 ]))
             self.ui.logs.addTopLevelItem(item)
+            self.ui.logs.scrollToItem(item)
         for i in range(4):
             self.ui.logs.resizeColumnToContents(i)
     def setAnalog(self,item):
@@ -200,7 +201,6 @@ class Main(QtGui.QMainWindow):
         if self.__settings.value(u'metalArchives', 0).toInt()[0]:
             from db.metalArchives import MetalArchives
             self.metalThread=MetalArchives(self.library)
-            self.metalThread.disambiguation.connect(self.chooser)
             self.metalThread.finished.connect(self.update)
             self.metalThread.stepped.connect(self.statusBar().showMessage)
             self.metalThread.errors.connect(self.logs)
@@ -208,7 +208,6 @@ class Main(QtGui.QMainWindow):
         if self.__settings.value(u'discogs', 0).toInt()[0]:
             from db.discogs import Discogs
             self.discogsThread=Discogs(self.library)
-            self.discogsThread.disambiguation.connect(self.chooser)
             self.discogsThread.finished.connect(self.update)
             self.discogsThread.nextBand.connect(self.statusBar().showMessage)
             self.discogsThread.message.connect(self.addLogEntry)
