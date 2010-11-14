@@ -31,7 +31,9 @@ class Settings(QtGui.QDialog):
         fsDirLayout.addWidget(fsDirButton)
         fsLabel = QtGui.QLabel(u'Ignores:')
         self.fsIgnores = QtGui.QListWidget()
-        ignores = self.__settings.value(u'ignores', []).toPyObject()
+        ignores = self.__settings.value(u'ignores').toPyObject()
+        if not ignores:
+            ignores = []
         for i in ignores:
             item = QtGui.QListWidgetItem(i[0])
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -62,7 +64,7 @@ class Settings(QtGui.QDialog):
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
         item.setCheckState(self.__settings.value(u'logs/info', 0).toInt()[0])
         self.logsList.addItem(item)
-        tabs.addTab(self.logsList, self.tr(u'L&ogs'))
+        tabs.addTab(self.logsList, self.tr(u'Lo&gs'))
         ok = QtGui.QPushButton(self.tr(u'&OK'))
         ok.clicked.connect(self.save)
         cancel = QtGui.QPushButton(self.tr(u'&Cancel'))

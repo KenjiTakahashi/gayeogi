@@ -166,6 +166,7 @@ class Filesystem(QThread):
                                 elif tags[u'album'] != album[u'album']:
                                     sem = False
                                     for rAlbum in artist[u'albums']:
+                                        rAlbum[u'digital'] = True
                                         if rAlbum[u'album'] == tags[u'album']:
                                             sem = True
                                             rAlbum[u'tracks'].append({
@@ -197,7 +198,7 @@ class Filesystem(QThread):
                 for d in toDelete:
                     del album[u'tracks'][album[u'tracks'].index(d)]
                 del toDelete[:]
-                if not album[u'tracks']:
+                if not album[u'tracks'] and album[u'digital'] and not album[u'analog']:
                     del artist[u'albums'][artist[u'albums'].index(album)]
             if not artist[u'albums']:
                 del library[library.index(artist)]
