@@ -122,24 +122,28 @@ class Discogs(QThread):
             except urllib2.HTTPError:
                 result={u'choice':u'error',u'elem':elem[u'artist']}
             else:
-                xml=minidom.parseString(data)
-                tag=xml.firstChild.firstChild
-                # Yeah, it's bad, it's ugly, just like discogs site and API is...
-                artists = [t.getElementsByTagName(u'uri')[0].firstChild.data
-                        for t in tag.getElementsByTagName(u'result')
-                        if elem[u'artist'] in t.getElementsByTagName(u'title')[0].firstChild.data\
-                                and u'artist' in t.getElementsByTagName(u'uri')[0].firstChild.data]
-                sensor = Bandsensor(artists, elem[u'albums'])
-                data = sensor.run()
-                if data:
-                    result = {
-                            u'choice': data[0],
-                            u'elem': elem,
-                            u'albums': data[1][0],
-                            u'years': data[1][1]
-                            }
+                try:
+                    xml=minidom.parseString(data)
+                except ExpatError:
+                    result = {u'choice': u'error', u'elem': elem[u'artist']}
                 else:
-                    result = {u'choice': u'no_band', u'elem': elem[u'artist']}
+                    tag=xml.firstChild.firstChild
+                    # Yeah, it's bad, it's ugly, just like discogs site and API is...
+                    artists = [t.getElementsByTagName(u'uri')[0].firstChild.data
+                            for t in tag.getElementsByTagName(u'result')
+                            if elem[u'artist'] in t.getElementsByTagName(u'title')[0].firstChild.data\
+                                    and u'artist' in t.getElementsByTagName(u'uri')[0].firstChild.data]
+                    sensor = Bandsensor(artists, elem[u'albums'])
+                    data = sensor.run()
+                    if data:
+                        result = {
+                                u'choice': data[0],
+                                u'elem': elem,
+                                u'albums': data[1][0],
+                                u'years': data[1][1]
+                                }
+                    else:
+                        result = {u'choice': u'no_band', u'elem': elem[u'artist']}
         return result
     def done(self,_,result):
         def exists(a,albums):
@@ -173,7 +177,7 @@ class Discogs(QThread):
                 if not exists(a,elem[u'albums']):
                     elem[u'albums'].append({
                         u'album': a,
-                        u'date': y,
+                        u'date': y and y or u'0',
                         u'tracks': [],
                         u'digital': False,
                         u'analog': False
@@ -185,7 +189,7 @@ class Discogs(QThread):
                     u'An unknown error occured (no internet?)')
     def run(self):
         requests=threadpool.makeRequests(self.work,self.library,self.done)
-        main=threadpool.ThreadPool(1)
+        main=threadpool.ThreadPool(5)
         for req in requests:
             main.putRequest(req)
         main.wait()

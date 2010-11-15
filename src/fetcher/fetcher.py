@@ -255,10 +255,6 @@ class Main(QtGui.QMainWindow):
             for i in items:
                 if i.text(0)==l[u'artist']:
                     for k, a in enumerate(l[u'albums']):
-                        print a[u'analog']
-                        print a[u'digital']
-                        print a[u'date']
-                        print a[u'album']
                         item = QtGui.QTreeWidgetItem(QStringList([
                             a[u'date'],
                             a[u'album'],
