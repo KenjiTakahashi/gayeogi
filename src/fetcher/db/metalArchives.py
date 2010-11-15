@@ -47,21 +47,25 @@ class Bandsensor(object):
         self.albums = albums
         self.results = {}
     def sense(self, data):
-        soup = BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/' + data).read())
-        albums = [unescape(tag.contents[0])
-                for tag in soup.findAll(u'a', attrs = {u'class': u'album'})]
-        years = [tag.contents[0][-4:]
-                for tag in soup.findAll(u'td', attrs={u'class': u'album'})]
-        for album in albums:
-            for eAlbum in self.albums:
-                if album.lower() == eAlbum[u'album'].lower():
-                    return {data: (albums, years)}
+        try:
+            soup = BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/' + data).read())
+        except urllib2.HTTPError:
+            pass
+        else:
+            albums = [unescape(tag.contents[0])
+                    for tag in soup.findAll(u'a', attrs = {u'class': u'album'})]
+            years = [tag.contents[0][-4:]
+                    for tag in soup.findAll(u'td', attrs={u'class': u'album'})]
+            for album in albums:
+                for eAlbum in self.albums:
+                    if album.lower() == eAlbum[u'album'].lower():
+                        return {data: (albums, years)}
     def finish(self, _, result):
         if result:
-            self.results[result.keys()[0]] = result.values()[0]
+            self.results.update(result)
     def run(self):
         requests = threadpool.makeRequests(self.sense, self.artists, self.finish)
-        main = threadpool.ThreadPool(3)
+        main = threadpool.ThreadPool(5)
         for req in requests:
             main.putRequest(req)
         main.wait()

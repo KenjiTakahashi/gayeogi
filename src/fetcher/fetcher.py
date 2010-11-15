@@ -209,18 +209,9 @@ class Main(QtGui.QMainWindow):
             from db.discogs import Discogs
             self.discogsThread=Discogs(self.library)
             self.discogsThread.finished.connect(self.update)
-            self.discogsThread.nextBand.connect(self.statusBar().showMessage)
-            self.discogsThread.message.connect(self.addLogEntry)
+            self.discogsThread.stepped.connect(self.statusBar().showMessage)
+            self.discogsThread.errors.connect(self.logs)
             self.discogsThread.start()
-    def chooser(self,artist,partial):
-        from interfaces import chooser
-        dialog=chooser.Chooser()
-        dialog.setArtist(artist)
-        for p in partial:
-            dialog.addButton(p)
-        dialog.exec_()
-        self.metalThread.disambigue(dialog.getChoice())
-        self.metalThread.setPaused(False)
     def update(self):
         self.computeStats()
         self.statusBar().showMessage(u'')
@@ -264,6 +255,10 @@ class Main(QtGui.QMainWindow):
             for i in items:
                 if i.text(0)==l[u'artist']:
                     for k, a in enumerate(l[u'albums']):
+                        print a[u'analog']
+                        print a[u'digital']
+                        print a[u'date']
+                        print a[u'album']
                         item = QtGui.QTreeWidgetItem(QStringList([
                             a[u'date'],
                             a[u'album'],
