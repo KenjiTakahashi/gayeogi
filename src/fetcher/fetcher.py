@@ -108,7 +108,7 @@ class Main(QtGui.QMainWindow):
     def showSettings(self):
         dialog=Settings()
         dialog.exec_()
-        directory = str(self.__settings.value(u'directory', u'').toString())
+        directory = unicode(self.__settings.value(u'directory', u'').toString())
         if self.fs.directory != directory:
             self.fs.setDirectory(directory)
             self.ignores = self.__settings.value(u'ignores', []).toPyObject()
@@ -168,7 +168,7 @@ class Main(QtGui.QMainWindow):
         item = self.ui.albums.topLevelItem(0)
         while item:
             artist = item.artist
-            state = str(item.background(0).color().name())
+            state = unicode(item.background(0).color().name())
             if artist in artists:
                 if state in artists[artist]:
                     artists[artist][state] += 1
@@ -200,7 +200,10 @@ class Main(QtGui.QMainWindow):
     def refresh(self):
         if self.__settings.value(u'metalArchives', 0).toInt()[0]:
             from db.metalArchives import MetalArchives
-            self.metalThread=MetalArchives(self.library)
+            releases = [str(k) for k, v
+                    in self.__settings.value(u'options/metalArchives').toPyObject().items()
+                    if v == 2]
+            self.metalThread=MetalArchives(self.library, releases)
             self.metalThread.finished.connect(self.update)
             self.metalThread.stepped.connect(self.statusBar().showMessage)
             self.metalThread.errors.connect(self.logs)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QRegExp
+from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString
 
 class Settings(QtGui.QDialog):
     dirChanged = pyqtSignal(str)
@@ -43,6 +43,20 @@ class Settings(QtGui.QDialog):
         dbOptionsLayout = QtGui.QGridLayout()
         self.dbOptions.setLayout(dbOptionsLayout)
         self.dbOptions.setVisible(False)
+        checkStates = self.__settings.value(u'options/metalArchives').toPyObject()
+        self.maOptionsWidgets = []
+        items = [[u'Full-length', u'Live album', u'Demo'],
+                [u'Single', u'EP', u'DVD'],
+                [u'Boxed set', u'Split', u'Video/VHS'],
+                [u'Best of/Compilation', u'Split album', u'Split DVD / Video']]
+        for i, item in enumerate(items):
+            subitems = []
+            for subitem in item:
+                widget = QtGui.QCheckBox(subitem)
+                if checkStates:
+                    widget.setCheckState(checkStates[QString(subitem)])
+                subitems.append(widget)
+            self.maOptionsWidgets.append(subitems)
         dbLayout = QtGui.QVBoxLayout()
         dbLayout.addLayout(dbUpperLayout)
         dbLayout.addWidget(self.dbOptions)
@@ -126,14 +140,15 @@ class Settings(QtGui.QDialog):
             self.__settings.setValue(u'directory', self.fsDir.text())
             self.__settings.setValue(u'metalArchives', self.dbList.item(0).checkState())
             self.__settings.setValue(u'discogs', self.dbList.item(1).checkState())
-            ignores = [(str(v.text()), v.checkState()) for v
+            ignores = [(unicode(v.text()), v.checkState()) for v
                     in self.fsIgnores.findItems(u'*', Qt.MatchWildcard)]
             self.__settings.setValue(u'ignores', ignores)
             self.__settings.setValue(u'logs/errors', self.logsList.item(0).checkState())
             self.__settings.setValue(u'logs/info', self.logsList.item(1).checkState())
-            maOptions = u''
-            for o in self.dbOptions.findChildren(QtGui.QCheckBox, QRegExp(u'.*')):
-                maOptions += str(o.checkState())
+            maOptions = {}
+            for item in self.maOptionsWidgets:
+                for subitem in item:
+                    maOptions[subitem.text()] = subitem.checkState()
             self.__settings.setValue(u'options/metalArchives', maOptions)
             self.close()
     def dbUp(self):
@@ -149,18 +164,10 @@ class Settings(QtGui.QDialog):
     def dbDisplayOptions(self, text):
         if text == u'metal-archives.com':
             self.__deleteItems()
-            items = [[u'Full-length', u'Live album', u'Demo'],
-                    [u'Single', u'EP', u'DVD'],
-                    [u'Boxed set', u'Split', u'Video/VHS'],
-                    [u'Best of/Compilation', u'Split album', u'Split DVD / Video']]
-            checkStates = self.__settings.value(u'options/metalArchives').toPyObject()
             layout = self.dbOptions.layout()
-            for i, item in enumerate(items):
+            for i, item in enumerate(self.maOptionsWidgets):
                 for j, subitem in enumerate(item):
-                    widget = QtGui.QCheckBox(subitem)
-                    if checkStates[i * 3 + j]:
-                        widget.setCheckState(int(checkStates[i * 3 + j]))
-                    layout.addWidget(widget, i, j)
+                    layout.addWidget(subitem, i, j)
             self.dbOptions.setVisible(True)
         else:
             self.dbOptions.setVisible(False)

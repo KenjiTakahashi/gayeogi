@@ -4,7 +4,7 @@ import urllib2
 from BeautifulSoup import BeautifulSoup
 import threadpool
 from PyQt4.QtCore import QThread,pyqtSignal
-from re import sub
+import re
 from htmlentitydefs import name2codepoint
 
 def unescape(text):
@@ -39,12 +39,13 @@ def unescape(text):
             except KeyError:
                 print "keyerror"
         return text # leave as is
-    return sub("&#?\w+;", fixup, text)
+    return re.sub("&#?\w+;", fixup, text)
 
 class Bandsensor(object):
-    def __init__(self, artists, albums):
+    def __init__(self, artists, albums, releases):
         self.artists = artists
         self.albums = albums
+        self.releases = releases
         self.results = {}
     def sense(self, data):
         try:
@@ -52,10 +53,13 @@ class Bandsensor(object):
         except urllib2.HTTPError:
             pass
         else:
-            albums = [unescape(tag.contents[0])
-                    for tag in soup.findAll(u'a', attrs = {u'class': u'album'})]
-            years = [tag.contents[0][-4:]
-                    for tag in soup.findAll(u'td', attrs={u'class': u'album'})]
+            albums = []
+            years = []
+            for release in self.releases:
+                navigation = [t for t in soup.findAll(text = re.compile(u'%s.*' % release))]
+                albums.extend([a.previous.previous.previous.previous.string
+                    for a in navigation])
+                years.extend([y[-4:] for y in navigation])
             for album in albums:
                 for eAlbum in self.albums:
                     if album.lower() == eAlbum[u'album'].lower():
@@ -88,20 +92,24 @@ class Bandsensor(object):
 class MetalArchives(QThread):
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     stepped = pyqtSignal(unicode)
-    def __init__(self,library):
+    def __init__(self, library, releases):
         QThread.__init__(self)
         self.library=library
+        self.releases = releases
     def parse1(self,elem):
         soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/'+elem[u'url']).read())
+        albums = []
+        years = []
+        for release in self.releases:
+            navigation = [t for t in soup.findAll(text = re.compile(u'%s.*' % release))]
+            albums.extend([a.previous.previous.previous.previous.string
+                for a in navigation])
+            years.extend([y[-4:] for y in navigation])
         return {
                 u'choice':u'',
                 u'elem':elem,
-                u'albums':[unescape(tag.contents[0].replace('/',' '))
-                    for tag in soup.findAll(u'a',attrs={u'class':u'album'})
-                    if len(tag.contents)!=0],
-                u'years':[tag.contents[0][-4:]
-                    for tag in soup.findAll(u'td',attrs={u'class':u'album'})
-                    if tag.contents[0][-4:]!=u'0000']
+                u'albums': albums,
+                u'years': years
                 }
     def parse2(self,soup,elem):
         if soup.findAll(u'script')[0].contents:
@@ -109,7 +117,7 @@ class MetalArchives(QThread):
         else:
             partial=[r[u'href'] for r in soup.findAll(u'a') if (r.contents[0]+u' (').startswith(elem[u'artist']+u' (')]
         try:
-            sensor = Bandsensor(partial, elem[u'albums'])
+            sensor = Bandsensor(partial, elem[u'albums'], self.releases)
             data = sensor.run()
             if data:
                 result = {
