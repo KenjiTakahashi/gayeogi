@@ -44,19 +44,16 @@ class Settings(QtGui.QDialog):
         self.dbOptions.setLayout(dbOptionsLayout)
         self.dbOptions.setVisible(False)
         checkStates = self.__settings.value(u'options/metalArchives').toPyObject()
-        self.maOptionsWidgets = []
         items = [[u'Full-length', u'Live album', u'Demo'],
                 [u'Single', u'EP', u'DVD'],
                 [u'Boxed set', u'Split', u'Video/VHS'],
                 [u'Best of/Compilation', u'Split album', u'Split DVD / Video']]
         for i, item in enumerate(items):
-            subitems = []
-            for subitem in item:
+            for j, subitem in enumerate(item):
                 widget = QtGui.QCheckBox(subitem)
                 if checkStates:
                     widget.setCheckState(checkStates[QString(subitem)])
-                subitems.append(widget)
-            self.maOptionsWidgets.append(subitems)
+                dbOptionsLayout.addWidget(widget, i, j)
         dbLayout = QtGui.QVBoxLayout()
         dbLayout.addLayout(dbUpperLayout)
         dbLayout.addWidget(self.dbOptions)
@@ -146,9 +143,11 @@ class Settings(QtGui.QDialog):
             self.__settings.setValue(u'logs/errors', self.logsList.item(0).checkState())
             self.__settings.setValue(u'logs/info', self.logsList.item(1).checkState())
             maOptions = {}
-            for item in self.maOptionsWidgets:
-                for subitem in item:
-                    maOptions[subitem.text()] = subitem.checkState()
+            #for item in self.maOptionsWidgets:
+            #    for subitem in item:
+            #        maOptions[subitem.text()] = subitem.checkState()
+            for o in self.dbOptions.findChildren(QtGui.QCheckBox):
+                maOptions[o.text()] = o.checkState()
             self.__settings.setValue(u'options/metalArchives', maOptions)
             self.close()
     def dbUp(self):
@@ -163,14 +162,16 @@ class Settings(QtGui.QDialog):
             self.dbList.setCurrentRow(current)
     def dbDisplayOptions(self, text):
         if text == u'metal-archives.com':
-            self.__deleteItems()
-            layout = self.dbOptions.layout()
-            for i, item in enumerate(self.maOptionsWidgets):
-                for j, subitem in enumerate(item):
-                    layout.addWidget(subitem, i, j)
+            #self.__deleteItems()
+            #layout = self.dbOptions.layout()
+            #for i, item in enumerate(self.maOptionsWidgets):
+            #    for j, subitem in enumerate(item):
+            #        layout.addWidget(subitem, i, j)
             self.dbOptions.setVisible(True)
         else:
             self.dbOptions.setVisible(False)
+    def showMessage(self):
+        pass
     def __deleteItems(self):
         layout = self.dbOptions.layout()
         if layout:
