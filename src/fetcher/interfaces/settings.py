@@ -3,13 +3,27 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString
 
+class QHoveringRadioButton(QtGui.QRadioButton):
+    hovered = pyqtSignal(unicode)
+    unhovered = pyqtSignal(int)
+    def __init__(self, tab, message = u'', parent = None):
+        QtGui.QRadioButton.__init__(self, parent)
+        self.message = message
+        self.tab = tab
+    def enterEvent(self, _):
+        self.hovered.emit(self.message)
+    def leaveEvent(self, _):
+        self.unhovered.emit(self.tab)
+
 class Settings(QtGui.QDialog):
     dirChanged = pyqtSignal(str)
     __settings=QSettings(u'fetcher',u'Fetcher')
     def __init__(self,parent=None):
         QtGui.QDialog.__init__(self,parent)
-        tabs = QtGui.QTabWidget()
+        self.tabs = QtGui.QTabWidget()
+        self.tabs.currentChanged.connect(self.globalMessage)
         self.info = QtGui.QLabel()
+        self.info.setWordWrap(True)
         self.dbList = QtGui.QListWidget()
         self.dbList.currentTextChanged.connect(self.dbDisplayOptions)
         item = QtGui.QListWidgetItem(u'metal-archives.com')
@@ -25,11 +39,24 @@ class Settings(QtGui.QDialog):
         dbDown = QtGui.QPushButton(self.tr(u'&Down'))
         dbDown.clicked.connect(self.dbDown)
         dbBehaviour = QtGui.QGroupBox(u'Behaviour')
-        crossed = QtGui.QRadioButton(self.tr(u'C&rossed'))
-        oneByOne = QtGui.QRadioButton(self.tr(u'O&ne-by-one'))
+        self.crossed = QHoveringRadioButton(
+                0, u'Search for all bands in all enabled databases.',
+                self.tr(u'C&rossed'))
+        self.crossed.hovered.connect(self.info.setText)
+        self.crossed.unhovered.connect(self.globalMessage)
+        oneByOne = QHoveringRadioButton(
+                0, u'Search databases in order and in every next database, search only for bands not yet found elsewhere.',
+                self.tr(u'O&ne-be-one'))
+        oneByOne.hovered.connect(self.info.setText)
+        oneByOne.unhovered.connect(self.globalMessage)
+        behaviour = self.__settings.value(u'behaviour', 0).toInt()[0]
+        if behaviour == 0:
+            oneByOne.setChecked(True)
+        else:
+            self.crossed.setChecked(True)
         dbBehaviourLayout = QtGui.QVBoxLayout()
-        dbBehaviourLayout.addWidget(crossed)
         dbBehaviourLayout.addWidget(oneByOne)
+        dbBehaviourLayout.addWidget(self.crossed)
         dbBehaviour.setLayout(dbBehaviourLayout)
         arrowsLayout = QtGui.QVBoxLayout()
         arrowsLayout.addWidget(dbUp)
@@ -59,7 +86,7 @@ class Settings(QtGui.QDialog):
         dbLayout.addWidget(self.dbOptions)
         dbWidget = QtGui.QWidget()
         dbWidget.setLayout(dbLayout)
-        tabs.addTab(dbWidget, self.tr(u'&Databases'))
+        self.tabs.addTab(dbWidget, self.tr(u'&Databases'))
         fsDirLabel = QtGui.QLabel(u'Directory')
         directory = self.__settings.value(u'directory', u'').toString()
         self.fsDir = QtGui.QLineEdit(directory)
@@ -94,7 +121,7 @@ class Settings(QtGui.QDialog):
         fsLayout.addLayout(fsButtonsLayout)
         fsWidget = QtGui.QWidget()
         fsWidget.setLayout(fsLayout)
-        tabs.addTab(fsWidget, self.tr(u'&Local'))
+        self.tabs.addTab(fsWidget, self.tr(u'&Local'))
         self.logsList = QtGui.QListWidget()
         item = QtGui.QListWidgetItem(u'errors')
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -104,7 +131,7 @@ class Settings(QtGui.QDialog):
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
         item.setCheckState(self.__settings.value(u'logs/info', 0).toInt()[0])
         self.logsList.addItem(item)
-        tabs.addTab(self.logsList, self.tr(u'Lo&gs'))
+        self.tabs.addTab(self.logsList, self.tr(u'Lo&gs'))
         ok = QtGui.QPushButton(self.tr(u'&OK'))
         ok.clicked.connect(self.save)
         cancel = QtGui.QPushButton(self.tr(u'&Cancel'))
@@ -114,9 +141,10 @@ class Settings(QtGui.QDialog):
         buttonsLayout.addWidget(ok)
         buttonsLayout.addWidget(cancel)
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(tabs)
+        layout.addWidget(self.tabs)
         layout.addWidget(self.info)
         layout.addLayout(buttonsLayout)
+        self.globalMessage(0)
         self.setLayout(layout)
     def add(self):
         if self.fsName.text() != u'':
@@ -143,12 +171,13 @@ class Settings(QtGui.QDialog):
             self.__settings.setValue(u'logs/errors', self.logsList.item(0).checkState())
             self.__settings.setValue(u'logs/info', self.logsList.item(1).checkState())
             maOptions = {}
-            #for item in self.maOptionsWidgets:
-            #    for subitem in item:
-            #        maOptions[subitem.text()] = subitem.checkState()
             for o in self.dbOptions.findChildren(QtGui.QCheckBox):
                 maOptions[o.text()] = o.checkState()
             self.__settings.setValue(u'options/metalArchives', maOptions)
+            if self.crossed.isChecked():
+                self.__settings.setValue(u'behaviour', 1)
+            else:
+                self.__settings.setValue(u'behaviour', 0)
             self.close()
     def dbUp(self):
         current = self.dbList.currentRow() - 1
@@ -162,19 +191,13 @@ class Settings(QtGui.QDialog):
             self.dbList.setCurrentRow(current)
     def dbDisplayOptions(self, text):
         if text == u'metal-archives.com':
-            #self.__deleteItems()
-            #layout = self.dbOptions.layout()
-            #for i, item in enumerate(self.maOptionsWidgets):
-            #    for j, subitem in enumerate(item):
-            #        layout.addWidget(subitem, i, j)
             self.dbOptions.setVisible(True)
         else:
             self.dbOptions.setVisible(False)
-    def showMessage(self):
-        pass
-    def __deleteItems(self):
-        layout = self.dbOptions.layout()
-        if layout:
-            while layout.count():
-                child = layout.takeAt(0)
-                child.widget().deleteLater()
+    def globalMessage(self, i):
+        if i == 0:
+            self.info.setText(u'Here you can choose which databases should be searched, what releases to search for and how the search should behave.')
+        elif i == 1:
+            self.info.setText(u"Here you can choose in which directory you files lies and which files to ignore while searching (you can use wilcards, like '*' or '?')")
+        elif i == 2:
+            self.info.setText(u'Here you can choose what kind of log messages should be displayed in the main window.')
