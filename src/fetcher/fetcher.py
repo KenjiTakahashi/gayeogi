@@ -14,7 +14,7 @@ version='0.4'
 if sys.platform=='win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()
-    dbPath = service.storageLocation(9) + '\\fetcher'
+    dbPath = os.path.join(unicode(service.storageLocation(9)), u'fetcher')
 else: # Most POSIX systems, there may be more elifs in future.
     dbPath=os.path.expanduser(u'~/.config/fetcher')
 

@@ -8,13 +8,17 @@ if platform=='win32':
 setup(name='Fetcher',
         version='0.4',
         description='',
-        author='Karol Woźniak',
+        author='Karol "Kenji Takahashi" Woźniak',
         author_email='wozniakk@gmail.com',
-        url='http://fetcher.sourceforge.net',
-        packages=['fetcher','fetcher/interfaces'],
-        package_dir={'fetcher':'src/fetcher','fetcher/interfaces':'src/fetcher/interfaces'},
+        url='http://github.com/KenjiTakahashi/fetcher',
+        packages=['fetcher', 'fetcher/interfaces', 'fetcher/db'],
+        package_dir={
+            'fetcher': 'src/fetcher',
+            'fetcher/interfaces': 'src/fetcher/interfaces',
+            'fetcher/db': 'src/fetcher/db'
+            },
         scripts=['fetcher'],
-        requires=['BeautifulSoup(>=2.0)','threadpool','PyQt4'],
+        requires=['BeautifulSoup(>=3.0)', 'threadpool', 'PyQt4', 'mutagen'],
         windows=['fetcher'],
         options={'py2exe':{'includes':['sip']}}
         )
