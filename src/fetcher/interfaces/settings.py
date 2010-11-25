@@ -26,14 +26,13 @@ class Settings(QtGui.QDialog):
         self.info.setWordWrap(True)
         self.dbList = QtGui.QListWidget()
         self.dbList.currentTextChanged.connect(self.dbDisplayOptions)
-        item = QtGui.QListWidgetItem(u'metal-archives.com')
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-        item.setCheckState(self.__settings.value(u'metalArchives', 0).toInt()[0])
-        self.dbList.addItem(item)
-        item = QtGui.QListWidgetItem(u'discogs.com')
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-        item.setCheckState(self.__settings.value(u'discogs', 0).toInt()[0])
-        self.dbList.addItem(item)
+        order = self.__settings.value(u'order',
+                [u'metal-archives.com', u'discogs.com']).toPyObject()
+        for o in order:
+            item = QtGui.QListWidgetItem(o)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(self.__settings.value(o, 0).toInt()[0])
+            self.dbList.addItem(item)
         dbUp = QtGui.QPushButton(self.tr(u'&Up'))
         dbUp.clicked.connect(self.dbUp)
         dbDown = QtGui.QPushButton(self.tr(u'&Down'))
@@ -58,6 +57,7 @@ class Settings(QtGui.QDialog):
         dbBehaviourLayout.addWidget(oneByOne)
         dbBehaviourLayout.addWidget(self.crossed)
         dbBehaviour.setLayout(dbBehaviourLayout)
+        dbBehaviour.setFixedHeight(80)
         arrowsLayout = QtGui.QVBoxLayout()
         arrowsLayout.addWidget(dbUp)
         arrowsLayout.addWidget(dbDown)
@@ -70,7 +70,7 @@ class Settings(QtGui.QDialog):
         dbOptionsLayout = QtGui.QGridLayout()
         self.dbOptions.setLayout(dbOptionsLayout)
         self.dbOptions.setVisible(False)
-        checkStates = self.__settings.value(u'options/metalArchives').toPyObject()
+        checkStates = self.__settings.value(u'options/metal-archives.com').toPyObject()
         items = [[u'Full-length', u'Live album', u'Demo'],
                 [u'Single', u'EP', u'DVD'],
                 [u'Boxed set', u'Split', u'Video/VHS'],
@@ -163,8 +163,8 @@ class Settings(QtGui.QDialog):
             dialog.setText(u'Directory field cannot be empty!')
         else:
             self.__settings.setValue(u'directory', self.fsDir.text())
-            self.__settings.setValue(u'metalArchives', self.dbList.item(0).checkState())
-            self.__settings.setValue(u'discogs', self.dbList.item(1).checkState())
+            self.__settings.setValue(u'metal-archives.com', self.dbList.item(0).checkState())
+            self.__settings.setValue(u'discogs.com', self.dbList.item(1).checkState())
             ignores = [(unicode(v.text()), v.checkState()) for v
                     in self.fsIgnores.findItems(u'*', Qt.MatchWildcard)]
             self.__settings.setValue(u'ignores', ignores)
@@ -173,11 +173,17 @@ class Settings(QtGui.QDialog):
             maOptions = {}
             for o in self.dbOptions.findChildren(QtGui.QCheckBox):
                 maOptions[o.text()] = o.checkState()
-            self.__settings.setValue(u'options/metalArchives', maOptions)
+            self.__settings.setValue(u'options/metal-archives.com', maOptions)
             if self.crossed.isChecked():
                 self.__settings.setValue(u'behaviour', 1)
             else:
                 self.__settings.setValue(u'behaviour', 0)
+            order = []
+            for item in self.dbList.findItems(u'*', Qt.MatchWildcard):
+                text = unicode(item.text())
+                self.__settings.setValue(text, item.checkState())
+                order.append(text)
+            self.__settings.setValue(u'order', order)
             self.close()
     def dbUp(self):
         current = self.dbList.currentRow() - 1

@@ -74,9 +74,10 @@ class Bandsensor(object):
 class Discogs(QThread):
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     stepped = pyqtSignal(unicode)
-    def __init__(self,library):
+    def __init__(self, library, releases):
         QThread.__init__(self)
         self.library=library
+        self.releases = releases
     def parse(self, elem):
         request = urllib2.Request(elem[u'url'])
         request.add_header(u'Accept-Encoding',u'gzip')

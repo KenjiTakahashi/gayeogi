@@ -7,6 +7,8 @@ from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings
 from db.local import Filesystem
 from interfaces.settings import Settings
+from db.metalArchives import MetalArchives
+from db.discogs import Discogs
 
 version='0.4'
 if sys.platform=='win32':
@@ -37,13 +39,14 @@ class DB(object):
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'fetcher', u'Fetcher')
+    runningThreads = 0
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        self.metalThread = None
-        self.discogsThread = None
         self.statistics = None
         if not os.path.exists(dbPath):
             os.mkdir(dbPath)
+        self.metalArchives = None
+        self.discogs = None
         self.fs = Filesystem()
         self.fs.stepped.connect(self.statusBar().showMessage)
         self.fs.created.connect(self.create)
@@ -198,26 +201,47 @@ class Main(QtGui.QMainWindow):
             else:
                 setColor(artist,Qt.green,states[u'analog'])
     def refresh(self):
-        if self.__settings.value(u'metalArchives', 0).toInt()[0]:
-            from db.metalArchives import MetalArchives
-            releases = [str(k) for k, v
-                    in self.__settings.value(u'options/metalArchives').toPyObject().items()
-                    if v == 2]
-            self.metalThread=MetalArchives(self.library, releases)
-            self.metalThread.finished.connect(self.update)
-            self.metalThread.stepped.connect(self.statusBar().showMessage)
-            self.metalThread.errors.connect(self.logs)
-            self.metalThread.start()
-        if self.__settings.value(u'discogs', 0).toInt()[0]:
-            from db.discogs import Discogs
-            self.discogsThread=Discogs(self.library)
-            self.discogsThread.finished.connect(self.update)
-            self.discogsThread.stepped.connect(self.statusBar().showMessage)
-            self.discogsThread.errors.connect(self.logs)
-            self.discogsThread.start()
+        behaviour = self.__settings.value(u'behaviour', 0).toInt()[0]
+        for o in self.__settings.value(u'order').toPyObject():
+            if self.__settings.value(o, 0).toInt()[0]:
+                releases = [unicode(k) for k, v
+                        in self.__settings.value(u'options/' + o, {}).toPyObject().iteritems()
+                        if v == 2]
+                if unicode(o) == u'metal-archives.com':
+                    thread = self.metalArchives = MetalArchives(self.library, releases)
+                elif unicode(o) == u'discogs.com':
+                    thread = self.discogs = Discogs(self.library, releases)
+                thread.finished.connect(self.decrement)
+                thread.stepped.connect(self.statusBar().showMessage)
+                thread.errors.connect(self.logs)
+                self.runningThreads += 1
+                thread.start()
+                if not behaviour:
+                    pass #wait in threads directly
+        #if self.__settings.value(u'metalArchives', 0).toInt()[0]:
+        #    from db.metalArchives import MetalArchives
+        #    releases = [str(k) for k, v
+        #            in self.__settings.value(u'options/metalArchives').toPyObject().items()
+        #            if v == 2]
+        #    self.metalThread=MetalArchives(self.library, releases)
+        #    self.metalThread.finished.connect(self.update)
+        #    self.metalThread.stepped.connect(self.statusBar().showMessage)
+        #    self.metalThread.errors.connect(self.logs)
+        #    self.metalThread.start()
+        #if self.__settings.value(u'discogs', 0).toInt()[0]:
+        #    from db.discogs import Discogs
+        #    self.discogsThread=Discogs(self.library)
+        #    self.discogsThread.finished.connect(self.update)
+        #    self.discogsThread.stepped.connect(self.statusBar().showMessage)
+        #    self.discogsThread.errors.connect(self.logs)
+        #    self.discogsThread.start()
+    def decrement(self):
+        self.runningThreads -= 1
+        if not self.runningThreads:
+            self.update()
     def update(self):
         self.computeStats()
-        self.statusBar().showMessage(u'')
+        self.statusBar().showMessage(u'Done')
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
         for i,l in enumerate(self.library):
