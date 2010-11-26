@@ -92,12 +92,13 @@ class Bandsensor(object):
 class MetalArchives(QThread):
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     stepped = pyqtSignal(unicode)
-    def __init__(self, library, releases):
+    def __init__(self, library, releases, behaviour):
         QThread.__init__(self)
         self.library=library
         self.releases = releases
+        self.behaviour = behaviour
     def parse1(self,elem):
-        soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/'+elem[u'url']).read())
+        soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/' + elem[u'url'][u'metalArchives']).read())
         albums = []
         years = []
         for release in self.releases:
@@ -159,7 +160,7 @@ class MetalArchives(QThread):
                     elem[u'artist'],
                     u'Successfully retrieved band contents')
             if result[u'choice']:
-                elem[u'url']=result[u'choice']
+                elem[u'url'][u'metalArchives'] = result[u'choice']
             for a,y in map(None,result[u'albums'],result[u'years']):
                 for album in elem[u'albums']:
                     if not album[u'digital'] and not album[u'analog']\
@@ -175,7 +176,7 @@ class MetalArchives(QThread):
                         })
     def work(self,elem):
         self.stepped.emit(elem[u'artist'])
-        if elem[u'url']:
+        if elem[u'url'] and u'metalArchives' in elem[u'url'].keys():
             result=self.parse1(elem)
         else:
             artist=urllib2.quote(elem[u'artist'].encode(u'latin-1')).replace(u'%20','+')
@@ -194,7 +195,12 @@ class MetalArchives(QThread):
                 result=self.parse2(soup,elem)
         return result
     def run(self):
-        requests = threadpool.makeRequests(self.work, self.library, self.done)
+        if not self.behaviour:
+            requests = threadpool.makeRequests(self.work,
+                    [lib for lib in self.library if not lib[u'url']],
+                    self.done)
+        else:
+            requests = threadpool.makeRequests(self.work, self.library, self.done)
         # metal-archives is blocking members on high load, that's why I use only 1 thread here.
         # (It sometimes gets blocked anyway).
         # If they'll ever get a pack of decent servers, this will be fixed by just changing the

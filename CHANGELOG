@@ -66,3 +66,7 @@ might just run'n'leave and things will get done.
 -Discogs !should! be working, but it's sooooo poor
 that I don't want to touch anymore, use at your own
 risk.
+-Ability to choose in what manner databases should
+be searched.
+-Ability to choose what kind of releases to search
+for (metal-archives only, for now).

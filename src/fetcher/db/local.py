@@ -76,7 +76,7 @@ class Filesystem(QThread):
                     u'digital': True,
                     u'analog': False
                     }],
-                u'url': None
+                u'url': {}
                 })
     def ignored(self, root):
         for ignore in self.ignores:

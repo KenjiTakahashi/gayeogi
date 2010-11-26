@@ -3,6 +3,7 @@
 import sys
 import os
 import cPickle
+from threading import Thread
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings
 from db.local import Filesystem
@@ -201,40 +202,25 @@ class Main(QtGui.QMainWindow):
             else:
                 setColor(artist,Qt.green,states[u'analog'])
     def refresh(self):
-        behaviour = self.__settings.value(u'behaviour', 0).toInt()[0]
-        for o in self.__settings.value(u'order').toPyObject():
-            if self.__settings.value(o, 0).toInt()[0]:
-                releases = [unicode(k) for k, v
-                        in self.__settings.value(u'options/' + o, {}).toPyObject().iteritems()
-                        if v == 2]
-                if unicode(o) == u'metal-archives.com':
-                    thread = self.metalArchives = MetalArchives(self.library, releases)
-                elif unicode(o) == u'discogs.com':
-                    thread = self.discogs = Discogs(self.library, releases)
-                thread.finished.connect(self.decrement)
-                thread.stepped.connect(self.statusBar().showMessage)
-                thread.errors.connect(self.logs)
-                self.runningThreads += 1
-                thread.start()
-                if not behaviour:
-                    pass #wait in threads directly
-        #if self.__settings.value(u'metalArchives', 0).toInt()[0]:
-        #    from db.metalArchives import MetalArchives
-        #    releases = [str(k) for k, v
-        #            in self.__settings.value(u'options/metalArchives').toPyObject().items()
-        #            if v == 2]
-        #    self.metalThread=MetalArchives(self.library, releases)
-        #    self.metalThread.finished.connect(self.update)
-        #    self.metalThread.stepped.connect(self.statusBar().showMessage)
-        #    self.metalThread.errors.connect(self.logs)
-        #    self.metalThread.start()
-        #if self.__settings.value(u'discogs', 0).toInt()[0]:
-        #    from db.discogs import Discogs
-        #    self.discogsThread=Discogs(self.library)
-        #    self.discogsThread.finished.connect(self.update)
-        #    self.discogsThread.stepped.connect(self.statusBar().showMessage)
-        #    self.discogsThread.errors.connect(self.logs)
-        #    self.discogsThread.start()
+        def __refresh():
+            behaviour = self.__settings.value(u'behaviour', 0).toInt()[0]
+            for o in self.__settings.value(u'order').toPyObject():
+                if self.__settings.value(o, 0).toInt()[0]:
+                    releases = [unicode(k) for k, v
+                            in self.__settings.value(u'options/' + o, {}).toPyObject().iteritems()
+                            if v == 2]
+                    if unicode(o) == u'metal-archives.com':
+                        thread = self.metalArchives = MetalArchives(self.library, releases, behaviour)
+                    elif unicode(o) == u'discogs.com':
+                        thread = self.discogs = Discogs(self.library, releases, behaviour)
+                    thread.finished.connect(self.decrement)
+                    thread.stepped.connect(self.statusBar().showMessage)
+                    thread.errors.connect(self.logs)
+                    self.runningThreads += 1
+                    thread.start()
+                    if not behaviour:
+                        thread.wait()
+        Thread(target = __refresh).start()
     def decrement(self):
         self.runningThreads -= 1
         if not self.runningThreads:

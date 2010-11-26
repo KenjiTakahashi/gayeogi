@@ -74,12 +74,13 @@ class Bandsensor(object):
 class Discogs(QThread):
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     stepped = pyqtSignal(unicode)
-    def __init__(self, library, releases):
+    def __init__(self, library, releases, behaviour):
         QThread.__init__(self)
         self.library=library
         self.releases = releases
+        self.behaviour = behaviour
     def parse(self, elem):
-        request = urllib2.Request(elem[u'url'])
+        request = urllib2.Request(elem[u'url'][u'discogs'])
         request.add_header(u'Accept-Encoding',u'gzip')
         try:
             temp=urllib2.urlopen(request).read()
@@ -93,7 +94,7 @@ class Discogs(QThread):
             xml=minidom.parseString(data)
             releases=[]
             years=[]
-            types=[u'CD, Album',u'LP, Album']
+            types = [u'CD, Album', u'LP, Album', u'CD, Album, RE', u'LP, Album, RE']
             for r in xml.getElementsByTagName(u'release'):
                 if r.childNodes[1].firstChild.data in types and r.firstChild.firstChild.data not in releases:
                     releases.append(r.firstChild.firstChild.data)
@@ -108,7 +109,7 @@ class Discogs(QThread):
         return result
     def work(self,elem):
         self.stepped.emit(elem[u'artist'])
-        if elem[u'url']:
+        if elem[u'url'] and u'discogs' in elem[u'url'].keys():
             result=self.parse(elem)
         else:
             artist=urllib2.quote(elem[u'artist'].encode(u'latin-1')).replace(u'%20',u'+')
@@ -169,7 +170,7 @@ class Discogs(QThread):
                     elem[u'artist'],
                     u'Successfully retrieved band contents')
             if result[u'choice']:
-                elem[u'url']=result[u'choice']
+                elem[u'url'][u'discogs'] = result[u'choice']
             for a,y in map(None,result[u'albums'],result[u'years']):
                 for album in elem[u'albums']:
                     if not album[u'digital'] and not album[u'analog']\
@@ -189,8 +190,16 @@ class Discogs(QThread):
                     result[u'elem'],
                     u'An unknown error occured (no internet?)')
     def run(self):
-        requests=threadpool.makeRequests(self.work,self.library,self.done)
-        main=threadpool.ThreadPool(5)
-        for req in requests:
-            main.putRequest(req)
-        main.wait()
+        if not self.behaviour:
+            temp = [lib for lib in self.library if not lib[u'url']]
+            if temp:
+                requests = threadpool.makeRequests(self.work, temp, self.done)
+            else:
+                requests = None
+        else:
+            requests = threadpool.makeRequests(self.work, self.library, self.done)
+        if requests:
+            main=threadpool.ThreadPool(5)
+            for req in requests:
+                main.putRequest(req)
+            main.wait()
