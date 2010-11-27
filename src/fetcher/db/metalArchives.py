@@ -57,9 +57,9 @@ class Bandsensor(object):
             years = []
             for release in self.releases:
                 navigation = [t for t in soup.findAll(text = re.compile(u'%s.*' % release))]
-                albums.extend([a.previous.previous.previous.previous.string
+                albums.extend([unicode(a.previous.previous.previous.previous.string)
                     for a in navigation])
-                years.extend([y[-4:] for y in navigation])
+                years.extend([unicode(y[-4:]) for y in navigation])
             for album in albums:
                 for eAlbum in self.albums:
                     if album.lower() == eAlbum[u'album'].lower():
@@ -103,9 +103,9 @@ class MetalArchives(QThread):
         years = []
         for release in self.releases:
             navigation = [t for t in soup.findAll(text = re.compile(u'%s.*' % release))]
-            albums.extend([a.previous.previous.previous.previous.string
+            albums.extend([unicode(a.previous.previous.previous.previous.string)
                 for a in navigation])
-            years.extend([y[-4:] for y in navigation])
+            years.extend([unicode(y[-4:]) for y in navigation])
         return {
                 u'choice':u'',
                 u'elem':elem,
