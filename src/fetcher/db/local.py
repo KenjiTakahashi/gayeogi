@@ -98,51 +98,57 @@ class Filesystem(QThread):
     def tagsread(self, filepath):
         u"""Read needed tags (metadata/ID3) from specified file"""
         ext = os.path.splitext(filepath)[1]
-        if ext == u'.mp3':
-            self.stepped.emit(filepath)
-            f = ID3(filepath)
-            try:
-                return {
-                        u'artist': f[u'TPE1'].text[0],
-                        u'album': f[u'TALB'].text[0],
-                        u'date': str(f[u'TDRC'].text[0]),
-                        u'title': f[u'TIT2'].text[0],
-                        u'tracknumber': f[u'TRCK'].text[0],
-                        u'path': filepath
-                        }
-            except KeyError:
-                self.errors.emit(u'local',
-                        u'errors',
-                        filepath,
-                        u"You're probably missing some tags")
-        else:
-            if ext == u'.flac':
-                f = FLAC(filepath)
-            elif ext == u'.asf':
-                f = ASF(filepath)
-            elif ext == u'.wv':
-                f = WavPack(filepath)
-            elif ext == u'.mpc' or ext == u'.mpp' or ext == u'.mp+':
-                f = Musepack(filepath)
-            elif ext == u'.ogg' or ext == u'.ape': # different .ogg and .ape files
-                f = File(filepath)
+        try:
+            if ext == u'.mp3':
+                self.stepped.emit(filepath)
+                f = ID3(filepath)
+                try:
+                    return {
+                            u'artist': f[u'TPE1'].text[0],
+                            u'album': f[u'TALB'].text[0],
+                            u'date': str(f[u'TDRC'].text[0]),
+                            u'title': f[u'TIT2'].text[0],
+                            u'tracknumber': f[u'TRCK'].text[0],
+                            u'path': filepath
+                            }
+                except KeyError:
+                    self.errors.emit(u'local',
+                            u'errors',
+                            filepath,
+                            u"You're probably missing some tags")
             else:
-                return False
-            self.stepped.emit(filepath)
-            try:
-                return {
-                        u'artist': f[u'artist'][0],
-                        u'album': f[u'album'][0],
-                        u'date': f[u'date'][0],
-                        u'title': f[u'title'][0],
-                        u'tracknumber': f[u'tracknumber'][0],
-                        u'path': filepath
-                        }
-            except KeyError:
-                self.errors.emit(u'local',
-                        u'errors',
-                        filepath,
-                        u"You're probably missing some tags")
+                if ext == u'.flac':
+                    f = FLAC(filepath)
+                elif ext == u'.asf':
+                    f = ASF(filepath)
+                elif ext == u'.wv':
+                    f = WavPack(filepath)
+                elif ext == u'.mpc' or ext == u'.mpp' or ext == u'.mp+':
+                    f = Musepack(filepath)
+                elif ext == u'.ogg' or ext == u'.ape': # different .ogg and .ape files
+                    f = File(filepath)
+                else:
+                    return False
+                self.stepped.emit(filepath)
+                try:
+                    return {
+                            u'artist': f[u'artist'][0],
+                            u'album': f[u'album'][0],
+                            u'date': f[u'date'][0],
+                            u'title': f[u'title'][0],
+                            u'tracknumber': f[u'tracknumber'][0],
+                            u'path': filepath
+                            }
+                except KeyError:
+                    self.errors.emit(u'local',
+                            u'errors',
+                            filepath,
+                            u"You're probably missing some tags")
+        except IOError:
+            self.errors.emit(u'local',
+                    u'errors',
+                    filepath,
+                    u'Cannot open file')
     def create(self):
         u"""Create new library"""
         library = []

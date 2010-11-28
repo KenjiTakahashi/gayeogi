@@ -266,7 +266,11 @@
            </property>
            <layout class="QFormLayout" name="formLayout">
             <item row="0" column="1">
-             <widget class="QLabel" name="artistsGreen"/>
+             <widget class="QLabel" name="artistsGreen">
+              <property name="text">
+               <string>0</string>
+              </property>
+             </widget>
             </item>
             <item row="1" column="0">
              <widget class="QFrame" name="frame_2">
@@ -294,7 +298,11 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QLabel" name="artistsYellow"/>
+             <widget class="QLabel" name="artistsYellow">
+              <property name="text">
+               <string>0</string>
+              </property>
+             </widget>
             </item>
             <item row="2" column="0">
              <widget class="QFrame" name="frame_3">
@@ -322,7 +330,11 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QLabel" name="artistsRed"/>
+             <widget class="QLabel" name="artistsRed">
+              <property name="text">
+               <string>0</string>
+              </property>
+             </widget>
             </item>
             <item row="0" column="0">
              <widget class="QFrame" name="frame">
@@ -384,7 +396,11 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLabel" name="albumsGreen"/>
+             <widget class="QLabel" name="albumsGreen">
+              <property name="text">
+               <string>0</string>
+              </property>
+             </widget>
             </item>
             <item row="1" column="0">
              <widget class="QFrame" name="frame_5">
@@ -412,7 +428,11 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QLabel" name="albumsYellow"/>
+             <widget class="QLabel" name="albumsYellow">
+              <property name="text">
+               <string>0</string>
+              </property>
+             </widget>
             </item>
             <item row="2" column="0">
              <widget class="QFrame" name="frame_4">
@@ -440,7 +460,11 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QLabel" name="albumsRed"/>
+             <widget class="QLabel" name="albumsRed">
+              <property name="text">
+               <string>0</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>

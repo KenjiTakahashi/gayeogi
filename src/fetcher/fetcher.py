@@ -258,8 +258,11 @@ class Main(QtGui.QMainWindow):
         self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
         self.ui.albumsRed.setText(self.statistics[u'albums'][2])
     def save(self):
-        self.db.write((self.library, self.paths))
-        self.statusBar().showMessage(u'Saved')
+        try:
+            self.db.write((self.library, self.paths))
+            self.statusBar().showMessage(u'Saved')
+        except AttributeError:
+            self.statusBar().showMessage(u'Nothing to save...')
     def fillAlbums(self):
         self.ui.albums.clear()
         items=self.ui.artists.selectedItems()
