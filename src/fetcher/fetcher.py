@@ -351,7 +351,6 @@ class Main(QtGui.QMainWindow):
                 u'albums': (unicode(albums[0]), unicode(albums[1]), unicode(albums[2])),
                 u'detailed': detailed
                 }
-        print self.statistics
 
 def run():
     app=QtGui.QApplication(sys.argv)
