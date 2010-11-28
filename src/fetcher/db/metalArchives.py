@@ -196,16 +196,20 @@ class MetalArchives(QThread):
         return result
     def run(self):
         if not self.behaviour:
-            requests = threadpool.makeRequests(self.work,
-                    [lib for lib in self.library if not lib[u'url']],
-                    self.done)
+            temp = [lib for lib in self.library
+                    if not lib[u'url'] or u'metalArchives' in lib[u'url'].keys()]
+            if temp:
+                requests = threadpool.makeRequests(self.work, temp, self.done)
+            else:
+                requests = None
         else:
             requests = threadpool.makeRequests(self.work, self.library, self.done)
         # metal-archives is blocking members on high load, that's why I use only 1 thread here.
         # (It sometimes gets blocked anyway).
         # If they'll ever get a pack of decent servers, this will be fixed by just changing the
         # number below.
-        main = threadpool.ThreadPool(1)
-        for req in requests:
-            main.putRequest(req)
-        main.wait()
+        if requests:
+            main = threadpool.ThreadPool(1)
+            for req in requests:
+                main.putRequest(req)
+            main.wait()

@@ -191,7 +191,8 @@ class Discogs(QThread):
                     u'An unknown error occured (no internet?)')
     def run(self):
         if not self.behaviour:
-            temp = [lib for lib in self.library if not lib[u'url']]
+            temp = [lib for lib in self.library
+                    if not lib[u'url'] or u'discogs' in lib[u'url'].keys()]
             if temp:
                 requests = threadpool.makeRequests(self.work, temp, self.done)
             else:
