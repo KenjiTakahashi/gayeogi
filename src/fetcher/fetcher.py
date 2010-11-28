@@ -72,7 +72,6 @@ class Main(QtGui.QMainWindow):
         else:
             (self.library, self.paths) = self.db.read()
             self.fs.setArgs(self.library, self.paths, self.ignores, True)
-            self.computeStats()
             self.update()
         self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
         self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album', u'Digital', u'Analog']))
@@ -319,36 +318,40 @@ class Main(QtGui.QMainWindow):
         albums = [0, 0, 0]
         detailed = []
         for l in self.library:
+            artist = 0
             for a in l[u'albums']:
                 if not a[u'digital'] and not a[u'analog']:
-                    artist = 0
                     albums[2] += 1
+                    artist = 1
                 elif a[u'digital'] and a[u'analog']:
-                    artist = 3
                     albums[0] += 1
+                    if not artist:
+                        artist = 4
                 else:
                     albums[1] += 1
-                    if a[u'digital']:
-                        artist = 1
-                    else:
-                        artist = 2
-            if artist == 3:
+                    if not artist or artist == 4:
+                        if a[u'digital']:
+                            artist = 2
+                        else:
+                            artist = 3
+            if artist == 4:
                 artists[0] += 1
                 detailed.append((1, 1))
-            elif not artist:
+            elif artist == 1:
                 artists[2] += 1
                 detailed.append((0, 0))
             else:
                 artists[1] += 1
-                if artist == 1:
+                if artist == 2:
                     detailed.append((1, 0))
                 else:
                     detailed.append((0, 1))
         self.statistics = {
-                u'artists': (str(artists[0]), str(artists[1]), str(artists[2])),
-                u'albums': (str(albums[0]), str(albums[1]), str(albums[2])),
+                u'artists': (unicode(artists[0]), unicode(artists[1]), unicode(artists[2])),
+                u'albums': (unicode(albums[0]), unicode(albums[1]), unicode(albums[2])),
                 u'detailed': detailed
                 }
+        print self.statistics
 
 def run():
     app=QtGui.QApplication(sys.argv)
