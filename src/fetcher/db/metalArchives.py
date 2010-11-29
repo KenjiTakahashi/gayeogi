@@ -24,7 +24,7 @@ def unescape(text):
                 else:
                     return unichr(int(text[2:-1]))
             except ValueError:
-                print "erreur de valeur"
+                pass
         else:
             # named entity
             try:
@@ -37,7 +37,7 @@ def unescape(text):
                 else:
                     text = unichr(name2codepoint[text[1:-1]])
             except KeyError:
-                print "keyerror"
+                pass
         return text # leave as is
     return re.sub("&#?\w+;", fixup, text)
 
@@ -155,18 +155,17 @@ class MetalArchives(QThread):
                     u'An unknown error occured (no internet?)')
         elif result[u'choice'] != u'block':
             elem=self.library[self.library.index(result[u'elem'])]
-            self.errors.emit(u'metal-archives.com',
-                    u'info',
-                    elem[u'artist'],
-                    u'Successfully retrieved band contents')
             if result[u'choice']:
                 elem[u'url'][u'metalArchives'] = result[u'choice']
+            message = u'Nothing has been changed'
             for a,y in map(None,result[u'albums'],result[u'years']):
                 for album in elem[u'albums']:
                     if not album[u'digital'] and not album[u'analog']\
                             and not exists2(album[u'album'], result[u'albums']):
+                        message = u'Something has been removed'
                         del elem[u'albums'][elem[u'albums'].index(album)]
                 if not exists(a,elem[u'albums']):
+                    message = u'Something has been added'
                     elem[u'albums'].append({
                         u'album': a,
                         u'date': y,
@@ -174,6 +173,8 @@ class MetalArchives(QThread):
                         u'digital': False,
                         u'analog': False
                         })
+            self.errors.emit(u'metal-archives.com', u'info',
+                    elem[u'artist'], message)
     def work(self,elem):
         self.stepped.emit(elem[u'artist'])
         if elem[u'url'] and u'metalArchives' in elem[u'url'].keys():

@@ -70,3 +70,9 @@ risk.
 be searched.
 -Ability to choose what kind of releases to search
 for (metal-archives only, for now).
+
+0.4.1:
+-Fixed artists statistics computing.
+-Fixed foreign characters display.
+-Added more informational messages (it displays if
+something has been added/removed or not).

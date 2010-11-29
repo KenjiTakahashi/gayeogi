@@ -165,18 +165,17 @@ class Discogs(QThread):
                     u'No such band has been found')
         elif result[u'choice']!=u'error':
             elem=self.library[self.library.index(result[u'elem'])]
-            self.errors.emit(u'discogs.com',
-                    u'info',
-                    elem[u'artist'],
-                    u'Successfully retrieved band contents')
             if result[u'choice']:
                 elem[u'url'][u'discogs'] = result[u'choice']
+            message = u'Nothing has been changed'
             for a,y in map(None,result[u'albums'],result[u'years']):
                 for album in elem[u'albums']:
                     if not album[u'digital'] and not album[u'analog']\
                             and not exists2(album[u'album'], result[u'albums']):
+                        message = u'Something has been removed'
                         del elem[u'albums'][elem[u'albums'].index(album)]
                 if not exists(a,elem[u'albums']):
+                    message = u'Something has been added'
                     elem[u'albums'].append({
                         u'album': a,
                         u'date': y and y or u'0',
@@ -184,6 +183,8 @@ class Discogs(QThread):
                         u'digital': False,
                         u'analog': False
                         })
+                self.errors.emit(u'discogs.com', u'info',
+                        elem[u'artist'], message)
         else:
             self.errors.emit(u'discogs.com',
                     u'errors',
