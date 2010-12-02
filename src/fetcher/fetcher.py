@@ -1,3 +1,18 @@
+# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# Karol "Kenji Takahashi" Wozniak (C) 2010
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # -*- coding: utf-8 -*-
 
 import sys
@@ -41,6 +56,7 @@ class DB(object):
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'fetcher', u'Fetcher')
     runningThreads = 0
+    oldLib = None
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         self.statistics = None
@@ -71,6 +87,7 @@ class Main(QtGui.QMainWindow):
             self.fs.setArgs([], [], self.ignores, False)
         else:
             (self.library, self.paths) = self.db.read()
+            self.oldLib = self.library
             self.fs.setArgs(self.library, self.paths, self.ignores, True)
             self.update()
         self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
@@ -80,13 +97,27 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.local.clicked.connect(self.fs.start)
         self.ui.remote.clicked.connect(self.refresh)
-        self.ui.close.clicked.connect(self.close)
+        self.ui.close.clicked.connect(self.confirm)
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
         self.ui.clearLogs.clicked.connect(self.ui.logs.clear)
         self.ui.saveLogs.clicked.connect(self.saveLogs)
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
+    def confirm(self):
+        if self.oldLib != self.library:
+            def save():
+                self.save()
+                self.close()
+            def close():
+                self.close()
+            from interfaces.confirmation import ConfirmationDialog
+            dialog = ConfirmationDialog()
+            dialog.buttons.accepted.connect(save)
+            dialog.buttons.helpRequested.connect(close)
+            dialog.exec_()
+        else:
+            self.close()
     def saveLogs(self):
         dialog = QtGui.QFileDialog()
         filename = dialog.getSaveFileName()
@@ -104,6 +135,7 @@ class Main(QtGui.QMainWindow):
             self.statusBar().showMessage(u'Saved logs')
     def create(self, (library, paths)):
         self.library = library
+        self.oldLib = self.library
         self.paths = paths
         self.computeStats()
         self.update()
@@ -158,7 +190,7 @@ class Main(QtGui.QMainWindow):
         if digital == u'YES' and analog == u'YES':
             for i in range(4):
                 item.setBackground(i, Qt.green)
-        elif digital=='YES':
+        elif digital==u'YES':
             for i in range(4):
                 item.setBackground(i, Qt.yellow)
         elif analog == u'YES':
@@ -259,9 +291,11 @@ class Main(QtGui.QMainWindow):
     def save(self):
         try:
             self.db.write((self.library, self.paths))
-            self.statusBar().showMessage(u'Saved')
         except AttributeError:
             self.statusBar().showMessage(u'Nothing to save...')
+        else:
+            self.statusBar().showMessage(u'Saved')
+            self.oldLib = self.library
     def fillAlbums(self):
         self.ui.albums.clear()
         items=self.ui.artists.selectedItems()

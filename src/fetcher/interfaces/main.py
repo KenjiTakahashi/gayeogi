@@ -254,7 +254,7 @@ class Ui_main(object):
         self.settings.setText(QtGui.QApplication.translate("main", "S&ettings", None, QtGui.QApplication.UnicodeUTF8))
         self.remote.setStatusTip(QtGui.QApplication.translate("main", "Refresh internet databases", None, QtGui.QApplication.UnicodeUTF8))
         self.remote.setText(QtGui.QApplication.translate("main", "&Remote", None, QtGui.QApplication.UnicodeUTF8))
-        self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk. (Do it if you don\'t like your changes to be lost!)", None, QtGui.QApplication.UnicodeUTF8))
+        self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk.", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setText(QtGui.QApplication.translate("main", "&Save", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setText(QtGui.QApplication.translate("main", "&Close", None, QtGui.QApplication.UnicodeUTF8))
