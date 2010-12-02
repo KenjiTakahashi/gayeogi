@@ -21,9 +21,9 @@ if platform=='win32':
     import py2exe
 
 setup(name='Fetcher',
-        version='0.4',
+        version='0.4.1',
         description='',
-        author='Karol "Kenji Takahashi" Woźniak',
+        author='Karol "Kenji Takahashi" Wozniak',
         author_email='wozniakk@gmail.com',
         url='http://github.com/KenjiTakahashi/fetcher',
         packages=['fetcher', 'fetcher/interfaces', 'fetcher/db'],

@@ -26,7 +26,7 @@ from interfaces.settings import Settings
 from db.metalArchives import MetalArchives
 from db.discogs import Discogs
 
-version='0.4'
+version = '0.4.1'
 if sys.platform=='win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()
