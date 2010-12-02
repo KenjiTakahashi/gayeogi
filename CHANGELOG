@@ -76,3 +76,5 @@ for (metal-archives only, for now).
 -Fixed foreign characters display.
 -Added more informational messages (it displays if
 something has been added/removed or not).
+-Confirmation dialog upon exiting if there are some
+unsaved changes
