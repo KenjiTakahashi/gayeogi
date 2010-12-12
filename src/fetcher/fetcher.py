@@ -18,6 +18,7 @@
 import sys
 import os
 import cPickle
+import re
 from threading import Thread
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings
@@ -102,8 +103,40 @@ class Main(QtGui.QMainWindow):
         self.ui.settings.clicked.connect(self.showSettings)
         self.ui.clearLogs.clicked.connect(self.ui.logs.clear)
         self.ui.saveLogs.clicked.connect(self.saveLogs)
+        self.ui.artistFilter.textEdited.connect(self.filter_)
+        self.ui.albumFilter.textEdited.connect(self.filter_)
+        self.ui.trackFilter.textEdited.connect(self.filter_)
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
+    def filter_(self, text):
+        columns = []
+        arguments = []
+        for a in (unicode(text)).split(u'|'):
+            temp = a.split(u':')
+            if len(temp) != 2 or temp[1] == u'':
+                break
+            columns.append(temp[0].lower())
+            arguments.append(temp[1].lower())
+        if len(columns) != 0 and len(columns) == len(arguments):
+            tree = self.sender().parent().children()[2]
+            header = tree.header().model()
+            num_columns = [i for i in range(tree.columnCount())
+                    if (unicode(header.headerData(i, Qt.Horizontal).toString())).lower()
+                    in columns]
+            for i in range(tree.topLevelItemCount()):
+                item = tree.topLevelItem(i)
+                for j, c in enumerate(num_columns):
+                    try:
+                        if not re.search(arguments[j], (unicode(item.text(c)).lower())):
+                            item.setHidden(True)
+                        else:
+                            item.setHidden(False)
+                    except:
+                        pass
+        else:
+            tree = self.sender().parent().children()[2]
+            for i in range(tree.topLevelItemCount()):
+                tree.topLevelItem(i).setHidden(False)
     def confirm(self):
         if self.oldLib != self.library:
             def save():
@@ -200,8 +233,8 @@ class Main(QtGui.QMainWindow):
             for i in range(4):
                 item.setBackground(i, Qt.red)
         artists={}
-        item = self.ui.albums.topLevelItem(0)
-        while item:
+        for i in range(self.ui.albums.topLevelItemCount()):
+            item = self.ui.albums.topLevelItem(i)
             artist = item.artist
             state = unicode(item.background(0).color().name())
             if artist in artists:
@@ -217,7 +250,6 @@ class Main(QtGui.QMainWindow):
                     artists[artist][u'analog'] = u'YES'
                 else:
                     artists[artist][u'analog'] = u'NO'
-            item = self.ui.albums.itemBelow(item)
         def setColor(artist,qcolor,analogState):
             for item in self.ui.artists.selectedItems():
                 if item.text(0) == artist:

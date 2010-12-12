@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../../../ui/main.ui'
 #
-# Created: Sun Nov 28 02:58:17 2010
+# Created: Sun Dec 12 22:55:11 2010
 #      by: PyQt4 UI code generator 4.8.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -17,7 +17,7 @@ except AttributeError:
 class Ui_main(object):
     def setupUi(self, main):
         main.setObjectName(_fromUtf8("main"))
-        main.resize(723, 588)
+        main.resize(793, 588)
         self.verticalLayout = QtGui.QVBoxLayout(main)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
         self.widget = QtGui.QWidget(main)
@@ -28,7 +28,15 @@ class Ui_main(object):
         self.splitter = QtGui.QSplitter(self.widget)
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setObjectName(_fromUtf8("splitter"))
-        self.artists = QtGui.QTreeWidget(self.splitter)
+        self.widget_6 = QtGui.QWidget(self.splitter)
+        self.widget_6.setObjectName(_fromUtf8("widget_6"))
+        self.verticalLayout_3 = QtGui.QVBoxLayout(self.widget_6)
+        self.verticalLayout_3.setMargin(0)
+        self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
+        self.artistFilter = QtGui.QLineEdit(self.widget_6)
+        self.artistFilter.setObjectName(_fromUtf8("artistFilter"))
+        self.verticalLayout_3.addWidget(self.artistFilter)
+        self.artists = QtGui.QTreeWidget(self.widget_6)
         self.artists.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.artists.setIndentation(0)
         self.artists.setItemsExpandable(False)
@@ -37,7 +45,16 @@ class Ui_main(object):
         self.artists.headerItem().setText(0, _fromUtf8("1"))
         self.artists.headerItem().setText(1, _fromUtf8("2"))
         self.artists.headerItem().setText(2, _fromUtf8("3"))
-        self.albums = QtGui.QTreeWidget(self.splitter)
+        self.verticalLayout_3.addWidget(self.artists)
+        self.widget_7 = QtGui.QWidget(self.splitter)
+        self.widget_7.setObjectName(_fromUtf8("widget_7"))
+        self.verticalLayout_4 = QtGui.QVBoxLayout(self.widget_7)
+        self.verticalLayout_4.setMargin(0)
+        self.verticalLayout_4.setObjectName(_fromUtf8("verticalLayout_4"))
+        self.albumFilter = QtGui.QLineEdit(self.widget_7)
+        self.albumFilter.setObjectName(_fromUtf8("albumFilter"))
+        self.verticalLayout_4.addWidget(self.albumFilter)
+        self.albums = QtGui.QTreeWidget(self.widget_7)
         self.albums.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.albums.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.albums.setIndentation(0)
@@ -48,7 +65,16 @@ class Ui_main(object):
         self.albums.headerItem().setText(1, _fromUtf8("2"))
         self.albums.headerItem().setText(2, _fromUtf8("3"))
         self.albums.headerItem().setText(3, _fromUtf8("4"))
-        self.tracks = QtGui.QTreeWidget(self.splitter)
+        self.verticalLayout_4.addWidget(self.albums)
+        self.widget_8 = QtGui.QWidget(self.splitter)
+        self.widget_8.setObjectName(_fromUtf8("widget_8"))
+        self.verticalLayout_5 = QtGui.QVBoxLayout(self.widget_8)
+        self.verticalLayout_5.setMargin(0)
+        self.verticalLayout_5.setObjectName(_fromUtf8("verticalLayout_5"))
+        self.trackFilter = QtGui.QLineEdit(self.widget_8)
+        self.trackFilter.setObjectName(_fromUtf8("trackFilter"))
+        self.verticalLayout_5.addWidget(self.trackFilter)
+        self.tracks = QtGui.QTreeWidget(self.widget_8)
         self.tracks.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.tracks.setAlternatingRowColors(True)
         self.tracks.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
@@ -58,6 +84,7 @@ class Ui_main(object):
         self.tracks.setObjectName(_fromUtf8("tracks"))
         self.tracks.headerItem().setText(0, _fromUtf8("1"))
         self.tracks.headerItem().setText(1, _fromUtf8("2"))
+        self.verticalLayout_5.addWidget(self.tracks)
         self.horizontalLayout.addWidget(self.splitter)
         self.verticalLayout.addWidget(self.widget)
         self.widget_3 = QtGui.QWidget(main)
@@ -232,8 +259,11 @@ class Ui_main(object):
         QtCore.QMetaObject.connectSlotsByName(main)
 
     def retranslateUi(self, main):
+        self.artistFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
         self.artists.setSortingEnabled(True)
+        self.albumFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
         self.albums.setSortingEnabled(True)
+        self.trackFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
         self.tracks.setSortingEnabled(True)
         self.logs.setSortingEnabled(True)
         self.clearLogs.setStatusTip(QtGui.QApplication.translate("main", "Clear logs table", None, QtGui.QApplication.UnicodeUTF8))
@@ -254,7 +284,7 @@ class Ui_main(object):
         self.settings.setText(QtGui.QApplication.translate("main", "S&ettings", None, QtGui.QApplication.UnicodeUTF8))
         self.remote.setStatusTip(QtGui.QApplication.translate("main", "Refresh internet databases", None, QtGui.QApplication.UnicodeUTF8))
         self.remote.setText(QtGui.QApplication.translate("main", "&Remote", None, QtGui.QApplication.UnicodeUTF8))
-        self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk.", None, QtGui.QApplication.UnicodeUTF8))
+        self.save.setStatusTip(QtGui.QApplication.translate("main", "Save current database to disk. (Do it if you don\'t like your changes to be lost!)", None, QtGui.QApplication.UnicodeUTF8))
         self.save.setText(QtGui.QApplication.translate("main", "&Save", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setStatusTip(QtGui.QApplication.translate("main", "Close the application", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setText(QtGui.QApplication.translate("main", "&Close", None, QtGui.QApplication.UnicodeUTF8))
