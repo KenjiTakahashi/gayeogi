@@ -3,8 +3,11 @@
 ===REQUIRES
 
 python>=2.6
+
 PyQt>=4.6
+
 BeautifulSoup>=3.0
+
 mutagen>=1.20
 
 Note: Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
@@ -13,7 +16,10 @@ Note2: Versions specified here are "known to work", but it may be possible, that
 
 ===LINUX
 
-Just type 'python setup.py install' while in package main directory and you should be set.
+Just type 
+    python setup.py install
+while in package main directory and you should be set.
+
 Also check out your distribution repository, Fetcher is surely available in Arch Linux (through Aur).
 
 ===WINDOWS
@@ -24,8 +30,10 @@ You should have no problems with provided installer (just few clicks ;). If you 
 
 You should recreate database, because there were some non-compatible changes made. To do this just remove:
     $HOME/.config/fetcher/db.sqlite3 (on Linux)
+
     Documents\fetcher\db.sqlite3 (on Windows)
 and re-run the application.
+
 Sorry about this, I hope it won't happen in the future.
 
 ===UPGRADE TO 0.4.x
