@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>723</width>
+    <width>793</width>
     <height>588</height>
    </rect>
   </property>
@@ -22,110 +22,158 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <widget class="QTreeWidget" name="artists">
-         <property name="editTriggers">
-          <set>QAbstractItemView::NoEditTriggers</set>
-         </property>
-         <property name="indentation">
-          <number>0</number>
-         </property>
-         <property name="itemsExpandable">
-          <bool>false</bool>
-         </property>
-         <property name="sortingEnabled">
-          <bool>true</bool>
-         </property>
-         <property name="columnCount">
-          <number>3</number>
-         </property>
-         <column>
-          <property name="text">
-           <string notr="true">1</string>
+        <widget class="QWidget" name="widget_6" native="true">
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <property name="margin">
+           <number>0</number>
           </property>
-         </column>
-         <column>
-          <property name="text">
-           <string notr="true">2</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string notr="true">3</string>
-          </property>
-         </column>
+          <item>
+           <widget class="QLineEdit" name="artistFilter">
+            <property name="statusTip">
+             <string>Pattern: &lt;column_name&gt;: &lt;phrase_to_search&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTreeWidget" name="artists">
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="indentation">
+             <number>0</number>
+            </property>
+            <property name="itemsExpandable">
+             <bool>false</bool>
+            </property>
+            <property name="sortingEnabled">
+             <bool>true</bool>
+            </property>
+            <property name="columnCount">
+             <number>3</number>
+            </property>
+            <column>
+             <property name="text">
+              <string notr="true">1</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string notr="true">2</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string notr="true">3</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+         </layout>
         </widget>
-        <widget class="QTreeWidget" name="albums">
-         <property name="editTriggers">
-          <set>QAbstractItemView::NoEditTriggers</set>
-         </property>
-         <property name="selectionMode">
-          <enum>QAbstractItemView::ExtendedSelection</enum>
-         </property>
-         <property name="indentation">
-          <number>0</number>
-         </property>
-         <property name="itemsExpandable">
-          <bool>false</bool>
-         </property>
-         <property name="sortingEnabled">
-          <bool>true</bool>
-         </property>
-         <property name="columnCount">
-          <number>4</number>
-         </property>
-         <column>
-          <property name="text">
-           <string notr="true">1</string>
+        <widget class="QWidget" name="widget_7" native="true">
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="margin">
+           <number>0</number>
           </property>
-         </column>
-         <column>
-          <property name="text">
-           <string notr="true">2</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string notr="true">3</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string notr="true">4</string>
-          </property>
-         </column>
+          <item>
+           <widget class="QLineEdit" name="albumFilter">
+            <property name="statusTip">
+             <string>Pattern: &lt;column_name&gt;: &lt;phrase_to_search&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTreeWidget" name="albums">
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::ExtendedSelection</enum>
+            </property>
+            <property name="indentation">
+             <number>0</number>
+            </property>
+            <property name="itemsExpandable">
+             <bool>false</bool>
+            </property>
+            <property name="sortingEnabled">
+             <bool>true</bool>
+            </property>
+            <property name="columnCount">
+             <number>4</number>
+            </property>
+            <column>
+             <property name="text">
+              <string notr="true">1</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string notr="true">2</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string notr="true">3</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string notr="true">4</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+         </layout>
         </widget>
-        <widget class="QTreeWidget" name="tracks">
-         <property name="editTriggers">
-          <set>QAbstractItemView::NoEditTriggers</set>
-         </property>
-         <property name="alternatingRowColors">
-          <bool>true</bool>
-         </property>
-         <property name="selectionMode">
-          <enum>QAbstractItemView::ExtendedSelection</enum>
-         </property>
-         <property name="indentation">
-          <number>0</number>
-         </property>
-         <property name="itemsExpandable">
-          <bool>false</bool>
-         </property>
-         <property name="sortingEnabled">
-          <bool>true</bool>
-         </property>
-         <property name="columnCount">
-          <number>2</number>
-         </property>
-         <column>
-          <property name="text">
-           <string notr="true">1</string>
+        <widget class="QWidget" name="widget_8" native="true">
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <property name="margin">
+           <number>0</number>
           </property>
-         </column>
-         <column>
-          <property name="text">
-           <string notr="true">2</string>
-          </property>
-         </column>
+          <item>
+           <widget class="QLineEdit" name="trackFilter">
+            <property name="statusTip">
+             <string>Pattern: &lt;column_name&gt;: &lt;phrase_to_search&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTreeWidget" name="tracks">
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="alternatingRowColors">
+             <bool>true</bool>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::ExtendedSelection</enum>
+            </property>
+            <property name="indentation">
+             <number>0</number>
+            </property>
+            <property name="itemsExpandable">
+             <bool>false</bool>
+            </property>
+            <property name="sortingEnabled">
+             <bool>true</bool>
+            </property>
+            <property name="columnCount">
+             <number>2</number>
+            </property>
+            <column>
+             <property name="text">
+              <string notr="true">1</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string notr="true">2</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </widget>
       </item>
