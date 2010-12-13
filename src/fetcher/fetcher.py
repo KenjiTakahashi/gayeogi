@@ -300,12 +300,15 @@ class Main(QtGui.QMainWindow):
             if self.statistics[u'detailed'][i][0] and self.statistics[u'detailed'][i][1]:
                 for j in range(3):
                     item.setBackground(j, Qt.green)
+                    item.setForeground(j, Qt.black)
             elif self.statistics[u'detailed'][i][0] or self.statistics[u'detailed'][i][1]:
                 for j in range(3):
                     item.setBackground(j, Qt.yellow)
+                    item.setForeground(j, Qt.black)
             else:
                 for j in range(3):
                     item.setBackground(j, Qt.red)
+                    item.setForeground(j, Qt.black)
             self.ui.artists.insertTopLevelItem(i, item)
         self.ui.artists.setSortingEnabled(True)
         self.ui.artists.sortItems(0, 0)
@@ -344,12 +347,15 @@ class Main(QtGui.QMainWindow):
                         if a[u'digital'] and a[u'analog']:
                             for i in range(4):
                                 item.setBackground(i, Qt.green)
+                                item.setForeground(i, Qt.black)
                         elif a[u'digital'] or a[u'analog']:
                             for i in range(4):
                                 item.setBackground(i, Qt.yellow)
+                                item.setForeground(i, Qt.black)
                         else:
                             for i in range(4):
                                 item.setBackground(i, Qt.red)
+                                item.setForeground(i, Qt.black)
                         self.ui.albums.insertTopLevelItem(k, item)
         self.ui.albums.setSortingEnabled(True)
         self.ui.albums.sortItems(0, 0)
