@@ -26,6 +26,7 @@ from db.local import Filesystem
 from interfaces.settings import Settings
 from db.metalArchives import MetalArchives
 from db.discogs import Discogs
+from copy import deepcopy
 
 version = '0.4.1'
 if sys.platform=='win32':
@@ -88,7 +89,7 @@ class Main(QtGui.QMainWindow):
             self.fs.setArgs([], [], self.ignores, False)
         else:
             (self.library, self.paths) = self.db.read()
-            self.oldLib = self.library
+            self.oldLib = deepcopy(self.library)
             self.fs.setArgs(self.library, self.paths, self.ignores, True)
             self.update()
         self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
@@ -98,7 +99,7 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.local.clicked.connect(self.fs.start)
         self.ui.remote.clicked.connect(self.refresh)
-        self.ui.close.clicked.connect(self.confirm)
+        self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
         self.ui.clearLogs.clicked.connect(self.ui.logs.clear)
@@ -137,20 +138,17 @@ class Main(QtGui.QMainWindow):
             tree = self.sender().parent().children()[2]
             for i in range(tree.topLevelItemCount()):
                 tree.topLevelItem(i).setHidden(False)
-    def confirm(self):
+    def confirm(self, event):
         if self.oldLib != self.library:
             def save():
                 self.save()
-                self.close()
-            def close():
-                self.close()
+            def reject():
+                event.ignore()
             from interfaces.confirmation import ConfirmationDialog
             dialog = ConfirmationDialog()
             dialog.buttons.accepted.connect(save)
-            dialog.buttons.helpRequested.connect(close)
+            dialog.buttons.rejected.connect(reject)
             dialog.exec_()
-        else:
-            self.close()
     def saveLogs(self):
         dialog = QtGui.QFileDialog()
         filename = dialog.getSaveFileName()
@@ -168,7 +166,7 @@ class Main(QtGui.QMainWindow):
             self.statusBar().showMessage(u'Saved logs')
     def create(self, (library, paths)):
         self.library = library
-        self.oldLib = self.library
+        self.oldLib = deepcopy(self.library)
         self.paths = paths
         self.computeStats()
         self.update()
@@ -327,7 +325,7 @@ class Main(QtGui.QMainWindow):
             self.statusBar().showMessage(u'Nothing to save...')
         else:
             self.statusBar().showMessage(u'Saved')
-            self.oldLib = self.library
+            self.oldLib = deepcopy(self.library)
     def fillAlbums(self):
         self.ui.albums.clear()
         items=self.ui.artists.selectedItems()
@@ -417,6 +415,8 @@ class Main(QtGui.QMainWindow):
                 u'albums': (unicode(albums[0]), unicode(albums[1]), unicode(albums[2])),
                 u'detailed': detailed
                 }
+    def closeEvent(self, event):
+        self.confirm(event)
 
 def run():
     app=QtGui.QApplication(sys.argv)

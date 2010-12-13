@@ -79,3 +79,5 @@ something has been added/removed or not).
 -Confirmation dialog upon exiting if there are some
 unsaved changes.
 -Merged threadpool into source.
+-Filters
+-Fixed close confirmation dialog.
