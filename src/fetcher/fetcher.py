@@ -126,12 +126,15 @@ class Main(QtGui.QMainWindow):
                     in columns]
             for i in range(tree.topLevelItemCount()):
                 item = tree.topLevelItem(i)
+                hidden = []
                 for j, c in enumerate(num_columns):
                     try:
-                        if not re.search(arguments[j], (unicode(item.text(c)).lower())):
-                            item.setHidden(True)
-                        else:
-                            item.setHidden(False)
+                        if item not in hidden:
+                            if not re.search(arguments[j], (unicode(item.text(c)).lower())):
+                                item.setHidden(True)
+                                hidden.append(item)
+                            else:
+                                item.setHidden(False)
                     except:
                         pass
         else:
