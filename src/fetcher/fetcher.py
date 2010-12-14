@@ -22,11 +22,12 @@ import re
 from threading import Thread
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings
+from copy import deepcopy
 from db.local import Filesystem
 from interfaces.settings import Settings
 from db.metalArchives import MetalArchives
 from db.discogs import Discogs
-from copy import deepcopy
+import plugins
 
 version = '0.4.1'
 if sys.platform=='win32':
@@ -109,6 +110,15 @@ class Main(QtGui.QMainWindow):
         self.ui.trackFilter.textEdited.connect(self.filter_)
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
+        self.loadPlugins()
+    def loadPlugins(self):
+        reload(plugins)
+        for plugin in plugins.__all__:
+            class_ = getattr(getattr(plugins, plugin), u'Main')(self)
+            if self.__settings.value(u'plugins' + plugin, 0).toInt()[0]:
+                class_.load()
+            else:
+                class_.unload()
     def filter_(self, text):
         columns = []
         arguments = []
@@ -182,6 +192,7 @@ class Main(QtGui.QMainWindow):
             self.fs.setDirectory(directory)
             self.ignores = self.__settings.value(u'ignores', []).toPyObject()
             self.fs.setArgs([], [], self.ignores, False)
+        self.loadPlugins()
     def logs(self, db, kind, filename, message):
         if self.__settings.value(u'logs/' + kind).toInt()[0]:
             item = QtGui.QTreeWidgetItem(QStringList([

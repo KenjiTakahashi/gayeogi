@@ -17,6 +17,7 @@
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString
+import plugins
 
 class QHoveringRadioButton(QtGui.QRadioButton):
     hovered = pyqtSignal(unicode)
@@ -147,6 +148,17 @@ class Settings(QtGui.QDialog):
         item.setCheckState(self.__settings.value(u'logs/info', 0).toInt()[0])
         self.logsList.addItem(item)
         self.tabs.addTab(self.logsList, self.tr(u'Lo&gs'))
+        self.pluginsList = QtGui.QListWidget()
+        for plugin in plugins.__all__:
+            item = QtGui.QListWidgetItem(plugin)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(self.__settings.value(u'plugins/' + plugin, 0).toInt()[0])
+            self.pluginsList.addItem(item)
+        self.pluginsLayout = QtGui.QVBoxLayout()
+        self.pluginsLayout.addWidget(self.pluginsList)
+        pluginsWidget = QtGui.QWidget()
+        pluginsWidget.setLayout(self.pluginsLayout)
+        self.tabs.addTab(pluginsWidget, self.tr(u'&Plugins'))
         ok = QtGui.QPushButton(self.tr(u'&OK'))
         ok.clicked.connect(self.save)
         cancel = QtGui.QPushButton(self.tr(u'&Cancel'))
@@ -199,6 +211,9 @@ class Settings(QtGui.QDialog):
                 self.__settings.setValue(text, item.checkState())
                 order.append(text)
             self.__settings.setValue(u'order', order)
+            for i in self.pluginsList.count():
+                item = self.pluginsList.item(i)
+                self.__settings.setValue(u'plugins/' + item.text(), item.checkState())
             self.close()
     def dbUp(self):
         current = self.dbList.currentRow() - 1
@@ -222,3 +237,5 @@ class Settings(QtGui.QDialog):
             self.info.setText(u"Here you can choose in which directory you files lies and which files to ignore while searching (you can use wilcards, like '*' or '?')")
         elif i == 2:
             self.info.setText(u'Here you can choose what kind of log messages should be displayed in the main window.')
+        elif i == 3:
+            self.info.setText(u'Here you can choose and configure additional plugins.')
