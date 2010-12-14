@@ -218,7 +218,7 @@ class Main(QtGui.QMainWindow):
         for l in self.library:
             if l[u'artist'] == item.artist:
                 for a in l[u'albums']:
-                    if a[u'album']==album:
+                    if a[u'album'] == unicode(album):
                         if analog == u'YES':
                             a[u'analog'] = True
                         else:
