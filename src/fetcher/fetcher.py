@@ -22,11 +22,12 @@ import re
 from threading import Thread
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings
+from copy import deepcopy
 from db.local import Filesystem
 from interfaces.settings import Settings
 from db.metalArchives import MetalArchives
 from db.discogs import Discogs
-from copy import deepcopy
+import plugins
 
 version = '0.4.1'
 if sys.platform=='win32':
@@ -109,6 +110,8 @@ class Main(QtGui.QMainWindow):
         self.ui.trackFilter.textEdited.connect(self.filter_)
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
+        for plugin in plugins.__all__:
+            getattr(getattr(plugins, plugin), u'Main')(self)
     def filter_(self, text):
         columns = []
         arguments = []
