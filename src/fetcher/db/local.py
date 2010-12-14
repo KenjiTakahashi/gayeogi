@@ -239,6 +239,7 @@ class Filesystem(QThread):
         self.ignores = [v for (v, _) in ignores]
     def run(self):
         u"""Run the creating/updating process (or rather a thread ;)"""
+        self.stepped.emit(u'Working')
         if self.doUpdate:
             self.update(self.library, self.paths)
             self.updated.emit()
