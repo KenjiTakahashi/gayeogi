@@ -152,7 +152,7 @@ class Settings(QtGui.QDialog):
         for plugin in plugins.__all__:
             item = QtGui.QListWidgetItem(plugin)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(self.__settings.value(u'logs/' + plugin, 0).toInt()[0])
+            item.setCheckState(self.__settings.value(u'plugins/' + plugin, 0).toInt()[0])
             self.pluginsList.addItem(item)
         self.pluginsLayout = QtGui.QVBoxLayout()
         self.pluginsLayout.addWidget(self.pluginsList)
