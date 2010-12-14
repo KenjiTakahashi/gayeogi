@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../../../ui/main.ui'
 #
-# Created: Sun Dec 12 22:55:11 2010
+# Created: Tue Dec 14 21:30:11 2010
 #      by: PyQt4 UI code generator 4.8.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -93,6 +93,7 @@ class Ui_main(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.widget_3.sizePolicy().hasHeightForWidth())
         self.widget_3.setSizePolicy(sizePolicy)
+        self.widget_3.setMaximumSize(QtCore.QSize(16777215, 237))
         self.widget_3.setObjectName(_fromUtf8("widget_3"))
         self.horizontalLayout_2 = QtGui.QHBoxLayout(self.widget_3)
         self.horizontalLayout_2.setMargin(0)
@@ -129,8 +130,6 @@ class Ui_main(object):
         self.horizontalLayout_3.addItem(spacerItem)
         self.verticalLayout_2.addWidget(self.widget_5)
         self.horizontalLayout_2.addWidget(self.widget_4)
-        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_2.addItem(spacerItem1)
         self.widget_2 = QtGui.QWidget(self.widget_3)
         self.widget_2.setObjectName(_fromUtf8("widget_2"))
         self.formLayout_3 = QtGui.QFormLayout(self.widget_2)
@@ -259,11 +258,11 @@ class Ui_main(object):
         QtCore.QMetaObject.connectSlotsByName(main)
 
     def retranslateUi(self, main):
-        self.artistFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
+        self.artistFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <column_name>: <phrase_to_search>", None, QtGui.QApplication.UnicodeUTF8))
         self.artists.setSortingEnabled(True)
-        self.albumFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
+        self.albumFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <column_name>: <phrase_to_search>", None, QtGui.QApplication.UnicodeUTF8))
         self.albums.setSortingEnabled(True)
-        self.trackFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
+        self.trackFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <column_name>: <phrase_to_search>", None, QtGui.QApplication.UnicodeUTF8))
         self.tracks.setSortingEnabled(True)
         self.logs.setSortingEnabled(True)
         self.clearLogs.setStatusTip(QtGui.QApplication.translate("main", "Clear logs table", None, QtGui.QApplication.UnicodeUTF8))

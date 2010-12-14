@@ -211,7 +211,7 @@ class Settings(QtGui.QDialog):
                 self.__settings.setValue(text, item.checkState())
                 order.append(text)
             self.__settings.setValue(u'order', order)
-            for i in self.pluginsList.count():
+            for i in range(self.pluginsList.count()):
                 item = self.pluginsList.item(i)
                 self.__settings.setValue(u'plugins/' + item.text(), item.checkState())
             self.close()
