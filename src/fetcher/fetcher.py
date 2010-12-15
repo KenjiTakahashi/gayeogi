@@ -54,7 +54,37 @@ class DB(object):
         handler = open(self.dbPath, u'rb')
         result = cPickle.load(handler)
         handler.close()
-        return result
+        if type(result[0]) == list:
+            return (self.convert(result[0]), result[1])
+        else:
+            return result
+    def convert(self, data):
+        def checkRemote(digital, analog):
+            if not digital and not analog:
+                return True
+            return False
+        results = {}
+        for artists in data:
+            results[artists[u'artist']] = {
+                    u'url': artists[u'url'],
+                    u'albums': {}
+                    }
+            for albums in artists[u'albums']:
+                results[artists[u'artist']][u'albums'][albums[u'album']] = {
+                        u'date': albums[u'date'],
+                        u'digital': albums[u'digital'],
+                        u'analog': albums[u'analog'],
+                        u'remote': checkRemote(albums[u'digital'], albums[u'analog']),
+                        u'tracks': {}
+                        }
+                for tracks in albums[u'tracks']:
+                    results[artists[u'artist']][u'albums'][albums[u'album']] \
+                            [u'tracks'][tracks[u'title']] = {
+                            u'tracknumber': tracks[u'tracknumber'],
+                            u'path': tracks[u'path'],
+                            u'modified': tracks[u'modified']
+                            }
+        return results
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'fetcher', u'Fetcher')

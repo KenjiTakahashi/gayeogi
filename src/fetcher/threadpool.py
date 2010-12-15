@@ -93,16 +93,19 @@ def makeRequests(callable_, args_list, callback=None,
     """
     requests = []
     for item in args_list:
-        if isinstance(item, tuple):
-            requests.append(
-                WorkRequest(callable_, item[0], item[1], callback=callback,
-                    exc_callback=exc_callback)
-            )
-        else:
-            requests.append(
-                WorkRequest(callable_, [item], None, callback=callback,
-                    exc_callback=exc_callback)
-            )
+        requests.append(WorkRequest(callable_, item, None, callback=callback,
+            exc_callback=exc_callback))
+    #for item in args_list:
+    #    if isinstance(item, tuple):
+    #        requests.append(
+    #            WorkRequest(callable_, item[0], item[1], callback=callback,
+    #                exc_callback=exc_callback)
+    #        )
+    #    else:
+    #        requests.append(
+    #            WorkRequest(callable_, [item], None, callback=callback,
+    #                exc_callback=exc_callback)
+    #        )
     return requests
 
 class WorkerThread(threading.Thread):
