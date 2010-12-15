@@ -54,7 +54,7 @@ class DB(object):
         handler = open(self.dbPath, u'rb')
         result = cPickle.load(handler)
         handler.close()
-        if type(result[0]) == list:
+        if isinstance(result[0], list):
             return (self.convert(result[0]), result[1])
         else:
             return result

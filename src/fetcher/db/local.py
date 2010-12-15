@@ -167,8 +167,10 @@ class Filesystem(QThread):
         return (library, paths)
     def update(self, library, paths):
         u"""Check existing library entries for changes and update if necessary"""
-        toDelete = []
-        toAppend = []
+        toTrackDelete = set()
+        toAlbumDelete = set()
+        toArtistDelete = set()
+        toAppend = set()
         for artist, albums in library.iteritems():
             for album, tracks in albums[u'albums'].iteritems():
                 for track, props in tracks[u'tracks'].iteritems():
@@ -177,26 +179,23 @@ class Filesystem(QThread):
                         if modified != props[u'modified']:
                             tags = self.tagsread(props[u'path'])
                             if tags:
-                                toDelete.append(track)
-                                toAppend.append(tags)
+                                toTrackDelete.add(track)
+                                toAppend.add(tags)
                     else:
-                        toDelete.append(track)
+                        toTrackDelete.add(track)
                         del paths[paths.index(props[u'path'])]
-                for todel in toDelete:
-                    del tracks[u'tracks'][todel]
-                del toDelete[:]
-                for toapp in toAppend:
-                    self.append(toapp, library)
-                del toAppend[:]
+                for i in range(len(toTrackDelete)):
+                    del tracks[u'tracks'][toTrackDelete.pop()]
+                for i in range(len(toAppend)):
+                    self.append(toAppend.pop(), library)
                 if not tracks[u'tracks'] and not tracks[u'remote'] and not tracks[u'analog']:
-                    toDelete.append(album)
-            for todel in toDelete:
-                del albums[u'albums'][todel]
-            del toDelete[:]
+                    toAlbumDelete.add(album)
+            for i in range(len(toAlbumDelete)):
+                del albums[u'albums'][toAlbumDelete.pop()]
             if not albums[u'albums'] and not albums[u'url']:
-                toDelete.append(artist)
-        for todel in toDelete:
-            del library[todel]
+                toArtistDelete.add(artist)
+        for i in range(len(toArtistDelete)):
+            del library[toArtistDelete.pop()]
         for path in paths:
             if self.ignored(path):
                 del paths[paths.index(path)]
