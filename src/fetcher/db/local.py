@@ -40,59 +40,54 @@ class Filesystem(QThread):
         self.ignores = []
     def append(self, tags, library):
         u"""Append new entry to the library"""
-        artistSem = False
-        albumSem = False
-        trackSem = False
-        for artist in library:
-            if artist[u'artist'] == tags[u'artist']:
-                artistSem = True
-                for album in artist[u'albums']:
-                    if album[u'album'] == tags[u'album']:
-                        albumSem = True
-                        for track in album[u'tracks']:
-                            if track[u'title'] == tags[u'title']:
-                                trackSem = True
-                                break
-                        if not trackSem:
-                            album[u'tracks'].append({
-                                u'title': tags[u'title'],
+        try:
+            albums = library[tags[u'artist']][u'albums']
+        except KeyError:
+            library[tags[u'artist']] = {
+                    u'albums': {
+                        tags[u'album']: {
+                            u'date': tags[u'date'],
+                            u'tracks': {
+                                tags[u'title']: {
+                                    u'tracknumber': tags[u'tracknumber'],
+                                    u'path': tags[u'path'],
+                                    u'modified': os.stat(tags[u'path']).st_mtime
+                                    }
+                                },
+                            u'digital': True,
+                            u'analog': False,
+                            u'remote': False
+                            }
+                        },
+                    u'url': {}
+                    }
+        else:
+            try:
+                tracks = albums[tags[u'album']][u'tracks']
+            except KeyError:
+                albums[tags[u'album']] = {
+                        u'date': tags[u'date'],
+                        u'tracks': {
+                            tags[u'title']: {
                                 u'tracknumber': tags[u'tracknumber'],
                                 u'path': tags[u'path'],
                                 u'modified': os.stat(tags[u'path']).st_mtime
-                                })
-                        album[u'digital'] = True
-                        break
-                if not albumSem:
-                    artist[u'albums'].append({
-                        u'album': tags[u'album'],
-                        u'date': tags[u'date'],
-                        u'tracks': [{
-                            u'title': tags[u'title'],
+                                }
+                            },
+                        u'digital': True,
+                        u'analog': False,
+                        u'remote': False
+                        }
+            else:
+                albums[tags[u'album']][u'digital'] = True
+                try:
+                    tracks[tags[u'title']]
+                except KeyError:
+                    tracks[tags[u'title']] = {
                             u'tracknumber': tags[u'tracknumber'],
                             u'path': tags[u'path'],
                             u'modified': os.stat(tags[u'path']).st_mtime
-                            }],
-                        u'digital': True,
-                        u'analog': False
-                        })
-                break
-        if not artistSem:
-            library.append({
-                u'artist': tags[u'artist'],
-                u'albums': [{
-                    u'album': tags[u'album'],
-                    u'date': tags[u'date'],
-                    u'tracks': [{
-                        u'title': tags[u'title'],
-                        u'tracknumber': tags[u'tracknumber'],
-                        u'path': tags[u'path'],
-                        u'modified': os.stat(tags[u'path']).st_mtime
-                        }],
-                    u'digital': True,
-                    u'analog': False
-                    }],
-                u'url': {}
-                })
+                            }
     def ignored(self, root):
         for ignore in self.ignores:
             if fnmatch(root, u'*/' + ignore + u'/*'):
@@ -166,63 +161,42 @@ class Filesystem(QThread):
                     u'Cannot open file')
     def create(self):
         u"""Create new library"""
-        library = []
+        library = {}
         paths = []
         self.flyby(library, paths)
         return (library, paths)
     def update(self, library, paths):
-        u"""Check existing library entries for changes and update"""
+        u"""Check existing library entries for changes and update if necessary"""
         toDelete = []
-        for artist in library:
-            for album in artist[u'albums']:
-                for track in album[u'tracks']:
-                    if os.path.exists(track[u'path']) and not self.ignored(track[u'path']):
-                        modified = os.stat(track[u'path']).st_mtime
-                        if modified != track[u'modified']:
-                            tags = self.tagsread(track[u'path'])
+        toAppend = []
+        for artist, albums in library.iteritems():
+            for album, tracks in albums[u'albums'].iteritems():
+                for track, props in tracks[u'tracks'].iteritems():
+                    if os.path.exists(props[u'path']) and not self.ignored(props[u'path']):
+                        modified = os.stat(props[u'path']).st_mtime
+                        if modified != props[u'modified']:
+                            tags = self.tagsread(props[u'path'])
                             if tags:
-                                if tags[u'artist'] != artist[u'artist']:
-                                    self.append(tags, library)
-                                    toDelete.append(track)
-                                elif tags[u'album'] != album[u'album']:
-                                    sem = False
-                                    for rAlbum in artist[u'albums']:
-                                        rAlbum[u'digital'] = True
-                                        if rAlbum[u'album'] == tags[u'album']:
-                                            sem = True
-                                            rAlbum[u'tracks'].append({
-                                                u'title': tags[u'title'],
-                                                u'tracknumber': tags[u'tracknumber'],
-                                                u'path': tags[u'path'],
-                                                u'modified': modified
-                                                })
-                                            break
-                                    if not sem:
-                                        artist[u'albums'].append({
-                                            u'album': tags[u'album'],
-                                            u'date': tags[u'date'],
-                                            u'tracks': [{
-                                                u'title': tags[u'title'],
-                                                u'tracknumber': tags[u'tracknumber'],
-                                                u'path': tags[u'path'],
-                                                u'modified': modified
-                                                }],
-                                            u'digital': True,
-                                            u'analog': False
-                                            })
-                                    toDelete.append(track)
-                                elif tags[u'title'] != track[u'title']:
-                                    track[u'title'] = tags[u'title']
-                                    track[u'modified'] = modified
-                    elif track[u'path']:
+                                toDelete.append(track)
+                                toAppend.append(tags)
+                    else:
                         toDelete.append(track)
-                for d in toDelete:
-                    del album[u'tracks'][album[u'tracks'].index(d)]
+                        del paths[paths.index(props[u'path'])]
+                for todel in toDelete:
+                    del tracks[u'tracks'][todel]
                 del toDelete[:]
-                if not album[u'tracks'] and album[u'digital'] and not album[u'analog']:
-                    del artist[u'albums'][artist[u'albums'].index(album)]
-            if not artist[u'albums']:
-                del library[library.index(artist)]
+                for toapp in toAppend:
+                    self.append(toapp, library)
+                del toAppend[:]
+                if not tracks[u'tracks'] and not tracks[u'remote'] and not tracks[u'analog']:
+                    toDelete.append(album)
+            for todel in toDelete:
+                del albums[u'albums'][todel]
+            del toDelete[:]
+            if not albums[u'albums'] and not albums[u'url']:
+                toDelete.append(artist)
+        for todel in toDelete:
+            del library[todel]
         for path in paths:
             if self.ignored(path):
                 del paths[paths.index(path)]
