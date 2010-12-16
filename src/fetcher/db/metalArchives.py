@@ -123,7 +123,7 @@ class MetalArchives(QThread):
             years.extend([unescape(y[-4:]) for y in navigation])
         return {
                 u'choice':u'',
-                u'elem':elem,
+                u'artist': elem,
                 u'albums': albums,
                 u'years': years
                 }
@@ -139,25 +139,25 @@ class MetalArchives(QThread):
             if data:
                 result = {
                         u'choice': data[0],
-                        u'elem': elem,
+                        u'artist': artist,
                         u'albums': data[1][0],
                         u'years': data[1][1]
                         }
             else:
-                result = {u'choice': u'no_band', u'elem': artist}
+                result = {u'choice': u'no_band', u'artist': artist}
         except urllib2.HTTPError:
-            result = {u'choice': u'error', u'elem': artist}
+            result = {u'choice': u'error', u'artist': artist}
         return result
     def done(self,_,result):
         if result[u'choice'] == u'no_band':
             self.errors.emit(u'metal-archives.com',
                     u'errors',
-                    result[u'elem'],
+                    result[u'artist'],
                     u'No such band has been found')
         elif result[u'choice'] == u'error':
             self.errors.emit(u'metal-archives.com',
                     u'errors',
-                    result[u'elem'],
+                    result[u'artist'],
                     u'An unknown error occured (no internet?)')
         elif result[u'choice'] != u'block':
             elem = self.library[result[u'artist']]
@@ -207,7 +207,7 @@ class MetalArchives(QThread):
                 soup=BeautifulSoup(urllib2.urlopen(
                     u'http://www.metal-archives.com/search.php?string=' + artist_ + u'&type=band').read())
             except urllib2.HTTPError:
-                result = {u'choice': u'block', u'elem': artist}
+                result = {u'choice': u'block', u'artist': artist}
                 self.errors.emit(u'metal-archives.com',
                         u'errors',
                         artist,
@@ -216,7 +216,6 @@ class MetalArchives(QThread):
                 self.sleep(60)
             else:
                 result = self.parse2(soup, artist, elem)
-                result[u'artist'] = artist
         return result
     def run(self):
         if not self.behaviour:
