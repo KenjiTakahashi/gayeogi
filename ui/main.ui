@@ -39,6 +39,9 @@
             <property name="editTriggers">
              <set>QAbstractItemView::NoEditTriggers</set>
             </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::ExtendedSelection</enum>
+            </property>
             <property name="indentation">
              <number>0</number>
             </property>
@@ -294,9 +297,6 @@
       <item>
        <widget class="QWidget" name="widget_2" native="true">
         <layout class="QFormLayout" name="formLayout_3">
-         <property name="fieldGrowthPolicy">
-          <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-         </property>
          <property name="margin">
           <number>0</number>
          </property>

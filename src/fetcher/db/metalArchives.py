@@ -76,8 +76,8 @@ class Bandsensor(object):
                     for a in navigation])
                 years.extend([unescape(y[-4:]) for y in navigation])
             for album in albums:
-                for eAlbum in self.albums:
-                    if album.lower() == eAlbum[u'album'].lower():
+                for eAlbum in self.albums.keys():
+                    if album.lower() == eAlbum.lower():
                         return {data: (albums, years)}
     def finish(self, _, result):
         if result:
@@ -91,8 +91,8 @@ class Bandsensor(object):
         values = {}
         for data, (albums, _) in self.results.items():
             for album in albums:
-                for eAlbum in self.albums:
-                    if album.lower() == eAlbum[u'album'].lower():
+                for eAlbum in self.albums.keys():
+                    if album.lower() == eAlbum.lower():
                         if data in values.keys():
                             values[data] += 1
                         else:
@@ -123,97 +123,104 @@ class MetalArchives(QThread):
             years.extend([unescape(y[-4:]) for y in navigation])
         return {
                 u'choice':u'',
-                u'elem':elem,
+                u'artist': elem,
                 u'albums': albums,
                 u'years': years
                 }
-    def parse2(self,soup,elem):
+    def parse2(self, soup, artist, elem):
         if soup.findAll(u'script')[0].contents:
             partial=[soup.findAll(u'script')[0].contents[0][18:-2]]
         else:
-            partial=[r[u'href'] for r in soup.findAll(u'a') if (r.contents[0]+u' (').startswith(elem[u'artist']+u' (')]
+            partial = [r[u'href'] for r in soup.findAll(u'a')
+                    if (r.contents[0] + u' (').startswith(artist + u' (')]
         try:
             sensor = Bandsensor(partial, elem[u'albums'], self.releases)
             data = sensor.run()
             if data:
                 result = {
                         u'choice': data[0],
-                        u'elem': elem,
+                        u'artist': artist,
                         u'albums': data[1][0],
                         u'years': data[1][1]
                         }
             else:
-                result = {u'choice': u'no_band', u'elem': elem[u'artist']}
+                result = {u'choice': u'no_band', u'artist': artist}
         except urllib2.HTTPError:
-            result={u'choice':u'error',u'elem':elem[u'artist']}
+            result = {u'choice': u'error', u'artist': artist}
         return result
     def done(self,_,result):
-        def exists(a,albums):
-            for alb in albums:
-                if a.lower()==alb[u'album'].lower():
-                    return True
-            return False
-        def exists2(a, albums):
-            for album in albums:
-                if a.lower() == album.lower():
-                    return True
-            return False
-        if result[u'choice']==u'no_band':
+        if result[u'choice'] == u'no_band':
             self.errors.emit(u'metal-archives.com',
                     u'errors',
-                    result[u'elem'],
+                    result[u'artist'],
                     u'No such band has been found')
         elif result[u'choice'] == u'error':
             self.errors.emit(u'metal-archives.com',
                     u'errors',
-                    result[u'elem'],
+                    result[u'artist'],
                     u'An unknown error occured (no internet?)')
         elif result[u'choice'] != u'block':
-            elem=self.library[self.library.index(result[u'elem'])]
+            elem = self.library[result[u'artist']]
             if result[u'choice']:
                 elem[u'url'][u'metalArchives'] = result[u'choice']
-            message = u'Nothing has been changed'
-            for a,y in map(None,result[u'albums'],result[u'years']):
-                for album in elem[u'albums']:
-                    if not album[u'digital'] and not album[u'analog']\
-                            and not exists2(album[u'album'], result[u'albums']):
-                        message = u'Something has been removed'
-                        del elem[u'albums'][elem[u'albums'].index(album)]
-                if not exists(a,elem[u'albums']):
-                    message = u'Something has been added'
-                    elem[u'albums'].append({
-                        u'album': a,
-                        u'date': y,
-                        u'tracks': [],
-                        u'digital': False,
-                        u'analog': False
-                        })
-            self.errors.emit(u'metal-archives.com', u'info',
-                    elem[u'artist'], message)
-    def work(self,elem):
-        self.stepped.emit(elem[u'artist'])
+            added = False
+            toDelete = []
+            for k, v in elem[u'albums'].iteritems():
+                if k not in result[u'albums'] and not v[u'digital'] and not v[u'analog']:
+                    toDelete.append(k)
+            for todel in toDelete:
+                del elem[u'albums'][todel]
+            for a, y in map(None, result[u'albums'], result[u'years']):
+                try:
+                    elem[u'albums'][a]
+                except KeyError:
+                    added = True
+                    elem[u'albums'][a] = {
+                            u'date': y,
+                            u'tracks': {},
+                            u'digital': False,
+                            u'analog': False,
+                            u'remote': True
+                            }
+                else:
+                    elem[u'albums'][a][u'remote'] = True
+            if added and toDelete:
+                message = u'Something has been changed'
+            elif added:
+                message = u'Something has been added'
+            elif toDelete:
+                message = u'Something has been removed'
+            else:
+                message = u'Nothing has been changed'
+            self.errors.emit(u'metal-archives.com',
+                    u'info',
+                    result[u'artist'],
+                    message)
+    def work(self, artist, elem):
+        self.stepped.emit(artist)
         if elem[u'url'] and u'metalArchives' in elem[u'url'].keys():
-            result=self.parse1(elem)
+            result = self.parse1(elem)
+            result[u'artist'] = artist
         else:
-            artist=urllib2.quote(elem[u'artist'].encode(u'latin-1')).replace(u'%20','+')
+            artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
             try:
                 soup=BeautifulSoup(urllib2.urlopen(
-                    u'http://www.metal-archives.com/search.php?string='+artist+u'&type=band').read())
+                    u'http://www.metal-archives.com/search.php?string=' + artist_ + u'&type=band').read())
             except urllib2.HTTPError:
-                result = {u'choice': u'block', u'elem': elem[u'artist']}
+                result = {u'choice': u'block', u'artist': artist}
                 self.errors.emit(u'metal-archives.com',
                         u'errors',
-                        result[u'elem'],
+                        artist,
                         u'No internet or blocked by upstream (Delaying for 60 secs)')
                 self.stepped.emit(u'Waiting...')
                 self.sleep(60)
             else:
-                result=self.parse2(soup,elem)
+                result = self.parse2(soup, artist, elem)
         return result
     def run(self):
         if not self.behaviour:
-            temp = [lib for lib in self.library
-                    if not lib[u'url'] or u'metalArchives' in lib[u'url'].keys()]
+            temp = {k: v for k, v in self.library.iteritems()
+                    if not v[u'url'] or u'metalArchives' in v[u'url'].keys()}
             if temp:
                 requests = threadpool.makeRequests(self.work, temp, self.done)
             else:

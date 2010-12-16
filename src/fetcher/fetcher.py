@@ -54,7 +54,37 @@ class DB(object):
         handler = open(self.dbPath, u'rb')
         result = cPickle.load(handler)
         handler.close()
-        return result
+        if isinstance(result[0], list):
+            return (self.convert(result[0]), result[1])
+        else:
+            return result
+    def convert(self, data):
+        def checkRemote(digital, analog):
+            if not digital and not analog:
+                return True
+            return False
+        results = {}
+        for artists in data:
+            results[artists[u'artist']] = {
+                    u'url': artists[u'url'],
+                    u'albums': {}
+                    }
+            for albums in artists[u'albums']:
+                results[artists[u'artist']][u'albums'][albums[u'album']] = {
+                        u'date': albums[u'date'],
+                        u'digital': albums[u'digital'],
+                        u'analog': albums[u'analog'],
+                        u'remote': checkRemote(albums[u'digital'], albums[u'analog']),
+                        u'tracks': {}
+                        }
+                for tracks in albums[u'tracks']:
+                    results[artists[u'artist']][u'albums'][albums[u'album']] \
+                            [u'tracks'][tracks[u'title']] = {
+                            u'tracknumber': tracks[u'tracknumber'],
+                            u'path': tracks[u'path'],
+                            u'modified': tracks[u'modified']
+                            }
+        return results
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'fetcher', u'Fetcher')
@@ -87,7 +117,7 @@ class Main(QtGui.QMainWindow):
         if not self.ignores:
             self.ignores = []
         if firstStart:
-            self.fs.setArgs([], [], self.ignores, False)
+            self.fs.setArgs({}, [], self.ignores, False)
         else:
             (self.library, self.paths) = self.db.read()
             self.oldLib = deepcopy(self.library)
@@ -214,17 +244,21 @@ class Main(QtGui.QMainWindow):
         else:
             item.setText(3, u'NO')
             analog = u'NO'
-        album = item.text(1)
-        for l in self.library:
-            if l[u'artist'] == item.artist:
-                for a in l[u'albums']:
-                    if a[u'album']==album:
-                        if analog == u'YES':
-                            a[u'analog'] = True
-                        else:
-                            a[u'analog'] = False
-                        break
-                break
+        album = unicode(item.text(1))
+        if analog == u'YES':
+            self.library[item.artist][u'albums'][album][u'analog'] = True
+        else:
+            self.library[item.artist][u'albums'][album][u'analog'] = False
+        #for l in self.library:
+        #    if l[u'artist'] == item.artist:
+        #        for a in l[u'albums']:
+        #            if a[u'album'] == unicode(album):
+        #                if analog == u'YES':
+        #                    a[u'analog'] = True
+        #                else:
+        #                    a[u'analog'] = False
+        #                break
+        #        break
         self.computeStats()
         self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
         self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
@@ -305,9 +339,8 @@ class Main(QtGui.QMainWindow):
         self.statusBar().showMessage(u'Done')
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
-        for i,l in enumerate(self.library):
-            item = QtGui.QTreeWidgetItem(QStringList([
-                l[u'artist'],
+        for i, l in enumerate(self.library.keys()):
+            item = QtGui.QTreeWidgetItem(QStringList([l,
                 self.statistics[u'detailed'][i][0] and u'YES' or u'NO',
                 self.statistics[u'detailed'][i][1] and u'YES' or u'NO'
                 ]))
@@ -347,30 +380,27 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.clear()
         items=self.ui.artists.selectedItems()
         self.ui.albums.setSortingEnabled(False)
-        for l in self.library:
-            for i in items:
-                if i.text(0)==l[u'artist']:
-                    for k, a in enumerate(l[u'albums']):
-                        item = QtGui.QTreeWidgetItem(QStringList([
-                            a[u'date'],
-                            a[u'album'],
-                            a[u'digital'] and u'YES' or u'NO',
-                            a[u'analog'] and u'YES' or u'NO'
-                            ]))
-                        item.artist = l[u'artist']
-                        if a[u'digital'] and a[u'analog']:
-                            for i in range(4):
-                                item.setBackground(i, Qt.green)
-                                item.setForeground(i, Qt.black)
-                        elif a[u'digital'] or a[u'analog']:
-                            for i in range(4):
-                                item.setBackground(i, Qt.yellow)
-                                item.setForeground(i, Qt.black)
-                        else:
-                            for i in range(4):
-                                item.setBackground(i, Qt.red)
-                                item.setForeground(i, Qt.black)
-                        self.ui.albums.insertTopLevelItem(k, item)
+        for item in items:
+            for a, props in self.library[unicode(item.text(0))][u'albums'].iteritems():
+                itemm = QtGui.QTreeWidgetItem(QStringList([
+                    props[u'date'], a,
+                    props[u'digital'] and u'YES' or u'NO',
+                    props[u'analog'] and u'YES' or u'NO'
+                    ]))
+                itemm.artist = unicode(item.text(0))
+                if props[u'digital'] and props[u'analog']:
+                    for i in range(4):
+                        itemm.setBackground(i, Qt.green)
+                        itemm.setForeground(i, Qt.black)
+                elif props[u'digital'] or props[u'analog']:
+                    for i in range(4):
+                        itemm.setBackground(i, Qt.yellow)
+                        itemm.setForeground(i, Qt.black)
+                else:
+                    for i in range(4):
+                        itemm.setBackground(i, Qt.red)
+                        itemm.setForeground(i, Qt.black)
+                self.ui.albums.addTopLevelItem(itemm)
         self.ui.albums.setSortingEnabled(True)
         self.ui.albums.sortItems(0, 0)
         for i in range(4):
@@ -378,21 +408,14 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
     def fillTracks(self):
         self.ui.tracks.clear()
-        artists = self.ui.artists.selectedItems()
         albums = self.ui.albums.selectedItems()
         self.ui.tracks.setSortingEnabled(False)
-        for l in self.library:
-            for artist in artists:
-                if artist.text(0) == l[u'artist']:
-                    for ll in l[u'albums']:
-                        for album in albums:
-                            if album.text(1) == ll[u'album']:
-                                for k, a in enumerate(ll[u'tracks']):
-                                    item = NumericTreeWidgetItem(QStringList([
-                                        a[u'tracknumber'],
-                                        a[u'title']
-                                        ]))
-                                    self.ui.tracks.insertTopLevelItem(k, item)
+        for album in albums:
+            for k, props in self.library[album.artist][u'albums']\
+                    [unicode(album.text(1))][u'tracks'].iteritems():
+                item = NumericTreeWidgetItem(QStringList([
+                    props[u'tracknumber'], k]))
+                self.ui.tracks.addTopLevelItem(item)
         self.ui.tracks.setSortingEnabled(True)
         self.ui.tracks.sortItems(0, 0)
         self.ui.tracks.resizeColumnToContents(0)
@@ -401,20 +424,20 @@ class Main(QtGui.QMainWindow):
         artists = [0, 0, 0]
         albums = [0, 0, 0]
         detailed = []
-        for l in self.library:
+        for l, a in self.library.iteritems():
             artist = 0
-            for a in l[u'albums']:
-                if not a[u'digital'] and not a[u'analog']:
+            for t in a[u'albums'].values():
+                if not t[u'digital'] and not t[u'analog']:
                     albums[2] += 1
                     artist = 1
-                elif a[u'digital'] and a[u'analog']:
+                elif t[u'digital'] and t[u'analog']:
                     albums[0] += 1
                     if not artist:
                         artist = 4
                 else:
                     albums[1] += 1
                     if not artist or artist == 4:
-                        if a[u'digital']:
+                        if t[u'digital']:
                             artist = 2
                         else:
                             artist = 3
