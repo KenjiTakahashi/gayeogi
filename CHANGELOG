@@ -84,3 +84,5 @@ unsaved changes.
 -Filters
 -Fixed close confirmation dialog.
 -Changed labels color to black for artists and albums
+-Multiple artists selection.
+-Internal structure change (should by much faster now).
