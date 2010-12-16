@@ -145,7 +145,8 @@ class Main(QtGui.QMainWindow):
         reload(plugins)
         for plugin in plugins.__all__:
             class_ = getattr(getattr(plugins, plugin), u'Main')(self.ui)
-            if self.__settings.value(u'plugins/' + plugin, 0).toInt()[0]:
+            if self.__settings.value(u'plugins/' + plugin, 0).toInt()[0] \
+                    and not class_.loaded:
                 class_.load()
             else:
                 class_.unload()
