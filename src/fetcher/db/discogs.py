@@ -130,6 +130,7 @@ class Discogs(QThread):
             artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
             request=urllib2.Request(u'http://www.discogs.com/search?type=all&q=' + artist_ + u'&f=xml&api_key=95b787be0c')
             request.add_header(u'Accept-Encoding',u'gzip')
+            print request.get_full_url()
             try:
                 temp=urllib2.urlopen(request).read()
                 try:
@@ -137,12 +138,12 @@ class Discogs(QThread):
                 except IOError:
                     data=temp
             except urllib2.HTTPError:
-                result={u'choice': u'error', u'elem': artist}
+                result={u'choice': u'error', u'artist': artist}
             else:
                 try:
                     xml=minidom.parseString(data)
                 except ExpatError:
-                    result = {u'choice': u'error', u'elem': artist}
+                    result = {u'choice': u'error', u'artist': artist}
                 else:
                     tag=xml.firstChild.firstChild
                     # Yeah, it's bad, it's ugly, just like discogs site and API is...
@@ -160,19 +161,19 @@ class Discogs(QThread):
                                 u'years': data[1][1]
                                 }
                     else:
-                        result = {u'choice': u'no_band', u'elem': artist}
+                        result = {u'choice': u'no_band', u'artist': artist}
         return result
 
     def done(self,_,result):
         if result[u'choice'] == u'no_band':
-            self.errors.emit(u'metal-archives.com',
+            self.errors.emit(u'discogs.com',
                     u'errors',
                     result[u'artist'],
                     u'No such band has been found')
         elif result[u'choice'] != u'error':
             elem = self.library[result[u'artist']]
             if result[u'choice']:
-                elem[u'url'][u'metalArchives'] = result[u'choice']
+                elem[u'url'][u'discogs'] = result[u'choice']
             added = False
             toDelete = []
             for k, v in elem[u'albums'].iteritems():
@@ -202,19 +203,19 @@ class Discogs(QThread):
                 message = u'Something has been removed'
             else:
                 message = u'Nothing has been changed'
-            self.errors.emit(u'metal-archives.com',
+            self.errors.emit(u'discogs.com',
                     u'info',
                     result[u'artist'],
                     message)
         else:
-            self.errors.emit(u'metal-archives.com',
+            self.errors.emit(u'discogs.com',
                     u'errors',
                     result[u'artist'],
                     u'An unknown error occured (no internet?)')
     def run(self):
         if not self.behaviour:
-            temp = [lib for lib in self.library
-                    if not lib[u'url'] or u'discogs' in lib[u'url'].keys()]
+            temp = {k: v for k, v in self.library.iteritems()
+                    if not v[u'url'] or u'discogs' in v[u'url'].keys()}
             if temp:
                 requests = threadpool.makeRequests(self.work, temp, self.done)
             else:

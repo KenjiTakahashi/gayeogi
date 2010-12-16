@@ -202,7 +202,7 @@ class MetalArchives(QThread):
             result = self.parse1(elem)
             result[u'artist'] = artist
         else:
-            artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', '+')
+            artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
             try:
                 soup=BeautifulSoup(urllib2.urlopen(
                     u'http://www.metal-archives.com/search.php?string=' + artist_ + u'&type=band').read())
