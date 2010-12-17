@@ -45,9 +45,10 @@ class PlayerItemDelegate(QtGui.QStyledItemDelegate):
     def sizeHint(self, option, index):
         return QSize(0, 18 + option.font.pointSize() * 2)
 
-class Main(object):
+class Main(QtGui.QWidget):
     loaded = False
     def __init__(self, parent):
+        QtGui.QWidget.__init__(self, None)
         self.parent = parent
     def load(self):
         previous = QtGui.QPushButton(u'Previous')
@@ -63,36 +64,27 @@ class Main(object):
         buttons = QtGui.QWidget()
         progress = QtGui.QProgressBar()
         buttons.setLayout(buttonsLayout)
-        playlist = QtGui.QListWidget()
-        delegate = PlayerItemDelegate(playlist)
-        playlist.setItemDelegate(delegate)
-        item = QtGui.QListWidgetItem()
-        item.setData(666, 1)
-        item.setData(667, u'title')
-        item.setData(668, u'artist')
-        item.setData(669, u'album')
-        item.setData(670, u'30:40')
-        item.setData(671, u'40:32')
-        item2 = QtGui.QListWidgetItem()
-        item2.setData(666, u'lol')
-        item2.setData(667, u'tes')
-        item2.setData(668, u'lfeo')
-        item2.setData(669, u'feslfo')
-        item2.setData(670, u'es')
-        item2.setData(671, u'fe:efs')
-        playlist.addItem(item)
-        playlist.addItem(item2)
+        delegate = PlayerItemDelegate()
+        self.playlist = QtGui.QListWidget()
+        self.playlist.setItemDelegate(delegate)
         layout = QtGui.QVBoxLayout()
         layout.addWidget(buttons)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(progress)
-        layout.addWidget(playlist)
-        widget = QtGui.QWidget()
-        widget.setLayout(layout)
-        self.parent.horizontalLayout_2.addWidget(widget)
+        layout.addWidget(self.playlist)
+        self.setLayout(layout)
+        self.parent.tracks.itemActivated.connect(self.addItem)
+        self.parent.horizontalLayout_2.addWidget(self)
         Main.loaded = True
     def unload(self):
         Main.loaded = False
     def QConfiguration():
         pass
     QConfiguration = staticmethod(QConfiguration)
+    def addItem(self, item, _):
+        item_ = QtGui.QListWidgetItem()
+        item_.setData(666, item.text(0))
+        item_.setData(667, item.text(1))
+        item_.setData(668, item.artist)
+        item_.setData(669, item.album)
+        self.playlist.addItem(item_)

@@ -416,6 +416,8 @@ class Main(QtGui.QMainWindow):
                     [unicode(album.text(1))][u'tracks'].iteritems():
                 item = NumericTreeWidgetItem(QStringList([
                     props[u'tracknumber'], k]))
+                item.album = album.text(1)
+                item.artist = album.artist
                 self.ui.tracks.addTopLevelItem(item)
         self.ui.tracks.setSortingEnabled(True)
         self.ui.tracks.sortItems(0, 0)
