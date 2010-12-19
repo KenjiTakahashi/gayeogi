@@ -38,10 +38,10 @@ else: # Most POSIX systems, there may be more elifs in future.
     dbPath=os.path.expanduser(u'~/.config/fetcher')
 
 class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
-    def __init__(self, parent = None):
-        QtGui.QTreeWidgetItem.__init__(self, parent)
     def __lt__(self, qtreewidgetitem):
-        return self.text(0).toInt()[0] < qtreewidgetitem.text(0).toInt()[0]
+        text1 = self.text(0).split(u'/')[0].toInt()[0]
+        text2 = qtreewidgetitem.text(0).split(u'/')[0].toInt()[0]
+        return text1 < text2
 
 class DB(object):
     def __init__(self):
@@ -144,7 +144,7 @@ class Main(QtGui.QMainWindow):
     def loadPlugins(self):
         reload(plugins)
         for plugin in plugins.__all__:
-            class_ = getattr(getattr(plugins, plugin), u'Main')(self.ui)
+            class_ = getattr(getattr(plugins, plugin), u'Main')(self.ui, self.library)
             if self.__settings.value(u'plugins/' + plugin, 0).toInt()[0] \
                     and not class_.loaded:
                 class_.load()
@@ -250,16 +250,6 @@ class Main(QtGui.QMainWindow):
             self.library[item.artist][u'albums'][album][u'analog'] = True
         else:
             self.library[item.artist][u'albums'][album][u'analog'] = False
-        #for l in self.library:
-        #    if l[u'artist'] == item.artist:
-        #        for a in l[u'albums']:
-        #            if a[u'album'] == unicode(album):
-        #                if analog == u'YES':
-        #                    a[u'analog'] = True
-        #                else:
-        #                    a[u'analog'] = False
-        #                break
-        #        break
         self.computeStats()
         self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
         self.ui.artistsYellow.setText(self.statistics[u'artists'][1])

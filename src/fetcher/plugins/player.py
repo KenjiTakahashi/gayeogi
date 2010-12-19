@@ -20,7 +20,7 @@ from PyQt4 import QtGui
 from PyQt4.QtCore import QSize, Qt
 from copy import deepcopy
 
-class PlayerItemDelegate(QtGui.QStyledItemDelegate):
+class PlayListItemDelegate(QtGui.QStyledItemDelegate):
     def paint(self, painter, option, index):
         start = deepcopy(option.rect)
         size = option.font.pointSize()
@@ -47,9 +47,10 @@ class PlayerItemDelegate(QtGui.QStyledItemDelegate):
 
 class Main(QtGui.QWidget):
     loaded = False
-    def __init__(self, parent):
+    def __init__(self, parent, library):
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
+        self.library = library
     def load(self):
         previous = QtGui.QPushButton(u'Previous')
         play = QtGui.QPushButton(u'Play')
@@ -64,7 +65,7 @@ class Main(QtGui.QWidget):
         buttons = QtGui.QWidget()
         progress = QtGui.QProgressBar()
         buttons.setLayout(buttonsLayout)
-        delegate = PlayerItemDelegate()
+        delegate = PlayListItemDelegate()
         self.playlist = QtGui.QListWidget()
         self.playlist.setItemDelegate(delegate)
         layout = QtGui.QVBoxLayout()
@@ -73,6 +74,8 @@ class Main(QtGui.QWidget):
         layout.addWidget(progress)
         layout.addWidget(self.playlist)
         self.setLayout(layout)
+        self.parent.artists.itemActivated.connect(self.addItem)
+        self.parent.albums.itemActivated.connect(self.addItem)
         self.parent.tracks.itemActivated.connect(self.addItem)
         self.parent.horizontalLayout_2.addWidget(self)
         Main.loaded = True
@@ -82,9 +85,45 @@ class Main(QtGui.QWidget):
         pass
     QConfiguration = staticmethod(QConfiguration)
     def addItem(self, item, _):
-        item_ = QtGui.QListWidgetItem()
-        item_.setData(666, item.text(0))
-        item_.setData(667, item.text(1))
-        item_.setData(668, item.artist)
-        item_.setData(669, item.album)
-        self.playlist.addItem(item_)
+        def createItem(source):
+            item = QListWidgetItem()
+            item.setData(666, source[0])
+            item.setData(667, source[1])
+            item.setData(668, source[2])
+            item.setData(669, source[3])
+            return item
+        def compare(i1, i2):
+            tracknumber1 = i1.data(666).toString().split(u'/')[0].toInt()[0]
+            tracknumber2 = i2.data(666).toString().split(u'/')[0].toInt()[0]
+            if tracknumber1 > tracknumber2:
+                return 1
+            elif tracknumber1 == tracknumber2:
+                return 0
+            else:
+                return -1
+        try:
+            item.album
+        except AttributeError:
+            try:
+                item.artist
+            except AttributeError:
+                items = []
+                for i in range(self.parent.albums.topLevelItemCount()):
+                    item_ = self.parent.albums.topLevelItem(i)
+                    album = unicode(item_.text(1))
+                    items_ = [createItem((vv[u'tracknumber'], title, album,
+                        item.text(0))) for title, vv
+                        in self.library[item_.artist][u'albums']\
+                                [album][u'tracks'].iteritems()]
+                    items_.sort(compare)
+                    items.extend(items_)
+                for i in items:
+                    self.playlist.addItem(i)
+            else:
+                for i in range(self.parent.tracks.topLevelItemCount()):
+                    item_ = self.parent.tracks.topLevelItem(i)
+                    self.playlist.addItem(createItem((item_.text(0),
+                        item_.text(1), item_.album, item_.artist)))
+        else:
+            self.playlist.addItem(createItem(
+                (item.text(0), item.text(1), item.album, item.artist)))
