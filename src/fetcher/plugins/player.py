@@ -80,13 +80,18 @@ class Main(QtGui.QWidget):
         self.parent.horizontalLayout_2.addWidget(self)
         Main.loaded = True
     def unload(self):
+        children = self.parent.horizontalLayout_2.parentWidget().children()
+        for i, child in enumerate(children):
+            if isinstance(child, Main):
+                item = self.parent.horizontalLayout_2.takeAt(i - 1)
+                item.widget().deleteLater()
         Main.loaded = False
     def QConfiguration():
         pass
     QConfiguration = staticmethod(QConfiguration)
     def addItem(self, item, _):
         def createItem(source):
-            item = QListWidgetItem()
+            item = QtGui.QListWidgetItem()
             item.setData(666, source[0])
             item.setData(667, source[1])
             item.setData(668, source[2])

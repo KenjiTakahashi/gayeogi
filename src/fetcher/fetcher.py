@@ -145,10 +145,10 @@ class Main(QtGui.QMainWindow):
         reload(plugins)
         for plugin in plugins.__all__:
             class_ = getattr(getattr(plugins, plugin), u'Main')(self.ui, self.library)
-            if self.__settings.value(u'plugins/' + plugin, 0).toInt()[0] \
-                    and not class_.loaded:
+            option = self.__settings.value(u'plugins/' + plugin, 0).toInt()[0]
+            if option and not class_.loaded:
                 class_.load()
-            else:
+            elif not option and class_.loaded:
                 class_.unload()
     def filter_(self, text):
         columns = []
