@@ -406,7 +406,7 @@ class Main(QtGui.QMainWindow):
                     [unicode(album.text(1))][u'tracks'].iteritems():
                 item = NumericTreeWidgetItem(QStringList([
                     props[u'tracknumber'], k]))
-                item.album = album.text(1)
+                item.album = unicode(album.text(1))
                 item.artist = album.artist
                 self.ui.tracks.addTopLevelItem(item)
         self.ui.tracks.setSortingEnabled(True)
@@ -456,6 +456,7 @@ class Main(QtGui.QMainWindow):
 
 def run():
     app=QtGui.QApplication(sys.argv)
+    app.setApplicationName(u'Fetcher')
     main=Main()
     main.show()
     sys.exit(app.exec_())
