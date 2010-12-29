@@ -64,28 +64,35 @@ class Main(QtGui.QWidget):
         remove = QtGui.QPushButton(u'Remove')
         remove.clicked.connect(self.removeByButton)
         previous = QtGui.QPushButton(u'Previous')
-        play = QtGui.QPushButton(u'Play')
+        previous.clicked.connect(self.previous)
+        self.playButton = QtGui.QPushButton(u'Play')
+        self.playButton.clicked.connect(self.playByButton)
         stop = QtGui.QPushButton(u'Stop')
+        stop.clicked.connect(self.stop)
         next_ = QtGui.QPushButton(u'Next')
+        next_.clicked.connect(self.next_)
+        volume = Phonon.VolumeSlider()
         buttonsLayout = QtGui.QHBoxLayout()
         buttonsLayout.setContentsMargins(0, 0, 0, 0)
         buttonsLayout.addWidget(add)
         buttonsLayout.addWidget(remove)
         buttonsLayout.addWidget(previous)
-        buttonsLayout.addWidget(play)
+        buttonsLayout.addWidget(self.playButton)
         buttonsLayout.addWidget(stop)
         buttonsLayout.addWidget(next_)
+        buttonsLayout.addWidget(volume)
         buttons = QtGui.QWidget()
-        self.progress = Phonon.SeekSlider()
+        progress = Phonon.SeekSlider()
         buttons.setLayout(buttonsLayout)
         delegate = PlayListItemDelegate()
         self.playlist = QtGui.QListWidget()
         self.playlist.setItemDelegate(delegate)
+        self.playlist.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
         self.playlist.itemActivated.connect(self.play)
         layout = QtGui.QVBoxLayout()
         layout.addWidget(buttons)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.progress)
+        layout.addWidget(progress)
         layout.addWidget(self.playlist)
         self.setLayout(layout)
         self.parent.artists.itemActivated.connect(self.addItem)
@@ -96,10 +103,11 @@ class Main(QtGui.QWidget):
         self.mediaobject.setTickInterval(500)
         self.mediaobject.tick.connect(self.tick)
         self.mediaobject.totalTimeChanged.connect(self.setTime)
-        self.mediaobject.finished.connect(self.next_)
-        self.progress.setMediaObject(self.mediaobject)
+        self.mediaobject.finished.connect(self.nextTrack)
         self.audiooutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
         Phonon.createPath(self.mediaobject, self.audiooutput)
+        progress.setMediaObject(self.mediaobject)
+        volume.setAudioOutput(self.audiooutput)
         Main.loaded = True
     def unload(self):
         children = self.parent.horizontalLayout_2.parentWidget().children()
@@ -112,35 +120,57 @@ class Main(QtGui.QWidget):
         pass
     QConfiguration = staticmethod(QConfiguration)
     def play(self, item):
-        if self.__current:
-            self.__current.setData(670, None)
-            self.__current.setData(671, None)
-            self.__current.setData(672, False)
+        self.__resetCurrent()
         self.mediaobject.setCurrentSource(Phonon.MediaSource(item.path))
         self.mediaobject.play()
         self.__current = item
         self.__current.setData(672, True)
-    def tick(self, interval):
-        self.__current.setData(670, self.__timeConvert(interval))
+        self.playButton.setText(u'Pause') # it is to change
+    def stop(self):
+        self.__resetCurrent()
+        self.__current = None
+        self.mediaobject.stop()
+    def previous(self):
+        index = self.playlist.row(self.__current)
+        if self.__current and index:
+            self.play(self.playlist.item(index - 1))
     def next_(self):
+        index = self.playlist.row(self.__current) + 1
+        if self.__current and index < self.playlist.count():
+            self.play(self.playlist.item(index))
+    def tick(self, interval):
+        if interval:
+            self.__current.setData(670, self.__timeConvert(interval))
+    def nextTrack(self):
         index = self.playlist.row(self.__current)
         self.playlist.itemActivated.emit(self.playlist.item(index + 1))
     def setTime(self, time):
-        self.__current.setData(671, self.__timeConvert(time))
-    def addByButton(self):
-        items = self.parent.tracks.selectedItems()
-        if items:
-            items_ = [self.__createItem((item.text(0), item.text(1),
-                item.album, item.artist)) for item in items]
-            items_.sort(self.__compare)
-            for i in items_:
-                self.playlist.addItem(i)
+        if self.__current:
+            self.__current.setData(671, self.__timeConvert(time))
+    def playByButton(self):
+        button = self.sender()
+        if button.text() == u'Play': # it is to change
+            if not self.__current:
+                self.play(self.playlist.item(0))
+            else:
+                button.setText(u'Pause')
+                self.mediaobject.play()
         else:
-            items = self.parent.albums.selectedItems()
+            button.setText(u'Play')
+            self.mediaobject.pause()
+    def addByButton(self):
+        def addItems(items):
             if items:
-                pass
+                for item in items:
+                    self.addItem(item, 0)
+                return True
+            return False
+        if not addItems(self.parent.tracks.selectedItems()):
+            if not addItems(self.parent.albums.selectedItems()):
+                addItems(self.parent.artists.selectedItems())
     def removeByButton(self):
-        pass
+        for item in self.playlist.selectedItems():
+            self.playlist.takeItem(self.playlist.row(item))
     def addItem(self, item, column):
         if column != 3:
             try:
@@ -195,3 +225,9 @@ class Main(QtGui.QWidget):
         time /= 1000
         return addZero(time / 3600 % 60) + u":" + addZero(time / 60 % 60)\
                 + u":" + addZero(time % 60)
+    def __resetCurrent(self):
+        if self.__current:
+            self.__current.setData(670, None)
+            self.__current.setData(671, None)
+            self.__current.setData(672, False)
+            self.mediaobject.clear()
