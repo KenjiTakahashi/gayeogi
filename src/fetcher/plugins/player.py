@@ -24,6 +24,11 @@ class PlayListItemDelegate(QtGui.QStyledItemDelegate):
     def paint(self, painter, option, index):
         start = deepcopy(option.rect)
         size = option.font.pointSize()
+        painter.save()
+        font = option.font
+        if index.data(672).toBool():
+            font.setBold(True)
+            painter.setFont(font)
         start.setLeft(start.left() + 5)
         start.setTop(start.top() + 20)
         QtGui.QStyledItemDelegate.paint(self, painter, option, index)
@@ -34,8 +39,6 @@ class PlayListItemDelegate(QtGui.QStyledItemDelegate):
                 index.data(667).toString())
         start = deepcopy(option.rect)
         start.setRight(start.right() - 5)
-        painter.save()
-        font = option.font
         font.setPointSize(16)
         painter.setFont(font)
         data670 = index.data(670).toString()
@@ -43,6 +46,7 @@ class PlayListItemDelegate(QtGui.QStyledItemDelegate):
             painter.drawText(start, Qt.AlignRight | Qt.AlignVCenter,
                     index.data(670).toString() + u'/' + index.data(671).toString())
         font.setPointSize(10)
+        font.setBold(False)
         painter.restore()
     def sizeHint(self, option, index):
         return QSize(0, 18 + option.font.pointSize() * 2)
@@ -108,14 +112,17 @@ class Main(QtGui.QWidget):
         pass
     QConfiguration = staticmethod(QConfiguration)
     def play(self, item):
+        if self.__current:
+            self.__current.setData(670, None)
+            self.__current.setData(671, None)
+            self.__current.setData(672, False)
         self.mediaobject.setCurrentSource(Phonon.MediaSource(item.path))
         self.mediaobject.play()
         self.__current = item
+        self.__current.setData(672, True)
     def tick(self, interval):
         self.__current.setData(670, self.__timeConvert(interval))
     def next_(self):
-        self.__current.setData(670, None)
-        self.__current.setData(671, None)
         index = self.playlist.row(self.__current)
         self.playlist.itemActivated.emit(self.playlist.item(index + 1))
     def setTime(self, time):
@@ -134,37 +141,38 @@ class Main(QtGui.QWidget):
                 pass
     def removeByButton(self):
         pass
-    def addItem(self, item, _):
-        try:
-            item.album
-        except AttributeError:
+    def addItem(self, item, column):
+        if column != 3:
             try:
-                item.artist
+                item.album
             except AttributeError:
-                items = []
-                for i in range(self.parent.albums.topLevelItemCount()):
-                    item_ = self.parent.albums.topLevelItem(i)
-                    album = unicode(item_.text(1))
-                    items_ = [self.__createItem((vv[u'tracknumber'], title,
-                        album, item.text(0), vv[u'path'])) for title, vv
-                        in self.library[item_.artist][u'albums']\
-                                [album][u'tracks'].iteritems()]
-                    items_.sort(self.__compare)
-                    items.extend(items_)
-                for i in items:
-                    self.playlist.addItem(i)
+                try:
+                    item.artist
+                except AttributeError:
+                    items = []
+                    for i in range(self.parent.albums.topLevelItemCount()):
+                        item_ = self.parent.albums.topLevelItem(i)
+                        album = unicode(item_.text(1))
+                        items_ = [self.__createItem((vv[u'tracknumber'], title,
+                            album, item.text(0), vv[u'path'])) for title, vv
+                            in self.library[item_.artist][u'albums']\
+                                    [album][u'tracks'].iteritems()]
+                        items_.sort(self.__compare)
+                        items.extend(items_)
+                    for i in items:
+                        self.playlist.addItem(i)
+                else:
+                    for i in range(self.parent.tracks.topLevelItemCount()):
+                        item_ = self.parent.tracks.topLevelItem(i)
+                        path = self.library[item_.artist][u'albums'][item_.album]\
+                                [u'tracks'][unicode(item_.text(1))][u'path']
+                        self.playlist.addItem(self.__createItem((item_.text(0),
+                            item_.text(1), item_.album, item_.artist, path)))
             else:
-                for i in range(self.parent.tracks.topLevelItemCount()):
-                    item_ = self.parent.tracks.topLevelItem(i)
-                    path = self.library[item_.artist][u'albums'][item_.album]\
-                            [u'tracks'][unicode(item_.text(1))][u'path']
-                    self.playlist.addItem(self.__createItem((item_.text(0),
-                        item_.text(1), item_.album, item_.artist, path)))
-        else:
-            path = self.library[item.artist][u'albums'][item.album]\
-                    [u'tracks'][unicode(item.text(1))][u'path']
-            self.playlist.addItem(self.__createItem(
-                (item.text(0), item.text(1), item.album, item.artist, path)))
+                path = self.library[item.artist][u'albums'][item.album]\
+                        [u'tracks'][unicode(item.text(1))][u'path']
+                self.playlist.addItem(self.__createItem(
+                    (item.text(0), item.text(1), item.album, item.artist, path)))
     def __createItem(self, source):
         item = QtGui.QListWidgetItem()
         item.setData(666, source[0])

@@ -236,71 +236,72 @@ class Main(QtGui.QMainWindow):
             self.ui.logs.scrollToItem(item)
         for i in range(4):
             self.ui.logs.resizeColumnToContents(i)
-    def setAnalog(self,item):
-        digital = item.text(2)
-        analog = item.text(3)
-        if analog == u'NO':
-            item.setText(3, u'YES')
-            analog = u'YES'
-        else:
-            item.setText(3, u'NO')
-            analog = u'NO'
-        album = unicode(item.text(1))
-        if analog == u'YES':
-            self.library[item.artist][u'albums'][album][u'analog'] = True
-        else:
-            self.library[item.artist][u'albums'][album][u'analog'] = False
-        self.computeStats()
-        self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
-        self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
-        self.ui.artistsRed.setText(self.statistics[u'artists'][2])
-        self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
-        self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
-        self.ui.albumsRed.setText(self.statistics[u'albums'][2])
-        if digital == u'YES' and analog == u'YES':
-            for i in range(4):
-                item.setBackground(i, Qt.green)
-        elif digital==u'YES':
-            for i in range(4):
-                item.setBackground(i, Qt.yellow)
-        elif analog == u'YES':
-            for i in range(4):
-                item.setBackground(i, Qt.yellow)
-        else:
-            for i in range(4):
-                item.setBackground(i, Qt.red)
-        artists={}
-        for i in range(self.ui.albums.topLevelItemCount()):
-            item = self.ui.albums.topLevelItem(i)
-            artist = item.artist
-            state = unicode(item.background(0).color().name())
-            if artist in artists:
-                if state in artists[artist]:
-                    artists[artist][state] += 1
-                else:
-                    artists[artist][state] = 1
-                if artists[artist][u'analog'] != u'NO' and item.text(3) == u'NO':
-                    artists[artist][u'analog'] = u'NO'
+    def setAnalog(self, item, column):
+        if column == 3:
+            digital = item.text(2)
+            analog = item.text(3)
+            if analog == u'NO':
+                item.setText(3, u'YES')
+                analog = u'YES'
             else:
-                artists[artist] = {state: 1}
-                if item.text(3) == u'YES':
-                    artists[artist][u'analog'] = u'YES'
-                else:
-                    artists[artist][u'analog'] = u'NO'
-        def setColor(artist,qcolor,analogState):
-            for item in self.ui.artists.selectedItems():
-                if item.text(0) == artist:
-                    for i in range(3):
-                        item.setBackground(i, qcolor)
-                    item.setText(2, analogState)
-                    break
-        for artist,states in artists.items():
-            if u'#ff0000' in states:
-                setColor(artist,Qt.red,states[u'analog'])
-            elif u'#ffff00' in states:
-                setColor(artist,Qt.yellow,states[u'analog'])
+                item.setText(3, u'NO')
+                analog = u'NO'
+            album = unicode(item.text(1))
+            if analog == u'YES':
+                self.library[item.artist][u'albums'][album][u'analog'] = True
             else:
-                setColor(artist,Qt.green,states[u'analog'])
+                self.library[item.artist][u'albums'][album][u'analog'] = False
+            self.computeStats()
+            self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
+            self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
+            self.ui.artistsRed.setText(self.statistics[u'artists'][2])
+            self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
+            self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
+            self.ui.albumsRed.setText(self.statistics[u'albums'][2])
+            if digital == u'YES' and analog == u'YES':
+                for i in range(4):
+                    item.setBackground(i, Qt.green)
+            elif digital==u'YES':
+                for i in range(4):
+                    item.setBackground(i, Qt.yellow)
+            elif analog == u'YES':
+                for i in range(4):
+                    item.setBackground(i, Qt.yellow)
+            else:
+                for i in range(4):
+                    item.setBackground(i, Qt.red)
+            artists={}
+            for i in range(self.ui.albums.topLevelItemCount()):
+                item = self.ui.albums.topLevelItem(i)
+                artist = item.artist
+                state = unicode(item.background(0).color().name())
+                if artist in artists:
+                    if state in artists[artist]:
+                        artists[artist][state] += 1
+                    else:
+                        artists[artist][state] = 1
+                    if artists[artist][u'analog'] != u'NO' and item.text(3) == u'NO':
+                        artists[artist][u'analog'] = u'NO'
+                else:
+                    artists[artist] = {state: 1}
+                    if item.text(3) == u'YES':
+                        artists[artist][u'analog'] = u'YES'
+                    else:
+                        artists[artist][u'analog'] = u'NO'
+            def setColor(artist,qcolor,analogState):
+                for item in self.ui.artists.selectedItems():
+                    if item.text(0) == artist:
+                        for i in range(3):
+                            item.setBackground(i, qcolor)
+                        item.setText(2, analogState)
+                        break
+            for artist,states in artists.items():
+                if u'#ff0000' in states:
+                    setColor(artist,Qt.red,states[u'analog'])
+                elif u'#ffff00' in states:
+                    setColor(artist,Qt.yellow,states[u'analog'])
+                else:
+                    setColor(artist,Qt.green,states[u'analog'])
     def refresh(self):
         def __refresh():
             behaviour = self.__settings.value(u'behaviour', 0).toInt()[0]
