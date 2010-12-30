@@ -63,13 +63,17 @@ class Main(QtGui.QWidget):
         add.clicked.connect(self.addByButton)
         remove = QtGui.QPushButton(u'Remove')
         remove.clicked.connect(self.removeByButton)
-        previous = QtGui.QPushButton(u'Previous')
+        pIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaSkipBackward)
+        previous = QtGui.QPushButton(pIcon, u'')
         previous.clicked.connect(self.previous)
-        self.playButton = QtGui.QPushButton(u'Play')
+        playIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
+        self.playButton = QtGui.QPushButton(playIcon, u'')
         self.playButton.clicked.connect(self.playByButton)
-        stop = QtGui.QPushButton(u'Stop')
+        stopIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaStop)
+        stop = QtGui.QPushButton(stopIcon, u'')
         stop.clicked.connect(self.stop)
-        next_ = QtGui.QPushButton(u'Next')
+        nextIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaSkipForward)
+        next_ = QtGui.QPushButton(nextIcon, u'')
         next_.clicked.connect(self.next_)
         volume = Phonon.VolumeSlider()
         buttonsLayout = QtGui.QHBoxLayout()
@@ -125,7 +129,8 @@ class Main(QtGui.QWidget):
         self.mediaobject.play()
         self.__current = item
         self.__current.setData(672, True)
-        self.playButton.setText(u'Pause') # it is to change
+        icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
+        self.playButton.setIcon(icon)
     def stop(self):
         self.__resetCurrent()
         self.__current = None
@@ -149,14 +154,16 @@ class Main(QtGui.QWidget):
             self.__current.setData(671, self.__timeConvert(time))
     def playByButton(self):
         button = self.sender()
-        if button.text() == u'Play': # it is to change
+        if not button.playing:
             if not self.__current:
                 self.play(self.playlist.item(0))
             else:
-                button.setText(u'Pause')
+                icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
+                button.setIcon(icon)
                 self.mediaobject.play()
         else:
-            button.setText(u'Play')
+            icon = self.style().standardIcon(QtGui.QStyle.SP_MediaStart)
+            button.setIcon(icon)
             self.mediaobject.pause()
     def addByButton(self):
         def addItems(items):

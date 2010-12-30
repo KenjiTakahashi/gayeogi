@@ -39,9 +39,18 @@ else: # Most POSIX systems, there may be more elifs in future.
 
 class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __lt__(self, qtreewidgetitem):
-        text1 = self.text(0).split(u'/')[0].toInt()[0]
-        text2 = qtreewidgetitem.text(0).split(u'/')[0].toInt()[0]
-        return text1 < text2
+        column = self.treeWidget().sortColumn()
+        if not column:
+            track1 = self.text(0).split(u'/')[0].toInt()[0]
+            track2 = qtreewidgetitem.text(0).split(u'/')[0].toInt()[0]
+            album1 = self.album
+            album2 = qtreewidgetitem.album
+            if album1 == album2:
+                return track1 < track2
+            else:
+                return False
+        else:
+            return self.text(column) < qtreewidgetitem.text(column)
 
 class DB(object):
     def __init__(self):
