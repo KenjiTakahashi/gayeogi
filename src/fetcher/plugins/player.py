@@ -69,6 +69,7 @@ class Main(QtGui.QWidget):
         playIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
         self.playButton = QtGui.QPushButton(playIcon, u'')
         self.playButton.clicked.connect(self.playByButton)
+        self.playButton.playing = False
         stopIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaStop)
         stop = QtGui.QPushButton(stopIcon, u'')
         stop.clicked.connect(self.stop)
@@ -131,6 +132,7 @@ class Main(QtGui.QWidget):
         self.__current.setData(672, True)
         icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
         self.playButton.setIcon(icon)
+        self.playButton.playing = True
     def stop(self):
         self.__resetCurrent()
         self.__current = None
@@ -160,10 +162,12 @@ class Main(QtGui.QWidget):
             else:
                 icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
                 button.setIcon(icon)
+                button.playing = True
                 self.mediaobject.play()
         else:
-            icon = self.style().standardIcon(QtGui.QStyle.SP_MediaStart)
+            icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
             button.setIcon(icon)
+            button.playing = False
             self.mediaobject.pause()
     def addByButton(self):
         def addItems(items):
