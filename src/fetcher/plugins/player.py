@@ -59,23 +59,37 @@ class Main(QtGui.QWidget):
         self.parent = parent
         self.library = library
     def load(self):
-        add = QtGui.QPushButton(u'Add')
+        add = QtGui.QPushButton(u'A')
+        add.setFixedWidth(30)
         add.clicked.connect(self.addByButton)
-        remove = QtGui.QPushButton(u'Remove')
+        addShortcut = QtGui.QShortcut(QtGui.QKeySequence(u'Ctrl + a'))
+        addShortcut.activated.connect(self.addByButton)
+        remove = QtGui.QPushButton(u'R')
+        remove.setFixedWidth(30)
         remove.clicked.connect(self.removeByButton)
+        removeShortcut = QtGui.QShortcut(QtGui.QKeySequence(u'Ctrl + r'))
+        removeShortcut.activated.connect(self.removeByButton)
         pIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaSkipBackward)
         previous = QtGui.QPushButton(pIcon, u'')
         previous.clicked.connect(self.previous)
+        previousShortcut = QtGui.QShortcut(QtGui.QKeySequence(u'Ctrl + N'))
+        previousShortcut.activated.connect(self.previous)
         playIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
         self.playButton = QtGui.QPushButton(playIcon, u'')
         self.playButton.clicked.connect(self.playByButton)
         self.playButton.playing = False
+        playShortcut = QtGui.QShortcut(QtGui.QKeySequence(u'Ctrl + p'))
+        playShortcut.activated.connect(self.play)
         stopIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaStop)
         stop = QtGui.QPushButton(stopIcon, u'')
         stop.clicked.connect(self.stop)
+        stopShortcut = QtGui.QShortcut(QtGui.QKeySequence(u'Ctrl + s'))
+        stopShortcut.activated.connect(self.stop)
         nextIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaSkipForward)
         next_ = QtGui.QPushButton(nextIcon, u'')
         next_.clicked.connect(self.next_)
+        next_Shortcut = QtGui.QShortcut(QtGui.QKeySequence(u'Ctrl + n'))
+        next_Shortcut.activated.connect(self.next_)
         volume = Phonon.VolumeSlider()
         buttonsLayout = QtGui.QHBoxLayout()
         buttonsLayout.setContentsMargins(0, 0, 0, 0)
@@ -94,6 +108,9 @@ class Main(QtGui.QWidget):
         self.playlist.setItemDelegate(delegate)
         self.playlist.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
         self.playlist.itemActivated.connect(self.play)
+        playlistShortcut = QtGui.QShortcut(
+                QtGui.QKeySequence(Qt.Key_Delete), self.playlist)
+        playlistShortcut.activated.connect(self.removeByButton)
         layout = QtGui.QVBoxLayout()
         layout.addWidget(buttons)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -173,7 +190,7 @@ class Main(QtGui.QWidget):
         def addItems(items):
             if items:
                 for item in items:
-                    self.addItem(item, -1)
+                    self.addItem(item)
                 return True
             return False
         if not addItems(self.parent.tracks.selectedItems()):
@@ -182,7 +199,7 @@ class Main(QtGui.QWidget):
     def removeByButton(self):
         for item in self.playlist.selectedItems():
             self.playlist.takeItem(self.playlist.row(item))
-    def addItem(self, item, column):
+    def addItem(self, item, column = -1):
         if column != 3:
             if column != -1:
                 self.playlist.clear()
