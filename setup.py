@@ -20,20 +20,27 @@ from sys import platform
 if platform=='win32':
     import py2exe
 
-setup(name='Fetcher',
+setup(
+        name='Fetcher',
         version='0.4.1',
         description='',
         author='Karol "Kenji Takahashi" Wozniak',
         author_email='wozniakk@gmail.com',
         url='http://github.com/KenjiTakahashi/fetcher',
-        packages=['fetcher', 'fetcher/interfaces', 'fetcher/db'],
+        packages = [
+            'fetcher',
+            'fetcher/interfaces',
+            'fetcher/db',
+            'fetcher/plugins'
+            ],
         package_dir={
             'fetcher': 'src/fetcher',
             'fetcher/interfaces': 'src/fetcher/interfaces',
-            'fetcher/db': 'src/fetcher/db'
+            'fetcher/db': 'src/fetcher/db',
+            'fetcher/plugins': 'src/fetcher/plugins'
             },
         scripts=['fetcher'],
-        requires=['BeautifulSoup(>=3.0)', 'threadpool', 'PyQt4', 'mutagen'],
+        requires = ['BeautifulSoup(>=3.0)', 'PyQt4', 'mutagen'],
         windows=['fetcher'],
         options={'py2exe':{'includes':['sip']}}
         )

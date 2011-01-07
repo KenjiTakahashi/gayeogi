@@ -173,7 +173,7 @@ class Main(QtGui.QWidget):
         def addItems(items):
             if items:
                 for item in items:
-                    self.addItem(item, 0)
+                    self.addItem(item, -1)
                 return True
             return False
         if not addItems(self.parent.tracks.selectedItems()):
@@ -184,6 +184,8 @@ class Main(QtGui.QWidget):
             self.playlist.takeItem(self.playlist.row(item))
     def addItem(self, item, column):
         if column != 3:
+            if column != -1:
+                self.playlist.clear()
             try:
                 item.album
             except AttributeError:
