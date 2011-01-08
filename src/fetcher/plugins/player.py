@@ -17,7 +17,7 @@
 
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSize, Qt
+from PyQt4.QtCore import QSize, Qt, QModelIndex, pyqtSignal
 from copy import deepcopy
 
 class PlayListItemDelegate(QtGui.QStyledItemDelegate):
@@ -50,6 +50,19 @@ class PlayListItemDelegate(QtGui.QStyledItemDelegate):
         painter.restore()
     def sizeHint(self, option, index):
         return QSize(0, 18 + option.font.pointSize() * 2)
+
+class Playlist(QtGui.QListWidget):
+    dropped = pyqtSignal(QtGui.QTreeWidgetItem)
+    def dropEvent(self, event):
+        source = event.source()
+        model = QtGui.QStandardItemModel()
+        model.dropMimeData(event.mimeData(), Qt.CopyAction, 0, 0, QModelIndex())
+        if isinstance(source, QtGui.QTreeWidget):
+            for m in range(model.rowCount()):
+                self.dropped.emit(source.topLevelItem(m))
+        else:
+            event.setDropAction(Qt.MoveAction)
+            QtGui.QListWidget.dropEvent(self, event)
 
 class Main(QtGui.QWidget):
     loaded = False
@@ -110,11 +123,12 @@ class Main(QtGui.QWidget):
         progress = Phonon.SeekSlider()
         buttons.setLayout(buttonsLayout)
         delegate = PlayListItemDelegate()
-        self.playlist = QtGui.QListWidget()
+        self.playlist = Playlist()
         self.playlist.setItemDelegate(delegate)
         self.playlist.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
-        self.playlist.setDragDropMode(self.playlist.InternalMove)
+        self.playlist.setDragDropMode(self.playlist.DragDrop)
         self.playlist.itemActivated.connect(self.play)
+        self.playlist.dropped.connect(self.addItem)
         playlistShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.Key_Delete), self.playlist)
         playlistShortcut.activated.connect(self.removeByButton)

@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file '../../../ui/main.ui'
 #
-# Created: Wed Dec 15 07:32:49 2010
-#      by: PyQt4 UI code generator 4.8.1
+# Created: Sat Jan  8 23:16:53 2011
+#      by: PyQt4 UI code generator 4.8.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -24,6 +24,7 @@ class Ui_main(object):
         self.widget.setObjectName(_fromUtf8("widget"))
         self.horizontalLayout = QtGui.QHBoxLayout(self.widget)
         self.horizontalLayout.setMargin(0)
+        self.horizontalLayout.setMargin(0)
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
         self.splitter = QtGui.QSplitter(self.widget)
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
@@ -32,12 +33,14 @@ class Ui_main(object):
         self.widget_6.setObjectName(_fromUtf8("widget_6"))
         self.verticalLayout_3 = QtGui.QVBoxLayout(self.widget_6)
         self.verticalLayout_3.setMargin(0)
+        self.verticalLayout_3.setMargin(0)
         self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
         self.artistFilter = QtGui.QLineEdit(self.widget_6)
         self.artistFilter.setObjectName(_fromUtf8("artistFilter"))
         self.verticalLayout_3.addWidget(self.artistFilter)
         self.artists = QtGui.QTreeWidget(self.widget_6)
         self.artists.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.artists.setDragDropMode(QtGui.QAbstractItemView.DragOnly)
         self.artists.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.artists.setIndentation(0)
         self.artists.setItemsExpandable(False)
@@ -51,12 +54,14 @@ class Ui_main(object):
         self.widget_7.setObjectName(_fromUtf8("widget_7"))
         self.verticalLayout_4 = QtGui.QVBoxLayout(self.widget_7)
         self.verticalLayout_4.setMargin(0)
+        self.verticalLayout_4.setMargin(0)
         self.verticalLayout_4.setObjectName(_fromUtf8("verticalLayout_4"))
         self.albumFilter = QtGui.QLineEdit(self.widget_7)
         self.albumFilter.setObjectName(_fromUtf8("albumFilter"))
         self.verticalLayout_4.addWidget(self.albumFilter)
         self.albums = QtGui.QTreeWidget(self.widget_7)
         self.albums.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.albums.setDragDropMode(QtGui.QAbstractItemView.DragOnly)
         self.albums.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.albums.setIndentation(0)
         self.albums.setItemsExpandable(False)
@@ -71,12 +76,14 @@ class Ui_main(object):
         self.widget_8.setObjectName(_fromUtf8("widget_8"))
         self.verticalLayout_5 = QtGui.QVBoxLayout(self.widget_8)
         self.verticalLayout_5.setMargin(0)
+        self.verticalLayout_5.setMargin(0)
         self.verticalLayout_5.setObjectName(_fromUtf8("verticalLayout_5"))
         self.trackFilter = QtGui.QLineEdit(self.widget_8)
         self.trackFilter.setObjectName(_fromUtf8("trackFilter"))
         self.verticalLayout_5.addWidget(self.trackFilter)
         self.tracks = QtGui.QTreeWidget(self.widget_8)
         self.tracks.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.tracks.setDragDropMode(QtGui.QAbstractItemView.DragOnly)
         self.tracks.setAlternatingRowColors(True)
         self.tracks.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.tracks.setIndentation(0)
@@ -98,10 +105,12 @@ class Ui_main(object):
         self.widget_3.setObjectName(_fromUtf8("widget_3"))
         self.horizontalLayout_2 = QtGui.QHBoxLayout(self.widget_3)
         self.horizontalLayout_2.setMargin(0)
+        self.horizontalLayout_2.setMargin(0)
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
         self.widget_4 = QtGui.QWidget(self.widget_3)
         self.widget_4.setObjectName(_fromUtf8("widget_4"))
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.widget_4)
+        self.verticalLayout_2.setMargin(0)
         self.verticalLayout_2.setMargin(0)
         self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
         self.logs = QtGui.QTreeWidget(self.widget_4)
@@ -120,6 +129,7 @@ class Ui_main(object):
         self.widget_5.setObjectName(_fromUtf8("widget_5"))
         self.horizontalLayout_3 = QtGui.QHBoxLayout(self.widget_5)
         self.horizontalLayout_3.setMargin(0)
+        self.horizontalLayout_3.setMargin(0)
         self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))
         self.clearLogs = QtGui.QPushButton(self.widget_5)
         self.clearLogs.setObjectName(_fromUtf8("clearLogs"))
@@ -134,6 +144,7 @@ class Ui_main(object):
         self.widget_2 = QtGui.QWidget(self.widget_3)
         self.widget_2.setObjectName(_fromUtf8("widget_2"))
         self.formLayout_3 = QtGui.QFormLayout(self.widget_2)
+        self.formLayout_3.setMargin(0)
         self.formLayout_3.setMargin(0)
         self.formLayout_3.setObjectName(_fromUtf8("formLayout_3"))
         self.artistsStats = QtGui.QGroupBox(self.widget_2)
@@ -258,11 +269,11 @@ class Ui_main(object):
         QtCore.QMetaObject.connectSlotsByName(main)
 
     def retranslateUi(self, main):
-        self.artistFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
+        self.artistFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <column_name>: <phrase_to_search>", None, QtGui.QApplication.UnicodeUTF8))
         self.artists.setSortingEnabled(True)
-        self.albumFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
+        self.albumFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <column_name>: <phrase_to_search>", None, QtGui.QApplication.UnicodeUTF8))
         self.albums.setSortingEnabled(True)
-        self.trackFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
+        self.trackFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <column_name>: <phrase_to_search>", None, QtGui.QApplication.UnicodeUTF8))
         self.tracks.setSortingEnabled(True)
         self.logs.setSortingEnabled(True)
         self.clearLogs.setStatusTip(QtGui.QApplication.translate("main", "Clear logs table", None, QtGui.QApplication.UnicodeUTF8))
