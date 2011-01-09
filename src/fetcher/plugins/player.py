@@ -96,7 +96,7 @@ class Main(QtGui.QWidget):
         self.playButton.playing = False
         playShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_P), self.playButton)
-        playShortcut.activated.connect(self.play)
+        playShortcut.activated.connect(self.playButton.click)
         stopIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaStop)
         stop = QtGui.QPushButton(stopIcon, u'')
         stop.clicked.connect(self.stop)
@@ -164,13 +164,17 @@ class Main(QtGui.QWidget):
     QConfiguration = staticmethod(QConfiguration)
     def play(self, item):
         self.__resetCurrent()
-        self.mediaobject.setCurrentSource(Phonon.MediaSource(item.path))
-        self.mediaobject.play()
-        self.__current = item
-        self.__current.setData(672, True)
-        icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
-        self.playButton.setIcon(icon)
-        self.playButton.playing = True
+        try:
+            self.mediaobject.setCurrentSource(Phonon.MediaSource(item.path))
+            self.mediaobject.play()
+            self.__current = item
+            self.__current.setData(672, True)
+            self.playlist.scrollToItem(self.__current)
+            icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
+            self.playButton.setIcon(icon)
+            self.playButton.playing = True
+        except AttributeError:
+            pass
     def stop(self):
         self.__resetCurrent()
         self.__current = None

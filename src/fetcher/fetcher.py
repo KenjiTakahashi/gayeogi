@@ -228,10 +228,12 @@ class Main(QtGui.QMainWindow):
         dialog=Settings()
         dialog.exec_()
         directory = unicode(self.__settings.value(u'directory', u'').toString())
+        self.ignores = self.__settings.values(u'ignores', []).toPyObject()
         if self.fs.directory != directory:
             self.fs.setDirectory(directory)
-            self.ignores = self.__settings.value(u'ignores', []).toPyObject()
             self.fs.setArgs([], [], self.ignores, False)
+        else:
+            self.fs.setIgnores(self.ignores)
         self.loadPlugins()
     def logs(self, db, kind, filename, message):
         if self.__settings.value(u'logs/' + kind).toInt()[0]:

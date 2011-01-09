@@ -203,6 +203,9 @@ class Filesystem(QThread):
     def setDirectory(self, directory):
         u"""Set library directory"""
         self.directory = directory
+    def setIgnores(self, ignores):
+        u"""Set ignores list"""
+        self.ignores = [v for (v, _) in ignores]
     def setArgs(self, library, paths, ignores, update = False):
         u"""Set library object, paths list, ignores list and
         update state (whether to update or create new library)"""
