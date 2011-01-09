@@ -133,7 +133,9 @@ class Main(QtGui.QMainWindow):
             self.fs.setArgs(self.library, self.paths, self.ignores, True)
             self.update()
         self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
+        self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
         self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album', u'Digital', u'Analog']))
+        self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
         self.ui.tracks.setHeaderLabels(QStringList([u'#', u'Title']))
         self.ui.logs.setHeaderLabels(QStringList([u'Database', u'Type', u'File/Entry', u'Message']))
         self.ui.albums.itemActivated.connect(self.setAnalog)
@@ -364,7 +366,6 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.sortItems(0, 0)
         self.ui.artists.resizeColumnToContents(0)
         self.ui.artists.resizeColumnToContents(2)
-        self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
         self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
         self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
         self.ui.artistsRed.setText(self.statistics[u'artists'][2])
@@ -408,7 +409,6 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.sortItems(0, 0)
         for i in range(4):
             self.ui.albums.resizeColumnToContents(i)
-        self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
     def fillTracks(self):
         self.ui.tracks.clear()
         albums = self.ui.albums.selectedItems()
