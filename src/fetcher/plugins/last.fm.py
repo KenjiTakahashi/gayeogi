@@ -20,6 +20,8 @@ import pylast
 class Main(object):
     name = u'Last.FM'
     loaded = False
+    __key = u'a3f47739f0f87e24f499a7683cc0d1fd'
+    __sec = u'1e4a65fba65e59cfb76adcc5af2fc3e3'
     def __init__(self, parent, library, _, __):
         pass
     def load(self):
