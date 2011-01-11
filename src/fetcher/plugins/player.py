@@ -65,12 +65,15 @@ class Playlist(QtGui.QListWidget):
             QtGui.QListWidget.dropEvent(self, event)
 
 class Main(QtGui.QWidget):
+    name = u'Player'
     loaded = False
     __current = None
-    def __init__(self, parent, library):
+    def __init__(self, parent, library, addWidget, removeWidget):
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
         self.library = library
+        self.addWidget = addWidget
+        self.removeWidget = removeWidget
     def load(self):
         add = QtGui.QPushButton(u'A')
         add.setFixedWidth(30)
@@ -141,7 +144,7 @@ class Main(QtGui.QWidget):
         self.parent.artists.itemActivated.connect(self.addItem)
         self.parent.albums.itemActivated.connect(self.addItem)
         self.parent.tracks.itemActivated.connect(self.addItem)
-        self.parent.horizontalLayout_2.addWidget(self)
+        self.addWidget(u'horizontalLayout_2', self, 2)
         self.mediaobject = Phonon.MediaObject()
         self.mediaobject.setTickInterval(500)
         self.mediaobject.tick.connect(self.tick)
@@ -153,11 +156,7 @@ class Main(QtGui.QWidget):
         volume.setAudioOutput(self.audiooutput)
         Main.loaded = True
     def unload(self):
-        children = self.parent.horizontalLayout_2.parentWidget().children()
-        for i, child in enumerate(children):
-            if isinstance(child, Main):
-                item = self.parent.horizontalLayout_2.takeAt(i - 1)
-                item.widget().deleteLater()
+        self.removeWidget(u'horizontalLayout_2', self, 2)
         Main.loaded = False
     def QConfiguration():
         pass
@@ -227,6 +226,7 @@ class Main(QtGui.QWidget):
     def addItem(self, item, column = -1):
         if column != 3:
             if column != -1:
+                self.__current = None
                 self.playlist.clear()
             try:
                 item.album

@@ -155,7 +155,8 @@ class Main(QtGui.QMainWindow):
     def loadPlugins(self):
         reload(plugins)
         for plugin in plugins.__all__:
-            class_ = getattr(getattr(plugins, plugin), u'Main')(self.ui, self.library)
+            class_ = getattr(getattr(plugins, plugin), u'Main')(self.ui,
+                    self.library, self.appendPlugin, self.removePlugin)
             option = self.__settings.value(u'plugins/' + plugin, 0).toInt()[0]
             if option and not class_.loaded:
                 class_.load()
@@ -230,7 +231,7 @@ class Main(QtGui.QMainWindow):
         dialog=Settings()
         dialog.exec_()
         directory = unicode(self.__settings.value(u'directory', u'').toString())
-        self.ignores = self.__settings.values(u'ignores', []).toPyObject()
+        self.ignores = self.__settings.value(u'ignores', []).toPyObject()
         if self.fs.directory != directory:
             self.fs.setDirectory(directory)
             self.fs.setArgs([], [], self.ignores, False)
@@ -463,6 +464,38 @@ class Main(QtGui.QMainWindow):
                 u'albums': (unicode(albums[0]), unicode(albums[1]), unicode(albums[2])),
                 u'detailed': detailed
                 }
+    def appendPlugin(self, parent, child, position):
+        parent = getattr(self.ui, parent)
+        if isinstance(parent, QtGui.QLayout):
+            widget = parent.itemAt(position)
+            if not widget:
+                parent.insertWidget(position, child)
+            else:
+                if isinstance(widget, QtGui.QTabWidget):
+                    widget.addTab(child, child.name)
+                else:
+                    widget = parent.takeAt(position).widget()
+                    tab = QtGui.QTabWidget()
+                    tab.setTabPosition(tab.South)
+                    tab.addTab(widget, widget.name)
+                    tab.addTab(child, child.name)
+                    parent.insertWidget(position, tab)
+    def removePlugin(self, parent, child, position):
+        parent = getattr(self.ui, parent)
+        if isinstance(parent, QtGui.QLayout):
+            widget = parent.itemAt(position).widget()
+            try:
+                if widget.name == child.name:
+                    parent.takeAt(position).widget().deleteLater()
+            except AttributeError:
+                for i in range(widget.count()):
+                    if widget.widget(i).name == child.name:
+                        widget.removeTab(i)
+                if widget.count() == 1:
+                    tmp = widget.widget(0)
+                    parent.takeAt(position).widget().deleteLater()
+                    parent.insertWidget(position, tmp)
+                    parent.itemAt(position).widget().setVisible(True)
     def closeEvent(self, event):
         self.confirm(event)
 
