@@ -495,7 +495,7 @@ class Main(QtGui.QMainWindow):
                     tmp = widget.widget(0)
                     parent.takeAt(position).widget().deleteLater()
                     parent.insertWidget(position, tmp)
-                    parent.itemAt(position).widget().setVisible(True)
+                    parent.itemAt(position).widget().show()
     def closeEvent(self, event):
         self.confirm(event)
 

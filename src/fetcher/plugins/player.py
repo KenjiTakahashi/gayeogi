@@ -196,20 +196,20 @@ class Main(QtGui.QWidget):
         if self.__current:
             self.__current.setData(671, self.__timeConvert(time))
     def playByButton(self):
-        button = self.sender()
-        if not button.playing:
-            if not self.__current:
-                self.play(self.playlist.item(0))
-            else:
+        if not self.__current:
+            self.play(self.playlist.item(0))
+        else:
+            button = self.sender()
+            if not button.playing:
                 icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
                 button.setIcon(icon)
                 button.playing = True
                 self.mediaobject.play()
-        else:
-            icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
-            button.setIcon(icon)
-            button.playing = False
-            self.mediaobject.pause()
+            else:
+                icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
+                button.setIcon(icon)
+                button.playing = False
+                self.mediaobject.pause()
     def addByButton(self):
         def addItems(items):
             if items:
@@ -258,6 +258,8 @@ class Main(QtGui.QWidget):
                         [u'tracks'][unicode(item.text(1))][u'path']
                 self.playlist.addItem(self.__createItem(
                     (item.text(0), item.text(1), item.album, item.artist, path)))
+            if column != -1:
+                self.playByButton()
     def __createItem(self, source):
         item = QtGui.QListWidgetItem()
         item.setData(666, source[0])
