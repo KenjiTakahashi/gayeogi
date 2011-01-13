@@ -18,6 +18,7 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString
 import plugins
+from copy import deepcopy, copy
 
 class QHoveringRadioButton(QtGui.QRadioButton):
     hovered = pyqtSignal(unicode)
@@ -149,13 +150,32 @@ class Settings(QtGui.QDialog):
         self.logsList.addItem(item)
         self.tabs.addTab(self.logsList, self.tr(u'Lo&gs'))
         self.pluginsList = QtGui.QListWidget()
-        for plugin in plugins.__all__:
-            item = QtGui.QListWidgetItem(plugin)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(self.__settings.value(u'plugins/' + plugin, 0).toInt()[0])
-            self.pluginsList.addItem(item)
+        self.pluginsList.currentTextChanged.connect(self.pluginsDisplayOptions)
+        #self.pluginsList.itemChanged.connect(self.checkDependencies)
         self.pluginsLayout = QtGui.QVBoxLayout()
         self.pluginsLayout.addWidget(self.pluginsList)
+        self.__plugins = {}
+        self.__depends = {}
+        def fulfilled(name, dependencies):
+            for d in dependencies:
+                try:
+                    self.__depends[d].append(name)
+                except KeyError:
+                    self.__depends[d] = [name]
+                if d not in plugins.__all__:
+                    return False
+            return True
+        for plugin in plugins.__all__:
+            ref = getattr(plugins, plugin).Main
+            if fulfilled(ref.name, ref.depends):
+                item = QtGui.QListWidgetItem(ref.name)
+                ref2 = ref.QConfiguration()
+                ref2.hide()
+                self.pluginsLayout.addWidget(ref2)
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+                item.setCheckState(ref2.enabled)
+                self.pluginsList.addItem(item)
+                self.__plugins[ref.name] = ref2
         pluginsWidget = QtGui.QWidget()
         pluginsWidget.setLayout(self.pluginsLayout)
         self.tabs.addTab(pluginsWidget, self.tr(u'&Plugins'))
@@ -213,7 +233,7 @@ class Settings(QtGui.QDialog):
             self.__settings.setValue(u'order', order)
             for i in range(self.pluginsList.count()):
                 item = self.pluginsList.item(i)
-                self.__settings.setValue(u'plugins/' + item.text(), item.checkState())
+                self.__plugins[unicode(item.text())].setSetting(u'enabled', item.checkState())
             self.close()
     def dbUp(self):
         current = self.dbList.currentRow() - 1
@@ -230,6 +250,16 @@ class Settings(QtGui.QDialog):
             self.dbOptions.setVisible(True)
         else:
             self.dbOptions.setVisible(False)
+    def pluginsDisplayOptions(self, text):
+        for k, v in self.__plugins.iteritems():
+            if unicode(text) == k:
+                v.show()
+            else:
+                v.hide()
+    def checkDependencies(self, item):
+        for d in self.__depends[unicode(item.text())]:
+            items = self.pluginsList.findItems(d, self.pluginsList.MatchFixedString)
+            print items
     def globalMessage(self, i):
         if i == 0:
             self.info.setText(u'Here you can choose which databases should be searched, what releases to search for and how the search should behave.')

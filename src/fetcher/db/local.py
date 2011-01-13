@@ -170,7 +170,7 @@ class Filesystem(QThread):
         toTrackDelete = set()
         toAlbumDelete = set()
         toArtistDelete = set()
-        toAppend = set()
+        toAppend = {}
         for artist, albums in library.iteritems():
             for album, tracks in albums[u'albums'].iteritems():
                 for track, props in tracks[u'tracks'].iteritems():
@@ -180,14 +180,15 @@ class Filesystem(QThread):
                             tags = self.tagsread(props[u'path'])
                             if tags:
                                 toTrackDelete.add(track)
-                                toAppend.add(tags)
+                                toAppend[track] = tags
                     else:
                         toTrackDelete.add(track)
                         del paths[paths.index(props[u'path'])]
+                toAppend_ = toAppend.values()
                 for i in range(len(toTrackDelete)):
                     del tracks[u'tracks'][toTrackDelete.pop()]
-                for i in range(len(toAppend)):
-                    self.append(toAppend.pop(), library)
+                for i in range(len(toAppend_)):
+                    self.append(toAppend_.pop(), library)
                 if not tracks[u'tracks'] and not tracks[u'remote'] and not tracks[u'analog']:
                     toAlbumDelete.add(album)
             for i in range(len(toAlbumDelete)):

@@ -157,7 +157,8 @@ class Main(QtGui.QMainWindow):
         for plugin in plugins.__all__:
             class_ = getattr(getattr(plugins, plugin), u'Main')(self.ui,
                     self.library, self.appendPlugin, self.removePlugin)
-            option = self.__settings.value(u'plugins/' + plugin, 0).toInt()[0]
+            __settings_ = QSettings(u'fetcher', class_.name)
+            option = __settings_.value(u'enabled', 0).toInt()[0]
             if option and not class_.loaded:
                 class_.load()
             elif not option and class_.loaded:

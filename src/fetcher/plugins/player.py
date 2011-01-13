@@ -17,7 +17,7 @@
 
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSize, Qt, QModelIndex, pyqtSignal
+from PyQt4.QtCore import QSize, Qt, QModelIndex, pyqtSignal, QSettings
 from copy import deepcopy
 
 class PlayListItemDelegate(QtGui.QStyledItemDelegate):
@@ -67,6 +67,7 @@ class Playlist(QtGui.QListWidget):
 class Main(QtGui.QWidget):
     name = u'Player'
     loaded = False
+    depends = []
     __current = None
     def __init__(self, parent, library, addWidget, removeWidget):
         QtGui.QWidget.__init__(self, None)
@@ -159,7 +160,11 @@ class Main(QtGui.QWidget):
         self.removeWidget(u'horizontalLayout_2', self, 2)
         Main.loaded = False
     def QConfiguration():
-        pass
+        __settings = QSettings(u'fetcher', u'Player')
+        widget = QtGui.QWidget()
+        widget.enabled = __settings.value(u'enabled', 0).toInt()[0]
+        widget.setSetting = lambda x, y : __settings.setValue(x, y)
+        return widget
     QConfiguration = staticmethod(QConfiguration)
     def play(self, item):
         self.__resetCurrent()

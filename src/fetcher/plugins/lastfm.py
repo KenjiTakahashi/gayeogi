@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # -*- coding: utf-8 -*-
 
+from PyQt4 import QtGui
+from PyQt4.QtCore import QSettings
 import pylast
 
 class Main(object):
@@ -26,9 +28,15 @@ class Main(object):
     def __init__(self, parent, library, _, __):
         pass
     def load(self):
-        pass
+        Main.loaded = True
     def unload(self):
-        pass
+        Main.loaded = False
     def QConfiguration():
-        pass
+        __settings = QSettings(u'fetcher', u'Lastfm')
+        def enabled():
+            return __settings.value(u'enabled', 0).toInt()[0]
+        widget = QtGui.QLabel(u'TEST')
+        widget.enabled = __settings.value(u'enabled', 0).toInt()[0]
+        widget.setSetting = lambda x, y : __settings.setValue(x, y)
+        return widget
     QConfiguration = staticmethod(QConfiguration)
