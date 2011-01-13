@@ -16,7 +16,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings
+from PyQt4.QtCore import QSettings, Qt
 import pylast
 
 class Main(object):
@@ -25,6 +25,7 @@ class Main(object):
     depends = [u'player']
     __key = u'a3f47739f0f87e24f499a7683cc0d1fd'
     __sec = u'1e4a65fba65e59cfb76adcc5af2fc3e3'
+    #__settings = QSettings(u'fetcher', u'Lastfm')
     def __init__(self, parent, library, _, __):
         pass
     def load(self):
@@ -33,9 +34,33 @@ class Main(object):
         Main.loaded = False
     def QConfiguration():
         __settings = QSettings(u'fetcher', u'Lastfm')
-        def enabled():
-            return __settings.value(u'enabled', 0).toInt()[0]
-        widget = QtGui.QLabel(u'TEST')
+        username = QtGui.QLineEdit(
+                __settings.value(u'username', u'').toString())
+        password = QtGui.QLineEdit(
+                __settings.value(u'password', u'').toString())
+        formLayout = QtGui.QFormLayout()
+        formLayout.addRow(u'Username:', username)
+        formLayout.addRow(u'Password:', password)
+        def store():
+            __settings.setValue(u'username', unicode(username.text()))
+            __settings.setValue(u'password',
+                    pylast.md5(unicode(password.text())))
+        apply_ = QtGui.QPushButton(u'Apply')
+        apply_.clicked.connect(store)
+        msg = QtGui.QLabel(u'Not tested yet')
+        msg.setAutoFillBackground(True)
+        msg.setFrameShape(QtGui.QFrame.Box)
+        palette = msg.palette()
+        palette.setColor(msg.backgroundRole(), Qt.yellow)
+        msg.setPalette(palette)
+        testLayout = QtGui.QHBoxLayout()
+        testLayout.addWidget(apply_)
+        testLayout.addWidget(msg)
+        layout = QtGui.QVBoxLayout()
+        layout.addLayout(formLayout)
+        layout.addLayout(testLayout)
+        widget = QtGui.QWidget()
+        widget.setLayout(layout)
         widget.enabled = __settings.value(u'enabled', 0).toInt()[0]
         widget.setSetting = lambda x, y : __settings.setValue(x, y)
         return widget
