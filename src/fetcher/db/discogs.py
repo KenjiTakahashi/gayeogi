@@ -163,7 +163,6 @@ class Discogs(QThread):
                     else:
                         result = {u'choice': u'no_band', u'artist': artist}
         return result
-
     def done(self,_,result):
         if result[u'choice'] == u'no_band':
             self.errors.emit(u'discogs.com',
@@ -177,8 +176,13 @@ class Discogs(QThread):
             added = False
             toDelete = []
             for k, v in elem[u'albums'].iteritems():
-                if k not in result[u'albums'] and not v[u'digital'] and not v[u'analog']:
-                    toDelete.append(k)
+                if k not in result[u'albums']:
+                    if not v[u'digital'] and not v[u'analog']:
+                        toDelete.append(k)
+                    else:
+                        del elem[u'url'][u'discogs']
+                        if not elem[u'url']:
+                            v[u'remote'] = False
             for todel in toDelete:
                 del elem[u'albums'][todel]
             for a, y in map(None, result[u'albums'], result[u'years']):

@@ -79,10 +79,21 @@ something has been added/removed or not).
 -Confirmation dialog upon exiting if there are some
 unsaved changes.
 
-0.5:
+==0.5:
+
+===MAIN:
+
 -Merged threadpool into source.
 -Filters
 -Fixed close confirmation dialog.
 -Changed labels color to black for artists and albums
 -Multiple artists selection.
 -Internal structure change (should by much faster now).
+
+===PLAYER:
+
+-First release
+
+===LASTFM:
+
+-First release

@@ -166,8 +166,13 @@ class MetalArchives(QThread):
             added = False
             toDelete = []
             for k, v in elem[u'albums'].iteritems():
-                if k not in result[u'albums'] and not v[u'digital'] and not v[u'analog']:
-                    toDelete.append(k)
+                if k not in result[u'albums']:
+                    if not v[u'digital'] and not v[u'analog']:
+                        toDelete.append(k)
+                    else:
+                        del elem[u'url'][u'metalArchives']
+                        if not elem[u'url']:
+                            v[u'remote'] = False
             for todel in toDelete:
                 del elem[u'albums'][todel]
             for a, y in map(None, result[u'albums'], result[u'years']):

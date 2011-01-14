@@ -185,6 +185,7 @@ class Filesystem(QThread):
                         toTrackDelete.add(track)
                         del paths[paths.index(props[u'path'])]
                 toAppend_ = toAppend.values()
+                toAppend = {}
                 for i in range(len(toTrackDelete)):
                     del tracks[u'tracks'][toTrackDelete.pop()]
                 for i in range(len(toAppend_)):
