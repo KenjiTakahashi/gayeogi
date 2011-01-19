@@ -25,34 +25,62 @@ class Main(object):
     depends = [u'player']
     __key = u'a3f47739f0f87e24f499a7683cc0d1fd'
     __sec = u'1e4a65fba65e59cfb76adcc5af2fc3e3'
-    #__settings = QSettings(u'fetcher', u'Lastfm')
+    __net = None
+    __settings = QSettings(u'fetcher', u'Lastfm')
     def __init__(self, parent, library, _, __):
-        pass
+        username = unicode(Main.__settings.value(u'username', u'').toString())
+        password = unicode(
+                Main.__settings.value(u'password_hash', u'').toString())
+        if username != u'' and password != u'':
+            try:
+                Main.__net = pylast.LastFMNetwork(api_key = self.__key,
+                        api_secret = self.__sec, username = username,
+                        password_hash = password)
+            except pylast.WSError:
+                pass
     def load(self):
         Main.loaded = True
     def unload(self):
         Main.loaded = False
     def QConfiguration():
-        __settings = QSettings(u'fetcher', u'Lastfm')
         username = QtGui.QLineEdit(
-                __settings.value(u'username', u'').toString())
-        password = QtGui.QLineEdit(
-                __settings.value(u'password', u'').toString())
+                Main.__settings.value(u'username', u'').toString())
+        password = QtGui.QLineEdit()
+        password.setEchoMode(password.Password)
+        password.setText(
+                Main.__settings.value(u'password', u'').toInt()[0] * u'*')
         formLayout = QtGui.QFormLayout()
         formLayout.addRow(u'Username:', username)
         formLayout.addRow(u'Password:', password)
-        def store():
-            __settings.setValue(u'username', unicode(username.text()))
-            __settings.setValue(u'password',
-                    pylast.md5(unicode(password.text())))
-        apply_ = QtGui.QPushButton(u'Apply')
-        apply_.clicked.connect(store)
         msg = QtGui.QLabel(u'Not tested yet')
         msg.setAutoFillBackground(True)
         msg.setFrameShape(QtGui.QFrame.Box)
         palette = msg.palette()
         palette.setColor(msg.backgroundRole(), Qt.yellow)
         msg.setPalette(palette)
+        def store():
+            username_ = unicode(username.text())
+            password_ = unicode(password.text())
+            pass_hash = pylast.md5(password_)
+            Main.__settings.setValue(u'username', username_) 
+            Main.__settings.setValue(u'password', len(password_))
+            Main.__settings.setValue(u'password_hash', pass_hash) 
+            def update(msg_, color):
+                msg.setText(msg_)
+                palette.setColor(msg.backgroundRole(), color)
+                msg.setPalette(palette)
+            if username_ != u'' and password_ != u'':
+                try:
+                    Main.__net = pylast.LastFMNetwork(api_key = Main.__key,
+                            api_secret = Main.__sec, username = username_,
+                            password_hash = pass_hash)
+                    update(u'Successful', Qt.green)
+                except pylast.WSError as msg_:
+                    update(unicode(msg_).split(u'.')[0], Qt.red)
+            else:
+                update(u'Username and/or password is empty', Qt.yellow)
+        apply_ = QtGui.QPushButton(u'Apply')
+        apply_.clicked.connect(store)
         testLayout = QtGui.QHBoxLayout()
         testLayout.addWidget(apply_)
         testLayout.addWidget(msg)
@@ -61,7 +89,7 @@ class Main(object):
         layout.addLayout(testLayout)
         widget = QtGui.QWidget()
         widget.setLayout(layout)
-        widget.enabled = __settings.value(u'enabled', 0).toInt()[0]
-        widget.setSetting = lambda x, y : __settings.setValue(x, y)
+        widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
+        widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
     QConfiguration = staticmethod(QConfiguration)
