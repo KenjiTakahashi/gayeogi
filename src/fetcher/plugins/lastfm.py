@@ -47,8 +47,8 @@ class Main(object):
                 Main.__settings.value(u'username', u'').toString())
         password = QtGui.QLineEdit()
         password.setEchoMode(password.Password)
-        password.setText(
-                Main.__settings.value(u'password', u'').toInt()[0] * u'*')
+        password__ = Main.__settings.value(u'password', u'').toInt()[0] *u'*'
+        password.setText(password__)
         formLayout = QtGui.QFormLayout()
         formLayout.addRow(u'Username:', username)
         formLayout.addRow(u'Password:', password)
@@ -60,11 +60,14 @@ class Main(object):
         msg.setPalette(palette)
         def store():
             username_ = unicode(username.text())
-            password_ = unicode(password.text())
-            pass_hash = pylast.md5(password_)
-            Main.__settings.setValue(u'username', username_) 
-            Main.__settings.setValue(u'password', len(password_))
-            Main.__settings.setValue(u'password_hash', pass_hash) 
+            if password.text() == password__:
+                pass_hash = unicode(
+                        Main.__settings.value(u'password_hash', u'').toString())
+                password_ = Main.__settings.value(u'password',
+                        0).toInt()[0] * u'*'
+            else:
+                password_ = unicode(password.text())
+                pass_hash = pylast.md5(password_)
             def update(msg_, color):
                 msg.setText(msg_)
                 palette.setColor(msg.backgroundRole(), color)
@@ -75,6 +78,9 @@ class Main(object):
                             api_secret = Main.__sec, username = username_,
                             password_hash = pass_hash)
                     update(u'Successful', Qt.green)
+                    Main.__settings.setValue(u'username', username_) 
+                    Main.__settings.setValue(u'password', len(password_))
+                    Main.__settings.setValue(u'password_hash', pass_hash) 
                 except pylast.WSError as msg_:
                     update(unicode(msg_).split(u'.')[0], Qt.red)
             else:

@@ -17,11 +17,27 @@
 
 from pkgutil import iter_modules
 
-__all__ = []
+__tmp__ = []
 for _, name, _ in iter_modules([u'plugins']):
     try:
         __import__(u'plugins.' + name)
     except:
         pass
     else:
-        __all__.append(name)
+        __tmp__.append(name)
+
+__all__ = []
+while __tmp__:
+    tmp = __tmp__.pop(0)
+    e = getattr(__import__(u'plugins'), tmp)
+    error = False
+    for d in e.Main.depends:
+        try:
+            i = __tmp__.index(d)
+        except ValueError:
+            error = True
+        else:
+            __all__.append(__tmp__[i])
+            del __tmp__[i]
+    if not error:
+        __all__.append(tmp)
