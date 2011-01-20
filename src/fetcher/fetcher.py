@@ -116,6 +116,7 @@ class Main(QtGui.QMainWindow):
         self.ui=Ui_main()
         widget=QtGui.QWidget()
         self.ui.setupUi(widget)
+        self.ui.plugins = {}
         self.setCentralWidget(widget)
         firstStart = not os.path.exists(os.path.join(dbPath, u'db.pkl'))
         if firstStart:
@@ -155,14 +156,17 @@ class Main(QtGui.QMainWindow):
     def loadPlugins(self):
         reload(plugins)
         for plugin in plugins.__all__:
-            class_ = getattr(getattr(plugins, plugin), u'Main')(self.ui,
-                    self.library, self.appendPlugin, self.removePlugin)
+            class_ = getattr(getattr(plugins, plugin), u'Main')
             __settings_ = QSettings(u'fetcher', class_.name)
             option = __settings_.value(u'enabled', 0).toInt()[0]
             if option and not class_.loaded:
-                class_.load()
+                class__ = class_(self.ui, self.library, self.appendPlugin,
+                        self.removePlugin)
+                class__.load()
+                self.ui.plugins[plugin] = class__
             elif not option and class_.loaded:
-                class_.unload()
+                self.ui.plugins[plugin].unload()
+                del self.ui.plugins[plugin]
     def filter_(self, text):
         columns = []
         arguments = []

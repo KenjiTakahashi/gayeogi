@@ -35,7 +35,8 @@ while __tmp__:
         try:
             i = __tmp__.index(d)
         except ValueError:
-            error = True
+            if d not in __all__:
+                error = True
         else:
             __all__.append(__tmp__[i])
             del __tmp__[i]
