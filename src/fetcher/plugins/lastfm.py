@@ -18,6 +18,7 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt
 import pylast
+from threading import Thread
 from time import time
 
 class Main(object):
@@ -38,12 +39,14 @@ class Main(object):
                 Main.__net = pylast.LastFMNetwork(api_key = self.__key,
                         api_secret = self.__sec, username = username,
                         password_hash = password)
+                self.parent = parent
                 parent.plugins[u'player'].trackChanged.connect(self.scrobble)
             except pylast.WSError:
                 pass
     def load(self):
         Main.loaded = True
     def unload(self):
+        self.parent.plugins[u'player'].trackChanged.disconnect()
         Main.loaded = False
     def QConfiguration():
         username = QtGui.QLineEdit(
@@ -103,10 +106,13 @@ class Main(object):
         return widget
     QConfiguration = staticmethod(QConfiguration)
     def scrobble(self, artist, title, album, track_number):
-        Main.__net.scrobble(
-                artist = unicode(artist),
-                title = unicode(title),
-                timestamp = unicode(int(time())),
-                album = unicode(album),
-                track_number = unicode(track_number)
-                )
+        def __scrobble():
+            Main.__net.scrobble(
+                    artist = unicode(artist),
+                    title = unicode(title),
+                    timestamp = unicode(int(time())),
+                    album = unicode(album),
+                    track_number = unicode(track_number)
+                    )
+            print "scrobbled"
+        Thread(target = __scrobble).start()
