@@ -18,6 +18,7 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt
 import pylast
+from socket import gaierror, error
 from threading import Thread
 from time import time
 
@@ -28,27 +29,36 @@ class Main(object):
     __key = u'a3f47739f0f87e24f499a7683cc0d1fd'
     __sec = u'1e4a65fba65e59cfb76adcc5af2fc3e3'
     __net = None
-    __opt = None
+    __opt = {u'Last.FM': u'LastFMNetwork', u'Libre.FM': u'LibreFMNetwork'}
     __settings = QSettings(u'fetcher', u'Last.FM')
     def __init__(self, parent, ___, _, __):
         username = unicode(Main.__settings.value(u'username', u'').toString())
         password = unicode(
                 Main.__settings.value(u'password_hash', u'').toString())
+        kind = unicode(Main.__settings.value(u'kind', u'Last.FM').toString())
         if username != u'' and password != u'':
-            try:
-                Main.__net = pylast.LastFMNetwork(api_key = self.__key,
-                        api_secret = self.__sec, username = username,
-                        password_hash = password)
-                self.parent = parent
-                parent.plugins[u'player'].trackChanged.connect(self.scrobble)
-            except pylast.WSError:
-                pass
+            def __connect():
+                try:
+                    Main.__net = getattr(pylast, Main.__opt[kind])(
+                            api_key = self.__key,
+                            api_secret = self.__sec,
+                            username = username,
+                            password_hash = password
+                            )
+                    self.parent = parent
+                    parent.plugins[u'player'].trackChanged.connect(self.scrobble)
+                except (pylast.WSError, gaierror, error):
+                    pass
+            Thread(target = __connect).start()
     def load(self):
         Main.loaded = True
     def unload(self):
         self.parent.plugins[u'player'].trackChanged.disconnect()
         Main.loaded = False
     def QConfiguration():
+        kind = QtGui.QComboBox()
+        kind.addItem(u'Last.FM')
+        kind.addItem(u'Libre.FM')
         username = QtGui.QLineEdit(
                 Main.__settings.value(u'username', u'').toString())
         password = QtGui.QLineEdit()
@@ -56,6 +66,7 @@ class Main(object):
         password__ = Main.__settings.value(u'password', u'').toInt()[0] *u'*'
         password.setText(password__)
         formLayout = QtGui.QFormLayout()
+        formLayout.addRow(u'Database:', kind)
         formLayout.addRow(u'Username:', username)
         formLayout.addRow(u'Password:', password)
         msg = QtGui.QLabel(u'Not tested yet')
@@ -65,6 +76,7 @@ class Main(object):
         palette.setColor(msg.backgroundRole(), Qt.yellow)
         msg.setPalette(palette)
         def store():
+            kind_ = unicode(kind.currentText())
             username_ = unicode(username.text())
             if password.text() == password__:
                 pass_hash = unicode(
@@ -79,16 +91,22 @@ class Main(object):
                 palette.setColor(msg.backgroundRole(), color)
                 msg.setPalette(palette)
             if username_ != u'' and password_ != u'':
-                try:
-                    Main.__net = pylast.LastFMNetwork(api_key = Main.__key,
-                            api_secret = Main.__sec, username = username_,
-                            password_hash = pass_hash)
-                    update(u'Successful', Qt.green)
-                    Main.__settings.setValue(u'username', username_) 
-                    Main.__settings.setValue(u'password', len(password_))
-                    Main.__settings.setValue(u'password_hash', pass_hash) 
-                except pylast.WSError as msg_:
-                    update(unicode(msg_).split(u'.')[0], Qt.red)
+                def __connect():
+                    try:
+                        Main.__net = getattr(pylast, Main.__opt[kind_])(
+                                api_key = Main.__key,
+                                api_secret = Main.__sec,
+                                username = username_,
+                                password_hash = pass_hash
+                                )
+                        update(u'Successful', Qt.green)
+                        Main.__settings.setValue(u'kind', kind_)
+                        Main.__settings.setValue(u'username', username_) 
+                        Main.__settings.setValue(u'password', len(password_))
+                        Main.__settings.setValue(u'password_hash', pass_hash) 
+                    except pylast.WSError as msg_:
+                        update(unicode(msg_).split(u'.')[0], Qt.red)
+                Thread(target = __connect).start()
             else:
                 update(u'Username and/or password is empty', Qt.yellow)
         apply_ = QtGui.QPushButton(u'Apply')
@@ -107,12 +125,14 @@ class Main(object):
     QConfiguration = staticmethod(QConfiguration)
     def scrobble(self, artist, title, album, track_number):
         def __scrobble():
-            Main.__net.scrobble(
-                    artist = unicode(artist),
-                    title = unicode(title),
-                    timestamp = unicode(int(time())),
-                    album = unicode(album),
-                    track_number = unicode(track_number)
-                    )
-            print "scrobbled"
+            try:
+                Main.__net.scrobble(
+                        artist = unicode(artist),
+                        title = unicode(title),
+                        timestamp = unicode(int(time())),
+                        album = unicode(album),
+                        track_number = unicode(track_number)
+                        )
+            except (gaierror, error):
+                pass # add to queue
         Thread(target = __scrobble).start()
