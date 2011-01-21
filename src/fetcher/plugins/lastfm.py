@@ -18,10 +18,9 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt
 import pylast
-from threading import Thread
-from time import time, sleep
+from time import time
 
-class Main(Thread):
+class Main(object):
     name = u'Last.FM'
     loaded = False
     depends = [u'player']
@@ -31,7 +30,6 @@ class Main(Thread):
     __opt = None
     __settings = QSettings(u'fetcher', u'Last.FM')
     def __init__(self, parent, ___, _, __):
-        Thread.__init__(self)
         username = unicode(Main.__settings.value(u'username', u'').toString())
         password = unicode(
                 Main.__settings.value(u'password_hash', u'').toString())
@@ -104,21 +102,11 @@ class Main(Thread):
         widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
     QConfiguration = staticmethod(QConfiguration)
-    def run(self):
-        timestamp_ = unicode(int(time()))
-        sleep(5)
-        Main.__net.scrobble(
-                artist = self.__opt[u'artist'],
-                title = self.__opt[u'title'],
-                timestamp = timestamp_,
-                album = self.__opt[u'album'],
-                track_number = self.__opt[u'track_number']
-                )
     def scrobble(self, artist, title, album, track_number):
-        self.__opt = {
-                u'artist': unicode(artist),
-                u'title': unicode(title),
-                u'album': unicode(album),
-                u'track_number': unicode(track_number)
-                }
-        self.start()
+        Main.__net.scrobble(
+                artist = unicode(artist),
+                title = unicode(title),
+                timestamp = unicode(int(time())),
+                album = unicode(album),
+                track_number = unicode(track_number)
+                )
