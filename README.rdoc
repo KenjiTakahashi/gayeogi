@@ -16,6 +16,10 @@ mutagen>=1.20
 
 phonon>=4.4
 
+====LAST.FM/LIBRE.FM
+
+pylast>=0.5.6
+
 Note: Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
 
 Note2: Versions specified here are "known to work", but it may be possible, that an older one will fit too.

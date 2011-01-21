@@ -69,6 +69,7 @@ class Main(QtGui.QWidget):
     loaded = False
     depends = []
     __current = None
+    trackChanged = pyqtSignal(unicode, unicode, unicode, int)
     def __init__(self, parent, library, addWidget, removeWidget):
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
@@ -177,6 +178,12 @@ class Main(QtGui.QWidget):
             icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
             self.playButton.setIcon(icon)
             self.playButton.playing = True
+            self.trackChanged.emit(
+                    self.__current.data(669).toString(),
+                    self.__current.data(667).toString(),
+                    self.__current.data(668).toString(),
+                    self.__current.data(666).toInt()[0]
+                    )
         except AttributeError:
             pass
     def stop(self):

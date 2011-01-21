@@ -18,16 +18,20 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt
 import pylast
+from threading import Thread
+from time import time, sleep
 
-class Main(object):
+class Main(Thread):
     name = u'Last.FM'
     loaded = False
     depends = [u'player']
     __key = u'a3f47739f0f87e24f499a7683cc0d1fd'
     __sec = u'1e4a65fba65e59cfb76adcc5af2fc3e3'
     __net = None
-    __settings = QSettings(u'fetcher', u'Lastfm')
-    def __init__(self, parent, library, _, __):
+    __opt = None
+    __settings = QSettings(u'fetcher', u'Last.FM')
+    def __init__(self, parent, ___, _, __):
+        Thread.__init__(self)
         username = unicode(Main.__settings.value(u'username', u'').toString())
         password = unicode(
                 Main.__settings.value(u'password_hash', u'').toString())
@@ -36,6 +40,7 @@ class Main(object):
                 Main.__net = pylast.LastFMNetwork(api_key = self.__key,
                         api_secret = self.__sec, username = username,
                         password_hash = password)
+                parent.plugins[u'player'].trackChanged.connect(self.scrobble)
             except pylast.WSError:
                 pass
     def load(self):
@@ -99,3 +104,21 @@ class Main(object):
         widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
     QConfiguration = staticmethod(QConfiguration)
+    def run(self):
+        timestamp_ = unicode(int(time()))
+        sleep(5)
+        Main.__net.scrobble(
+                artist = self.__opt[u'artist'],
+                title = self.__opt[u'title'],
+                timestamp = timestamp_,
+                album = self.__opt[u'album'],
+                track_number = self.__opt[u'track_number']
+                )
+    def scrobble(self, artist, title, album, track_number):
+        self.__opt = {
+                u'artist': unicode(artist),
+                u'title': unicode(title),
+                u'album': unicode(album),
+                u'track_number': unicode(track_number)
+                }
+        self.start()
