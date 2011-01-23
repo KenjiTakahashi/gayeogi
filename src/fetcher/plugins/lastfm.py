@@ -63,7 +63,7 @@ class Main(object):
                 Main.__settings.value(u'username', u'').toString())
         password = QtGui.QLineEdit()
         password.setEchoMode(password.Password)
-        password__ = Main.__settings.value(u'password', u'').toInt()[0] *u'*'
+        password__ = Main.__settings.value(u'password', u'').toInt()[0] * u'*'
         password.setText(password__)
         formLayout = QtGui.QFormLayout()
         formLayout.addRow(u'Database:', kind)
@@ -124,6 +124,7 @@ class Main(object):
         return widget
     QConfiguration = staticmethod(QConfiguration)
     def scrobble(self, artist, title, album, track_number):
+        print 1
         def __scrobble():
             try:
                 Main.__net.scrobble(
@@ -133,6 +134,8 @@ class Main(object):
                         album = unicode(album),
                         track_number = unicode(track_number)
                         )
+                print 3
             except (gaierror, error):
+                print 2
                 pass # add to queue
         Thread(target = __scrobble).start()

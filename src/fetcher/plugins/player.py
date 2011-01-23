@@ -17,7 +17,7 @@
 
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSize, Qt, QModelIndex, pyqtSignal, QSettings
+from PyQt4.QtCore import QSize, Qt, QModelIndex, pyqtSignal, QSettings, QString
 from copy import deepcopy
 
 class PlayListItemDelegate(QtGui.QStyledItemDelegate):
@@ -69,7 +69,7 @@ class Main(QtGui.QWidget):
     loaded = False
     depends = []
     __current = None
-    trackChanged = pyqtSignal(unicode, unicode, unicode, int)
+    trackChanged = pyqtSignal(QString, QString, QString, int)
     def __init__(self, parent, library, addWidget, removeWidget):
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
