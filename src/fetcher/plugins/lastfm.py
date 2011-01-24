@@ -31,12 +31,14 @@ class Main(object):
     __net = None
     __opt = {u'Last.FM': u'LastFMNetwork', u'Libre.FM': u'LibreFMNetwork'}
     __settings = QSettings(u'fetcher', u'Last.FM')
+    __sem = True
     def __init__(self, parent, ___, _, __):
         username = unicode(Main.__settings.value(u'username', u'').toString())
         password = unicode(
                 Main.__settings.value(u'password_hash', u'').toString())
         kind = unicode(Main.__settings.value(u'kind', u'Last.FM').toString())
         if username != u'' and password != u'':
+            self.parent = parent
             def __connect():
                 try:
                     Main.__net = getattr(pylast, Main.__opt[kind])(
@@ -45,11 +47,11 @@ class Main(object):
                             username = username,
                             password_hash = password
                             )
-                    self.parent = parent
-                    parent.plugins[u'player'].trackChanged.connect(self.scrobble)
                 except (pylast.WSError, gaierror, error):
-                    pass
+                    Main.__sem = False
             Thread(target = __connect).start()
+            if Main.__sem:
+                parent.plugins[u'player'].trackChanged.connect(self.scrobble)
     def load(self):
         Main.loaded = True
     def unload(self):
@@ -124,7 +126,6 @@ class Main(object):
         return widget
     QConfiguration = staticmethod(QConfiguration)
     def scrobble(self, artist, title, album, track_number):
-        print 1
         def __scrobble():
             try:
                 Main.__net.scrobble(
@@ -134,8 +135,6 @@ class Main(object):
                         album = unicode(album),
                         track_number = unicode(track_number)
                         )
-                print 3
             except (gaierror, error):
-                print 2
                 pass # add to queue
         Thread(target = __scrobble).start()
