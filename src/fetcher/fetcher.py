@@ -200,6 +200,9 @@ class Main(QtGui.QMainWindow):
             for i in range(tree.topLevelItemCount()):
                 tree.topLevelItem(i).setHidden(False)
     def confirm(self, event):
+        def unload():
+            for plugin in self.ui.plugins.values():
+                plugin.unload()
         if self.oldLib != self.library:
             def save():
                 self.save()
@@ -208,8 +211,12 @@ class Main(QtGui.QMainWindow):
             from interfaces.confirmation import ConfirmationDialog
             dialog = ConfirmationDialog()
             dialog.buttons.accepted.connect(save)
+            dialog.buttons.accepted.connect(unload)
             dialog.buttons.rejected.connect(reject)
+            dialog.buttons.helpRequested.connect(unload)
             dialog.exec_()
+        else:
+            unload()
     def saveLogs(self):
         dialog = QtGui.QFileDialog()
         filename = dialog.getSaveFileName()

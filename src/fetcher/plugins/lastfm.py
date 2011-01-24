@@ -20,7 +20,7 @@ from PyQt4.QtCore import QSettings, Qt
 import pylast
 from socket import gaierror, error
 from threading import Thread
-from time import time
+from time import time, sleep
 
 class Main(object):
     name = u'Last.FM'
@@ -40,21 +40,29 @@ class Main(object):
         if username != u'' and password != u'':
             self.parent = parent
             def __connect():
-                try:
-                    Main.__net = getattr(pylast, Main.__opt[kind])(
-                            api_key = self.__key,
-                            api_secret = self.__sec,
-                            username = username,
-                            password_hash = password
-                            )
-                except (pylast.WSError, gaierror, error):
-                    Main.__sem = False
+                def __connect_():
+                    try:
+                        print "trying trying"
+                        Main.__net = getattr(pylast, Main.__opt[kind])(
+                                api_key = self.__key,
+                                api_secret = self.__sec,
+                                username = username,
+                                password_hash = password
+                                )
+                        Main.__sem = False
+                    except (pylast.WSError, gaierror, error):
+                        sleep(5)
+                while Main.__sem:
+                    t = Thread(target = __connect_)
+                    t.start()
+                    t.join()
             Thread(target = __connect).start()
-            if Main.__sem:
-                parent.plugins[u'player'].trackChanged.connect(self.scrobble)
+            parent.plugins[u'player'].trackChanged.connect(self.scrobble)
     def load(self):
+        Main.__sem = True
         Main.loaded = True
     def unload(self):
+        Main.__sem = False
         self.parent.plugins[u'player'].trackChanged.disconnect()
         Main.loaded = False
     def QConfiguration():
