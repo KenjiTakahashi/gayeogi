@@ -42,7 +42,6 @@ class Main(object):
             def __connect():
                 def __connect_():
                     try:
-                        print "trying trying"
                         Main.__net = getattr(pylast, Main.__opt[kind])(
                                 api_key = self.__key,
                                 api_secret = self.__sec,
