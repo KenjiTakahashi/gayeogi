@@ -126,15 +126,28 @@ class Main(object):
         return widget
     QConfiguration = staticmethod(QConfiguration)
     def scrobble(self, artist, title, album, track_number):
-        def __scrobble():
+        def __scrobble(artist, title, album, track_number, timestamp = None):
             try:
                 Main.__net.scrobble(
                         artist = unicode(artist),
                         title = unicode(title),
-                        timestamp = unicode(int(time())),
+                        timestamp = timestamp or unicode(int(time())),
                         album = unicode(album),
                         track_number = unicode(track_number)
                         )
-            except (gaierror, error):
-                pass # add to queue
-        Thread(target = __scrobble).start()
+            except (gaierror, error, AttributeError):
+                i = Main.__settings.value(u'queue/size', 0).toInt()[0]
+                Main.__settings.setValue(u'queue/' + unicode(i) + u'/elem',
+                        (artist, title, album, track_number,
+                            timestamp or unicode(int(time()))))
+                Main.__settings.setValue(u'queue/size', i + 1)
+        queue = []
+        for i in range(Main.__settings.value(u'queue/size', 0).toInt()[0]):
+            queue.append(Main.__settings.value(
+                    u'queue/' + unicode(i) + u'/elem').toPyObject())
+            Main.__settings.remove(u'queue/' + unicode(i) + u'/elem')
+        Main.__settings.setValue(u'queue/size', 0)
+        for q in queue:
+            Thread(target = __scrobble, args = q).start()
+        Thread(target = __scrobble, args = (
+            artist, title, album, track_number)).start()
