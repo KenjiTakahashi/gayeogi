@@ -184,12 +184,13 @@ class Main(QtGui.QWidget):
                 self.__current.data(666).toInt()[0]
                 )
     def play(self, item):
+        self.mediaobject.stop()
+        self.mediaobject.clear()
         self.mediaobject.enqueue(Phonon.MediaSource(item.path))
-        if not self.playButton.playing:
-            self.mediaobject.play()
-            icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
-            self.playButton.setIcon(icon)
-            self.playButton.playing = True
+        self.mediaobject.play()
+        icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
+        self.playButton.setIcon(icon)
+        self.playButton.playing = True
     def stop(self):
         self.__resetCurrent()
         self.__current = None
@@ -207,7 +208,9 @@ class Main(QtGui.QWidget):
             self.__current.setData(670, self.__timeConvert(interval))
     def nextTrack(self):
         index = self.playlist.row(self.__current)
-        self.playlist.itemActivated.emit(self.playlist.item(index + 1))
+        self.mediaobject.enqueue(
+                Phonon.MediaSource(self.playlist.item(index + 1).path))
+        #self.playlist.itemActivated.emit(self.playlist.item(index + 1))
     def playByButton(self):
         if not self.__current:
             self.play(self.playlist.item(0))
