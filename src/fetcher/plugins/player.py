@@ -148,10 +148,13 @@ class Main(QtGui.QWidget):
         self.parent.tracks.itemActivated.connect(self.addItem)
         self.addWidget(u'horizontalLayout_2', self, 2)
         self.mediaobject = Phonon.MediaObject()
-        self.mediaobject.setTickInterval(500)
+        self.mediaobject.setTickInterval(200)
         self.mediaobject.tick.connect(self.tick)
-        self.mediaobject.totalTimeChanged.connect(self.setTime)
-        self.mediaobject.finished.connect(self.nextTrack)
+        self.mediaobject.aboutToFinish.connect(self.nextTrack)
+        def __updateView(time):
+            index = self.playlist.row(self.__current)
+            self.updateView(self.playlist.item(index + 1), time)
+        self.mediaobject.totalTimeChanged.connect(__updateView)
         self.audiooutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
         Phonon.createPath(self.mediaobject, self.audiooutput)
         progress.setMediaObject(self.mediaobject)
@@ -167,25 +170,26 @@ class Main(QtGui.QWidget):
         widget.setSetting = lambda x, y : __settings.setValue(x, y)
         return widget
     QConfiguration = staticmethod(QConfiguration)
-    def play(self, item):
+    def updateView(self, item, time):
         self.__resetCurrent()
-        try:
-            self.mediaobject.setCurrentSource(Phonon.MediaSource(item.path))
+        self.__current = item
+        self.__current.setData(670, self.__timeConvert(0))
+        self.__current.setData(671, self.__timeConvert(time))
+        self.__current.setData(672, True)
+        self.playlist.scrollToItem(self.__current)
+        self.trackChanged.emit(
+                self.__current.data(669).toString(),
+                self.__current.data(667).toString(),
+                self.__current.data(668).toString(),
+                self.__current.data(666).toInt()[0]
+                )
+    def play(self, item):
+        self.mediaobject.enqueue(Phonon.MediaSource(item.path))
+        if not self.playButton.playing:
             self.mediaobject.play()
-            self.__current = item
-            self.__current.setData(672, True)
-            self.playlist.scrollToItem(self.__current)
             icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
             self.playButton.setIcon(icon)
             self.playButton.playing = True
-            self.trackChanged.emit(
-                    self.__current.data(669).toString(),
-                    self.__current.data(667).toString(),
-                    self.__current.data(668).toString(),
-                    self.__current.data(666).toInt()[0]
-                    )
-        except AttributeError:
-            pass
     def stop(self):
         self.__resetCurrent()
         self.__current = None
@@ -204,9 +208,6 @@ class Main(QtGui.QWidget):
     def nextTrack(self):
         index = self.playlist.row(self.__current)
         self.playlist.itemActivated.emit(self.playlist.item(index + 1))
-    def setTime(self, time):
-        if self.__current:
-            self.__current.setData(671, self.__timeConvert(time))
     def playByButton(self):
         if not self.__current:
             self.play(self.playlist.item(0))
@@ -299,4 +300,3 @@ class Main(QtGui.QWidget):
             self.__current.setData(670, None)
             self.__current.setData(671, None)
             self.__current.setData(672, False)
-            self.mediaobject.clear()
