@@ -123,11 +123,12 @@ class Main(QtGui.QMainWindow):
             dialog = Settings()
             dialog.exec_()
         self.fs.setDirectory(unicode(self.__settings.value(u'directory').toPyObject()))
+        self.library = {}
         self.ignores = self.__settings.value(u'ignores').toPyObject()
         if not self.ignores:
             self.ignores = []
         if firstStart:
-            self.fs.setArgs({}, [], self.ignores, False)
+            self.fs.setArgs(self.library, [], self.ignores, False)
         else:
             (self.library, self.paths) = self.db.read()
             self.oldLib = deepcopy(self.library)
@@ -233,23 +234,27 @@ class Main(QtGui.QMainWindow):
             fh.close()
             self.statusBar().showMessage(u'Saved logs')
     def create(self, (library, paths)):
-        self.library = library
+        self.library.update(library)
+        #self.library = library
         self.oldLib = deepcopy(self.library)
         self.paths = paths
         self.computeStats()
         self.update()
         self.fs.setArgs(self.library, self.paths, self.ignores, True)
     def showSettings(self):
+        def __save():
+            directory = unicode(self.__settings.value(u'directory', u'').toString())
+            self.ignores = self.__settings.value(u'ignores', []).toPyObject()
+            if self.fs.directory != directory:
+                self.fs.setDirectory(directory)
+                self.fs.setArgs([], [], self.ignores, False)
+            else:
+                self.fs.setIgnores(self.ignores)
+            self.loadPlugins()
         dialog=Settings()
         dialog.exec_()
-        directory = unicode(self.__settings.value(u'directory', u'').toString())
-        self.ignores = self.__settings.value(u'ignores', []).toPyObject()
-        if self.fs.directory != directory:
-            self.fs.setDirectory(directory)
-            self.fs.setArgs([], [], self.ignores, False)
-        else:
-            self.fs.setIgnores(self.ignores)
-        self.loadPlugins()
+        dialog.ok.clicked.connect(__save)
+        dialog.cancel.clicked.connect(self.close)
     def logs(self, db, kind, filename, message):
         if self.__settings.value(u'logs/' + kind).toInt()[0]:
             item = QtGui.QTreeWidgetItem(QStringList([

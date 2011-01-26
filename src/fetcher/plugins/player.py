@@ -155,6 +155,7 @@ class Main(QtGui.QWidget):
             index = self.playlist.row(self.__current)
             self.updateView(self.playlist.item(index + 1), time)
         self.mediaobject.totalTimeChanged.connect(__updateView)
+        self.mediaobject.finished.connect(self.__resetCurrent)
         self.audiooutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
         Phonon.createPath(self.mediaobject, self.audiooutput)
         progress.setMediaObject(self.mediaobject)
@@ -208,9 +209,9 @@ class Main(QtGui.QWidget):
             self.__current.setData(670, self.__timeConvert(interval))
     def nextTrack(self):
         index = self.playlist.row(self.__current)
-        self.mediaobject.enqueue(
-                Phonon.MediaSource(self.playlist.item(index + 1).path))
-        #self.playlist.itemActivated.emit(self.playlist.item(index + 1))
+        item = self.playlist.item(index + 1)
+        if item:
+            self.mediaobject.enqueue(Phonon.MediaSource(item.path))
     def playByButton(self):
         if not self.__current:
             self.play(self.playlist.item(0))
