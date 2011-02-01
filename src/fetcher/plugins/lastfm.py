@@ -49,7 +49,7 @@ class Main(object):
                                 password_hash = password
                                 )
                         Main.__sem = False
-                    except (pylast.WSError, gaierror, error):
+                    except:
                         sleep(5)
                 while Main.__sem:
                     t = Thread(target = __connect_)
@@ -113,7 +113,7 @@ class Main(object):
                         Main.__settings.setValue(u'username', username_) 
                         Main.__settings.setValue(u'password', len(password_))
                         Main.__settings.setValue(u'password_hash', pass_hash) 
-                    except pylast.WSError as msg_:
+                    except (pylast.NetworkError, pylast.WSError) as msg_:
                         update(unicode(msg_).split(u'.')[0], Qt.red)
                 Thread(target = __connect).start()
             else:
@@ -142,7 +142,7 @@ class Main(object):
                         album = unicode(album),
                         track_number = unicode(track_number)
                         )
-            except (gaierror, error, AttributeError):
+            except:
                 i = Main.__settings.value(u'queue/size', 0).toInt()[0]
                 Main.__settings.setValue(u'queue/' + unicode(i) + u'/elem',
                         (artist, title, album, track_number,
