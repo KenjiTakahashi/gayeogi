@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '../../../ui/main.ui'
+# Form implementation generated from reading ui file '../../ui/main.ui'
 #
-# Created: Wed Jan 12 03:33:04 2011
+# Created: Sun Feb 13 19:13:31 2011
 #      by: PyQt4 UI code generator 4.8.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -40,7 +40,6 @@ class Ui_main(object):
         self.verticalLayout_3.addWidget(self.artistFilter)
         self.artists = QtGui.QTreeWidget(self.widget_6)
         self.artists.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        self.artists.setDragDropMode(QtGui.QAbstractItemView.DragOnly)
         self.artists.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.artists.setIndentation(0)
         self.artists.setItemsExpandable(False)
@@ -61,7 +60,6 @@ class Ui_main(object):
         self.verticalLayout_4.addWidget(self.albumFilter)
         self.albums = QtGui.QTreeWidget(self.widget_7)
         self.albums.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        self.albums.setDragDropMode(QtGui.QAbstractItemView.DragOnly)
         self.albums.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.albums.setIndentation(0)
         self.albums.setItemsExpandable(False)
@@ -83,7 +81,6 @@ class Ui_main(object):
         self.verticalLayout_5.addWidget(self.trackFilter)
         self.tracks = QtGui.QTreeWidget(self.widget_8)
         self.tracks.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        self.tracks.setDragDropMode(QtGui.QAbstractItemView.DragOnly)
         self.tracks.setAlternatingRowColors(True)
         self.tracks.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.tracks.setIndentation(0)

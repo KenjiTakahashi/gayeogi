@@ -131,9 +131,9 @@ class Main(QtGui.QWidget):
         self.playlist = Playlist()
         self.playlist.setItemDelegate(delegate)
         self.playlist.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
-        self.playlist.setDragDropMode(self.playlist.DragDrop)
+        #self.playlist.setDragDropMode(self.playlist.DragDrop)
         self.playlist.itemActivated.connect(self.play)
-        self.playlist.dropped.connect(self.addItem)
+        #self.playlist.dropped.connect(self.addItem)
         playlistShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.Key_Delete), self.playlist)
         playlistShortcut.activated.connect(self.removeByButton)
