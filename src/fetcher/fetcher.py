@@ -235,7 +235,6 @@ class Main(QtGui.QMainWindow):
             self.statusBar().showMessage(u'Saved logs')
     def create(self, (library, paths)):
         self.library.update(library)
-        #self.library = library
         self.oldLib = deepcopy(self.library)
         self.paths = paths
         self.computeStats()

@@ -84,6 +84,7 @@ class Main(QtGui.QWidget):
     loaded = False
     depends = []
     trackChanged = pyqtSignal(QString, QString, QString, int)
+    __settings = QSettings('fetcher', 'Player')
     def __init__(self, parent, library, addWidget, removeWidget):
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
@@ -168,11 +169,13 @@ class Main(QtGui.QWidget):
         self.mediaobject.totalTimeChanged.connect(self.updateView)
         self.mediaobject.finished.connect(self.stop)
         self.audiooutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
+        self.audiooutput.setVolume(self.__settings.value('volume', 1).toReal()[0])
         Phonon.createPath(self.mediaobject, self.audiooutput)
         progress.setMediaObject(self.mediaobject)
         volume.setAudioOutput(self.audiooutput)
         Main.loaded = True
     def unload(self):
+        self.__settings.setValue('volume', self.audiooutput.volume())
         self.removeWidget(u'horizontalLayout_2', self, 2)
         Main.loaded = False
     def QConfiguration():
@@ -189,12 +192,12 @@ class Main(QtGui.QWidget):
         item.setData(671, self.__timeConvert(time))
         item.setData(672, True)
         self.playlist.scrollToItem(item)
-        #self.trackChanged.emit(
-        #        item.data(669).toString(),
-        #        item.data(667).toString(),
-        #        item.data(668).toString(),
-        #        item.data(666).toInt()[0]
-        #        )
+        self.trackChanged.emit(
+                item.data(669).toString(),
+                item.data(667).toString(),
+                item.data(668).toString(),
+                item.data(666).toInt()[0]
+                )
     def play(self, item):
         self.mediaobject.stop()
         self.mediaobject.clear()
