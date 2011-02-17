@@ -146,6 +146,16 @@ class Main(QtGui.QWidget):
         self.playlist = Playlist()
         self.playlist.setItemDelegate(delegate)
         self.playlist.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
+        self.__settings.beginGroup('playlist')
+        for i in range(self.__settings.value('size').toInt()[0]):
+            item = QtGui.QListWidgetItem()
+            item.setData(666, self.__settings.value(unicode(i) + '666'))
+            item.setData(667, self.__settings.value(unicode(i) + '667'))
+            item.setData(668, self.__settings.value(unicode(i) + '668'))
+            item.setData(669, self.__settings.value(unicode(i) + '669'))
+            item.path = self.__settings.value(unicode(i) + 'path').toString()
+            self.playlist.addItem(item)
+        self.__settings.endGroup()
         #self.playlist.setDragDropMode(self.playlist.DragDrop)
         self.playlist.itemActivated.connect(self.play)
         #self.playlist.dropped.connect(self.addItem)
@@ -176,6 +186,17 @@ class Main(QtGui.QWidget):
         Main.loaded = True
     def unload(self):
         self.__settings.setValue('volume', self.audiooutput.volume())
+        self.__settings.beginGroup('playlist')
+        self.__settings.remove('')
+        self.__settings.setValue('size', self.playlist.count())
+        for i in range(self.playlist.count()):
+            item = self.playlist.item(i)
+            self.__settings.setValue(unicode(i) + '666', item.data(666))
+            self.__settings.setValue(unicode(i) + '667', item.data(667))
+            self.__settings.setValue(unicode(i) + '668', item.data(668))
+            self.__settings.setValue(unicode(i) + '669', item.data(669))
+            self.__settings.setValue(unicode(i) + 'path', item.path)
+        self.__settings.endGroup()
         self.removeWidget(u'horizontalLayout_2', self, 2)
         Main.loaded = False
     def QConfiguration():
@@ -320,7 +341,7 @@ class Main(QtGui.QWidget):
                 + u":" + addZero(time % 60)
     def __resetCurrent(self):
         item = self.playlist.previouslyActiveItem
-        if item:
+        if item and item != -1:
             item.setData(670, None)
             item.setData(671, None)
             item.setData(672, False)
