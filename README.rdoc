@@ -4,21 +4,21 @@
 
 ====MAIN
 
-python>=2.6
+python >= 2.6
 
-PyQt>=4.6
+PyQt >= 4.6
 
-BeautifulSoup>=3.0
+BeautifulSoup >= 3.0
 
-mutagen>=1.20
+mutagen >= 1.20
 
 ====PLAYER
 
-phonon>=4.4
+phonon >= 4.4
 
 ====LAST.FM/LIBRE.FM
 
-pylast>=0.5.6
+pylast >= 0.5.6
 
 Note: Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
 
