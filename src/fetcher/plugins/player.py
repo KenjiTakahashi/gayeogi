@@ -279,6 +279,8 @@ class Main(QtGui.QWidget):
                 addItems(self.parent.artists.selectedItems())
     def removeByButton(self):
         for item in self.playlist.selectedItems():
+            if item == self.playlist.activeItem:
+                self.stop()
             self.playlist.takeItem(self.playlist.row(item))
     def addItem(self, item, column = -1):
         if column != 3:
