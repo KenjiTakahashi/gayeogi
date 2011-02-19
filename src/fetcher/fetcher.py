@@ -139,7 +139,7 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album', u'Digital', u'Analog']))
         self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
         self.ui.tracks.setHeaderLabels(QStringList([u'#', u'Title']))
-        self.ui.logs.setHeaderLabels(QStringList([u'Database', u'Type', u'File/Entry', u'Message']))
+        self.ui.logs.setHeaderLabels(QStringList([u'Module', u'Type', u'File/Entry', u'Message']))
         self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.local.clicked.connect(self.fs.start)
         self.ui.remote.clicked.connect(self.refresh)
@@ -164,6 +164,8 @@ class Main(QtGui.QMainWindow):
                 class__ = class_(self.ui, self.library, self.appendPlugin,
                         self.removePlugin)
                 class__.load()
+                if hasattr(class__, 'errors'):
+                    class__.errors.connect(self.logs)
                 self.ui.plugins[plugin] = class__
             elif not option and class_.loaded:
                 self.ui.plugins[plugin].unload()

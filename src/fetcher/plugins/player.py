@@ -84,6 +84,7 @@ class Main(QtGui.QWidget):
     loaded = False
     depends = []
     trackChanged = pyqtSignal(QString, QString, QString, int)
+    errors = pyqtSignal(unicode, unicode, unicode, unicode)
     __settings = QSettings('fetcher', 'Player')
     def __init__(self, parent, library, addWidget, removeWidget):
         QtGui.QWidget.__init__(self, None)
@@ -178,6 +179,7 @@ class Main(QtGui.QWidget):
         self.mediaobject.aboutToFinish.connect(self.nextTrack)
         self.mediaobject.totalTimeChanged.connect(self.updateView)
         self.mediaobject.finished.connect(self.stop)
+        self.mediaobject.stateChanged.connect(self.state)
         self.audiooutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
         self.audiooutput.setVolume(self.__settings.value('volume', 1).toReal()[0])
         Phonon.createPath(self.mediaobject, self.audiooutput)
@@ -319,6 +321,21 @@ class Main(QtGui.QWidget):
                     (item.text(0), item.text(1), item.album, item.artist, path)))
             if column != -1:
                 self.playByButton()
+    def state(self, state):
+        if state == Phonon.ErrorState:
+            error = self.mediaobject.errorType()
+            if error == Phonon.NormalError:
+                self.errors.emit(
+                        u'Player',
+                        u'errors',
+                        self.playlist.activeItem.path,
+                        u'An non-critical error has occurred.')
+            elif error == Phonon.FatalError:
+                self.errors.emit(
+                        u'Player',
+                        u'errors',
+                        self.playlist.activeItem.path,
+                        u'An fatal error has occurred.')
     def __createItem(self, source):
         item = QtGui.QListWidgetItem()
         item.setData(666, source[0])
