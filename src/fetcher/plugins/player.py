@@ -323,19 +323,17 @@ class Main(QtGui.QWidget):
                 self.playByButton()
     def state(self, state):
         if state == Phonon.ErrorState:
-            error = self.mediaobject.errorType()
-            if error == Phonon.NormalError:
-                self.errors.emit(
-                        u'Player',
-                        u'errors',
-                        self.playlist.activeItem.path,
-                        u'An non-critical error has occurred.')
-            elif error == Phonon.FatalError:
-                self.errors.emit(
-                        u'Player',
-                        u'errors',
-                        self.playlist.activeItem.path,
-                        u'An fatal error has occurred.')
+            def getErrorMessage():
+                error = self.mediaobject.errorType()
+                if error == Phonon.NormalError:
+                    return u'An non-critical error has occurred.'
+                elif error == Phonon.FatalError:
+                    return u'An fatal error has occurred.'
+            self.errors.emit(
+                    u'Player',
+                    u'errors',
+                    self.playlist.activeItem.path,
+                    getErrorMessage())
     def __createItem(self, source):
         item = QtGui.QListWidgetItem()
         item.setData(666, source[0])
