@@ -117,6 +117,7 @@ class Main(QtGui.QMainWindow):
         widget=QtGui.QWidget()
         self.ui.setupUi(widget)
         self.ui.plugins = {}
+        self.ui.splitter.restoreState(self.__settings.value(u'splitters').toByteArray())
         self.setCentralWidget(widget)
         firstStart = not os.path.exists(os.path.join(dbPath, u'db.pkl'))
         if firstStart:
@@ -217,6 +218,7 @@ class Main(QtGui.QMainWindow):
         def unload():
             for plugin in self.ui.plugins.values():
                 plugin.unload()
+            self.__settings.setValue(u'splitters', self.ui.splitter.saveState())
         if self.oldLib != self.library:
             def save():
                 self.save()
