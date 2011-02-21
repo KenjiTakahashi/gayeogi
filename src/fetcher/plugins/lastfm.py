@@ -18,7 +18,6 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt
 import pylast
-from socket import gaierror, error
 from threading import Thread
 from time import time, sleep
 

@@ -156,6 +156,12 @@ class Main(QtGui.QMainWindow):
         self.loadPlugins()
     def loadPlugins(self):
         reload(plugins)
+        def depends(plugin):
+            for p in plugins.__all__:
+                class_ = getattr(getattr(plugins, p), u'Main')
+                if plugin in class_.depends and class_.loaded:
+                    return True
+            return False
         for plugin in plugins.__all__:
             class_ = getattr(getattr(plugins, plugin), u'Main')
             __settings_ = QSettings(u'fetcher', class_.name)
@@ -169,7 +175,12 @@ class Main(QtGui.QMainWindow):
                 self.ui.plugins[plugin] = class__
             elif not option and class_.loaded:
                 self.ui.plugins[plugin].unload()
-                del self.ui.plugins[plugin]
+                for d in self.ui.plugins[plugin].depends:
+                    if not self.ui.plugins[d].loaded \
+                            and d in self.ui.plugins.keys():
+                        del self.ui.plugins[d]
+                if not depends(plugin):
+                    del self.ui.plugins[plugin]
     def filter_(self, text):
         columns = []
         arguments = []
@@ -183,8 +194,8 @@ class Main(QtGui.QMainWindow):
             tree = self.sender().parent().children()[2]
             header = tree.header().model()
             num_columns = [i for i in range(tree.columnCount())
-                    if (unicode(header.headerData(i, Qt.Horizontal).toString())).lower()
-                    in columns]
+                    if (unicode(header.headerData(i,
+                        Qt.Horizontal).toString())).lower() in columns]
             for i in range(tree.topLevelItemCount()):
                 item = tree.topLevelItem(i)
                 hidden = []
@@ -252,10 +263,10 @@ class Main(QtGui.QMainWindow):
             else:
                 self.fs.setIgnores(self.ignores)
             self.loadPlugins()
-        dialog=Settings()
-        dialog.exec_()
+        dialog = Settings()
         dialog.ok.clicked.connect(__save)
         dialog.cancel.clicked.connect(self.close)
+        dialog.exec_()
     def logs(self, db, kind, filename, message):
         if self.__settings.value(u'logs/' + kind).toInt()[0]:
             item = QtGui.QTreeWidgetItem(QStringList([
