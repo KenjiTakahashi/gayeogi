@@ -29,7 +29,7 @@ from db.metalArchives import MetalArchives
 from db.discogs import Discogs
 import plugins
 
-version = '0.4.1'
+version = '0.5'
 if sys.platform=='win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()

@@ -22,7 +22,7 @@ if platform=='win32':
 
 setup(
         name='Fetcher',
-        version='0.4.1',
+        version='0.5',
         description='',
         author='Karol "Kenji Takahashi" Wozniak',
         author_email='wozniakk@gmail.com',
