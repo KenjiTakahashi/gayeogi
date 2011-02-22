@@ -15,17 +15,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # -*- coding: utf-8 -*-
 
-from distutils.core import setup
-from sys import platform
-if platform=='win32':
-    import py2exe
+from setuptools import setup
 
 setup(
-        name='Fetcher',
-        version='0.5',
-        description='',
-        author='Karol "Kenji Takahashi" Wozniak',
-        author_email='wozniakk@gmail.com',
+        name = 'Fetcher',
+        version = '0.5',
+        description = 'A fully-featured music management suite.',
+        author = 'Karol "Kenji Takahashi" Wozniak',
+        author_email = 'wozniakk@gmail.com',
+        license = 'GPL3',
         url='http://github.com/KenjiTakahashi/fetcher',
         packages = [
             'fetcher',
@@ -33,15 +31,29 @@ setup(
             'fetcher/db',
             'fetcher/plugins'
             ],
-        package_dir={
+        package_dir = {
             'fetcher': 'src/fetcher',
             'fetcher/interfaces': 'src/fetcher/interfaces',
             'fetcher/db': 'src/fetcher/db',
             'fetcher/plugins': 'src/fetcher/plugins'
             },
-        scripts=['fetcher'],
-        requires = ['BeautifulSoup(>=3.0)', 'PyQt4', 'mutagen'],
-        windows=['fetcher'],
-        options={'py2exe':{'includes':['sip']}}
+        scripts = ['fetcher'],
+        install_requires = [
+            'BeautifulSoup>=3.0',
+            'mutagen'
+            ],
+        extras_require = {
+            'Last.FM': ['pylast']
+            },
+        classifiers = [f.strip() for f in """
+        Development Status :: 4 - Beta
+        Environment :: Win32 (MS Windows)
+        Environment :: X11 Applications :: Qt
+        Intended Audience :: End Users/Desktop
+        License :: OSI Approved :: GNU General Public License (GPL)
+        Natural Language :: English
+        Operating System :: OS Independent
+        Programming Language :: Python :: 2
+        Topic :: Multimedia :: Sound/Audio :: Players
+        """.splitlines() if f.strip()]
         )
-        
