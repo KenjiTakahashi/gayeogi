@@ -150,31 +150,27 @@ class Settings(QtGui.QDialog):
         self.tabs.addTab(self.logsList, self.tr(u'Lo&gs'))
         self.pluginsList = QtGui.QListWidget()
         self.pluginsList.currentTextChanged.connect(self.pluginsDisplayOptions)
-        #self.pluginsList.itemChanged.connect(self.checkDependencies)
+        self.pluginsList.itemChanged.connect(self.checkDependencies)
         self.pluginsLayout = QtGui.QVBoxLayout()
         self.pluginsLayout.addWidget(self.pluginsList)
         self.__plugins = {}
         self.__depends = {}
-        def fulfilled(name, dependencies):
-            for d in dependencies:
-                try:
-                    self.__depends[d].append(name)
-                except KeyError:
-                    self.__depends[d] = [name]
-                if d not in plugins.__all__:
-                    return False
-            return True
         for plugin in plugins.__all__:
             ref = getattr(plugins, plugin).Main
-            if fulfilled(ref.name, ref.depends):
-                item = QtGui.QListWidgetItem(ref.name)
-                ref2 = ref.QConfiguration()
-                ref2.hide()
-                self.pluginsLayout.addWidget(ref2)
-                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-                item.setCheckState(ref2.enabled)
-                self.pluginsList.addItem(item)
-                self.__plugins[ref.name] = ref2
+            item = QtGui.QListWidgetItem(ref.name)
+            item.depends = ref.depends
+            ref2 = ref.QConfiguration()
+            ref2.hide()
+            self.pluginsLayout.addWidget(ref2)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(ref2.enabled)
+            self.pluginsList.addItem(item)
+            self.__plugins[ref.name] = ref2
+            for d in ref.depends:
+                try:
+                    self.__depends[d].append(ref.name)
+                except KeyError:
+                    self.__depends[d] = [ref.name]
         pluginsWidget = QtGui.QWidget()
         pluginsWidget.setLayout(self.pluginsLayout)
         self.tabs.addTab(pluginsWidget, self.tr(u'&Plugins'))
@@ -256,9 +252,17 @@ class Settings(QtGui.QDialog):
             else:
                 v.hide()
     def checkDependencies(self, item):
-        for d in self.__depends[unicode(item.text())]:
-            items = self.pluginsList.findItems(d, self.pluginsList.MatchFixedString)
-            print items
+        if item.checkState() != 0:
+            for d in item.depends:
+                for i in self.pluginsList.findItems(d, Qt.MatchFixedString):
+                    i.setCheckState(2)
+        else:
+            try:
+                for d in self.__depends[unicode(item.text()).lower()]:
+                    for i in self.pluginsList.findItems(d, Qt.MatchFixedString):
+                        i.setCheckState(0)
+            except KeyError:
+                pass
     def globalMessage(self, i):
         if i == 0:
             self.info.setText(u'Here you can choose which databases should be searched, what releases to search for and how the search should behave.')
