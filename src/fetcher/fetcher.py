@@ -267,7 +267,7 @@ class Main(QtGui.QMainWindow):
             self.loadPlugins()
         dialog = Settings()
         dialog.ok.clicked.connect(__save)
-        dialog.cancel.clicked.connect(self.close)
+        dialog.cancel.clicked.connect(dialog.close)
         dialog.exec_()
     def logs(self, db, kind, filename, message):
         if self.__settings.value(u'logs/' + kind).toInt()[0]:
