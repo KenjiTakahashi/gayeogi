@@ -158,11 +158,10 @@ class MetalArchives(QThread):
             self.errors.emit(u'metal-archives.com',
                     u'errors',
                     result[u'artist'],
-                    u'An unknown error occured (no internet?)')
+                    u'An unknown error occurred (no internet?)')
         elif result[u'choice'] != u'block':
             elem = self.library[result[u'artist']]
-            if result[u'choice']:
-                elem[u'url'][u'metalArchives'] = result[u'choice']
+            elem[u'url'][u'metalArchives'] = result[u'choice']
             added = False
             toDelete = []
             for k, v in elem[u'albums'].iteritems():
@@ -170,11 +169,16 @@ class MetalArchives(QThread):
                     if not v[u'digital'] and not v[u'analog']:
                         toDelete.append(k)
                     else:
-                        del elem[u'url'][u'metalArchives']
-                        if not elem[u'url']:
-                            v[u'remote'] = False
+                        v[u'remote'] = False
             for todel in toDelete:
                 del elem[u'albums'][todel]
+            def true(eee):
+                for e in eee:
+                    if e[u'remote']:
+                        return True
+                return False
+            if not true(elem[u'albums'].values()):
+                del elem[u'url'][u'metalArchives']
             for a, y in map(None, result[u'albums'], result[u'years']):
                 try:
                     elem[u'albums'][a]

@@ -171,8 +171,7 @@ class Discogs(QThread):
                     u'No such band has been found')
         elif result[u'choice'] != u'error':
             elem = self.library[result[u'artist']]
-            if result[u'choice']:
-                elem[u'url'][u'discogs'] = result[u'choice']
+            elem[u'url'][u'discogs'] = result[u'choice']
             added = False
             toDelete = []
             for k, v in elem[u'albums'].iteritems():
@@ -180,11 +179,16 @@ class Discogs(QThread):
                     if not v[u'digital'] and not v[u'analog']:
                         toDelete.append(k)
                     else:
-                        del elem[u'url'][u'discogs']
-                        if not elem[u'url']:
-                            v[u'remote'] = False
+                        v[u'remote'] = False
             for todel in toDelete:
                 del elem[u'albums'][todel]
+            def true(eee):
+                for e in eee:
+                    if e[u'remote']:
+                        return True
+                return False
+            if not true(elem[u'albums'].values()):
+                del elem[u'url'][u'discogs']
             for a, y in map(None, result[u'albums'], result[u'years']):
                 try:
                     elem[u'albums'][a]
