@@ -17,7 +17,7 @@
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString
-from .. import plugins
+import plugins
 
 class QHoveringRadioButton(QtGui.QRadioButton):
     hovered = pyqtSignal(unicode)

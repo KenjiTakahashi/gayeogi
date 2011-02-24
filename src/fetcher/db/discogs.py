@@ -16,7 +16,7 @@
 # -*- coding: utf-8 -*-
 
 import urllib2
-from .. import threadpool
+import threadpool
 from gzip import GzipFile
 from cStringIO import StringIO
 from xml.dom import minidom
