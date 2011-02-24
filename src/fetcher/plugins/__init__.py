@@ -16,9 +16,10 @@
 # -*- coding: utf-8 -*-
 
 from pkgutil import iter_modules
+from os.path import realpath, dirname
 
 __tmp__ = []
-for _, name, _ in iter_modules([u'plugins']):
+for _, name, _ in iter_modules([dirname(realpath(__file__))]):
     try:
         __import__(u'plugins.' + name)
     except:
