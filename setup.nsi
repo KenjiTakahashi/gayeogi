@@ -1,5 +1,5 @@
 ; This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
-; Karol "Kenji Takahashi" Wozniak (C) 2010
+; Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ RequestExecutionLevel admin
 
 !insertmacro MUI_PAGE_LICENSE "LICENSE"
 !insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_INSTFILES
 
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -36,40 +37,88 @@ RequestExecutionLevel admin
 !insertmacro MUI_LANGUAGE "English"
 
 Section "Fetcher (required)"
-	SetOutPath "$INSTDIR"
-	
-	File "dist\*"
-	
-	WriteRegStr HKLM "Software\Fetcher" "Install_Dir" "$INSTDIR"
-	
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher" "DisplayName" "Fetcher"
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher" "UninstallString" '"$INSTDIR\uninstall.exe"'
-	WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher" "NoModify" 1
-	WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher" "NoRepair" 1
-	WriteUninstaller "uninstall.exe"
+SectionIn RO
+    SetOutPath "$INSTDIR"
+    
+    File "dist\_hashlib.pyd"
+    File "dist\_s*"
+    File "dist\bz2.pyd"
+    File "dist\f*"
+    File "dist\m*"
+    File "dist\PyQt4.Qt*"
+    File "dist\Qt*"
+    File "dist\py*dll"
+    File "dist\pyexpat.pyd"
+    File "dist\s*"
+    File "dist\u*"
+    File "dist\w*"
+
+    SetOutPath "$INSTDIR\qt4_plugins"
+
+    File /r "dist\qt4_plugins\*"
+
+    SetOutPath "$INSTDIR\plugins"
+
+    File "dist\plugins\__init__.pyc"
+    
+    WriteRegStr HKLM "Software\Fetcher" "Install_Dir" "$INSTDIR"
+    
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher" "DisplayName" "Fetcher"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher" "UninstallString" '"$INSTDIR\uninstall.exe"'
+    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher" "NoModify" 1
+    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher" "NoRepair" 1
+    WriteUninstaller "uninstall.exe"
+SectionEnd
+
+Section "Player"
+    SetOutPath "$INSTDIR"
+
+    File "dist\phonon4.dll"
+    File "dist\PyQt4.phonon.pyd"
+    File "dist\_bsddb.pyd"
+
+    SetOutPath "$INSTDIR\plugins"
+
+    File "dist\plugins\player.pyc"
+SectionEnd
+
+Section "Last.FM/Libre.FM"
+    SetOutPath "$INSTDIR\plugins"
+
+    File "dist\plugins\lastfm.pyc"
 SectionEnd
 
 Section "Start Menu Shortcuts"
-	CreateDirectory "$SMPROGRAMS\Fetcher"
-	CreateShortCut "$SMPROGRAMS\Fetcher\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
-	CreateShortCut "$SMPROGRAMS\Fetcher\Fetcher.lnk" "$INSTDIR\fetcher.exe" "" "$INSTDIR\fetcher.exe" 0
+    CreateDirectory "$SMPROGRAMS\Fetcher"
+    CreateShortCut "$SMPROGRAMS\Fetcher\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+    CreateShortCut "$SMPROGRAMS\Fetcher\Fetcher.lnk" "$INSTDIR\fetcher.exe" "" "$INSTDIR\fetcher.exe" 0
 SectionEnd
 
 Section "Uninstall"
   
-  ; Remove registry keys
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher"
-  DeleteRegKey HKLM "Software\Fetcher"
+    ; Remove registry keys
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Fetcher"
+    DeleteRegKey HKLM "Software\Fetcher"
 
-  ; Remove files and uninstaller
-  Delete $INSTDIR\*
-  Delete $INSTDIR\uninstall.exe
+    ; Remove files and uninstaller
+    Delete "$INSTDIR\*"
+    Delete "$INSTDIR\plugins\*"
+    Delete "$INSTDIR\qt4_plugins\codecs\*"
+    Delete "$INSTDIR\qt4_plugins\iconengines\*"
+    Delete "$INSTDIR\qt4_plugins\imageformats\*"
+    Delete "$INSTDIR\qt4_plugins\phonon_backend\*"
+    Delete "$INSTDIR\uninstall.exe"
 
-  ; Remove shortcuts, if any
-  Delete "$SMPROGRAMS\Fetcher\*.*"
+    ; Remove shortcuts, if any
+    Delete "$SMPROGRAMS\Fetcher\*.*"
 
-  ; Remove directories used
-  RMDir "$SMPROGRAMS\Fetcher"
-  RMDir "$INSTDIR"
+    ; Remove directories used
+    RMDir "$SMPROGRAMS\Fetcher"
+    RMDir "$INSTDIR\plugins"
+    RMDir "$INSTDIR\qt4_plugins\codecs"
+    RMDir "$INSTDIR\qt4_plugins\iconengines"
+    RMDir "$INSTDIR\qt4_plugins\imagesformats"
+    RMDir "$INSTDIR\qt4_plugins\phonon_backend"
+    RMDir "$INSTDIR"
 
 SectionEnd

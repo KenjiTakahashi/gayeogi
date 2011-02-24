@@ -84,11 +84,14 @@ unsaved changes.
 ===MAIN:
 
 -Merged threadpool into source.
--Filters
+-Filters.
 -Fixed close confirmation dialog.
--Changed labels color to black for artists and albums
+-Changed labels color to black for artists and albums.
 -Multiple artists selection.
 -Internal structure change (should by much faster now).
+-Plugins.
+-Switched to distribute and pyInstaller for setups.
+-Using UPX on Windows.
 
 ===PLAYER:
 
