@@ -17,7 +17,7 @@
 
 import urllib2
 from BeautifulSoup import BeautifulSoup
-import threadpool
+from .. import threadpool
 from PyQt4.QtCore import QThread,pyqtSignal
 import re
 from htmlentitydefs import name2codepoint
