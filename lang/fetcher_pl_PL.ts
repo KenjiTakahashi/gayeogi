@@ -2,6 +2,59 @@
 <!DOCTYPE TS>
 <TS version="2.0" language="pl_PL">
 <context>
+    <name>Main</name>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="138"/>
+        <source>Artist</source>
+        <translation>Artysta</translation>
+    </message>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="143"/>
+        <source>Digital</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="143"/>
+        <source>Analog</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="143"/>
+        <source>Year</source>
+        <translation>Rok</translation>
+    </message>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="143"/>
+        <source>Album</source>
+        <translation>Album</translation>
+    </message>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="149"/>
+        <source>Title</source>
+        <translation>Tytuł</translation>
+    </message>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="150"/>
+        <source>Module</source>
+        <translation>Moduł</translation>
+    </message>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="150"/>
+        <source>Type</source>
+        <translation>Typ</translation>
+    </message>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="150"/>
+        <source>File/Entry</source>
+        <translation>Plik/Wpis</translation>
+    </message>
+    <message>
+        <location filename="src/fetcher/fetcher.py" line="150"/>
+        <source>Message</source>
+        <translation type="unfinished">Wiadomość</translation>
+    </message>
+</context>
+<context>
     <name>main</name>
     <message>
         <location filename="src/fetcher/interfaces/main.py" line="273"/>
@@ -36,7 +89,6 @@
     <message>
         <location filename="src/fetcher/interfaces/main.py" line="287"/>
         <source>0</source>
-        <translatorcomment>cyfra</translatorcomment>
         <translation>0</translation>
     </message>
     <message>

@@ -135,12 +135,23 @@ class Main(QtGui.QMainWindow):
             self.oldLib = deepcopy(self.library)
             self.fs.setArgs(self.library, self.paths, self.ignores, True)
             self.update()
-        self.ui.artists.setHeaderLabels(QStringList([u'Artist', u'Digital', u'Analog']))
+        self.ui.artists.setHeaderLabels(QStringList([
+            self.trUtf8('Artist'),
+            self.trUtf8('Digital'),
+            self.trUtf8('Analog')]))
         self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
-        self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album', u'Digital', u'Analog']))
+        self.ui.albums.setHeaderLabels(QStringList([
+            self.trUtf8('Year'),
+            self.trUtf8('Album'),
+            self.trUtf8('Digital'),
+            self.trUtf8('Analog')]))
         self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
-        self.ui.tracks.setHeaderLabels(QStringList([u'#', u'Title']))
-        self.ui.logs.setHeaderLabels(QStringList([u'Module', u'Type', u'File/Entry', u'Message']))
+        self.ui.tracks.setHeaderLabels(QStringList(['#', self.trUtf8('Title')]))
+        self.ui.logs.setHeaderLabels(QStringList([
+            self.trUtf8('Module'),
+            self.trUtf8('Type'),
+            self.trUtf8('File/Entry'),
+            self.trUtf8('Message')]))
         self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.local.clicked.connect(self.fs.start)
         self.ui.remote.clicked.connect(self.refresh)
