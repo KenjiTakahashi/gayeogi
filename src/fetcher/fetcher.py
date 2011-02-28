@@ -21,7 +21,7 @@ import cPickle
 import re
 from threading import Thread
 from PyQt4 import QtGui
-from PyQt4.QtCore import QStringList, Qt, QSettings
+from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator
 from copy import deepcopy
 from db.local import Filesystem
 from interfaces.settings import Settings
@@ -532,6 +532,10 @@ class Main(QtGui.QMainWindow):
 def run():
     app=QtGui.QApplication(sys.argv)
     app.setApplicationName(u'Fetcher')
+    locale = QLocale.system().name()
+    translator = QTranslator()
+    if translator.load(u'fetcher_' + locale, u'langs/'):
+        app.installTranslator(translator)
     main=Main()
     main.show()
     sys.exit(app.exec_())
