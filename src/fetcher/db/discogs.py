@@ -116,7 +116,7 @@ class Discogs(QThread):
                     if len(r.childNodes)>3:
                         years.append(r.childNodes[3].firstChild.data)
             result={
-                    u'choice':u'',
+                    u'choice': elem[u'url'][u'discogs'],
                     u'artist': artist,
                     u'albums':releases,
                     u'years':years

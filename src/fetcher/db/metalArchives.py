@@ -122,7 +122,7 @@ class MetalArchives(QThread):
                 for a in navigation])
             years.extend([unescape(y[-4:]) for y in navigation])
         return {
-                u'choice':u'',
+                u'choice':elem[u'url'][u'metalArchives'],
                 u'artist': elem,
                 u'albums': albums,
                 u'years': years
