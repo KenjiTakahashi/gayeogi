@@ -16,11 +16,30 @@
 # -*- coding: utf-8 -*-
 
 from threading import Thread
+from Queue import Queue
+from PyQt4.QtCore import QThread, QSettings
 
 class Bee(Thread):
-    def __init__(self):
+    def __init__(self, tasks):
         Thread.__init__(self)
+        self.tasks = tasks
+        self.daemon = True
+        self.start()
+    def run(self):
+        while True:
+            function, args, kargs = self.tasks.get()
+            try:
+                function(*args, **kargs)
+            except Exception:
+                self.tasks.task_done()
 
-class Distributor(object):
-    def __init__(self):
+class Distributor(QThread):
+    __settings = QSettings(u'fetcher', u'Databases')
+    def __init__(self, library):
+        QThread.__init__(self)
+        self.library = library
+        self.tasks = Queue(1)
+        Bee(self.tasks)
+        self.start()
+    def run(self):
         pass
