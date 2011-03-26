@@ -1,5 +1,5 @@
 # This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
-# Karol "Kenji Takahashi" Wozniak (C) 2010
+# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,17 +18,17 @@
 import urllib2
 from BeautifulSoup import BeautifulSoup
 import threadpool
-from PyQt4.QtCore import QThread,pyqtSignal
+#from PyQt4.QtCore import QThread,pyqtSignal
 import re
 from htmlentitydefs import name2codepoint
 
 def unescape(text):
     """Removes HTML or XML character references 
-      and entities from a text string.
-      keep &amp;, &gt;, &lt; in the source code.
-   from Fredrik Lundh
-   http://effbot.org/zone/re-sub.htm#unescape-html
-   """
+    and entities from a text string.
+    keep &amp;, &gt;, &lt; in the source code.
+    from Fredrik Lundh
+    http://effbot.org/zone/re-sub.htm#unescape-html
+    """
     def fixup(m):
         text = m.group(0)
         if text[:2] == "&#":
@@ -83,6 +83,7 @@ class Bandsensor(object):
         if result:
             self.results.update(result)
     def run(self):
+        #drop threadpool here!
         requests = threadpool.makeRequests(self.sense, self.artists, self.finish)
         main = threadpool.ThreadPool(5)
         for req in requests:
@@ -104,144 +105,176 @@ class Bandsensor(object):
                     best = k
             return (best, self.results[best])
 
-class MetalArchives(QThread):
-    errors = pyqtSignal(unicode, unicode, unicode, unicode)
-    stepped = pyqtSignal(unicode)
-    def __init__(self, library, releases, behaviour):
-        QThread.__init__(self)
-        self.library=library
-        self.releases = releases
-        self.behaviour = behaviour
-    def parse1(self,elem):
-        soup=BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/' + elem[u'url'][u'metalArchives']).read())
-        albums = []
-        years = []
-        for release in self.releases:
-            navigation = [t for t in soup.findAll(text = re.compile(u'%s.*' % release))]
-            albums.extend([unescape(a.previous.previous.previous.previous.string)
-                for a in navigation])
-            years.extend([unescape(y[-4:]) for y in navigation])
-        return {
-                u'choice':elem[u'url'][u'metalArchives'],
-                u'artist': elem,
-                u'albums': albums,
-                u'years': years
-                }
-    def parse2(self, soup, artist, elem):
-        if soup.findAll(u'script')[0].contents:
-            partial=[soup.findAll(u'script')[0].contents[0][18:-2]]
+#class MetalArchives(QThread):
+    #errors = pyqtSignal(unicode, unicode, unicode, unicode)
+    #stepped = pyqtSignal(unicode)
+    #def __init__(self, library, releases, behaviour):
+    #    QThread.__init__(self)
+    #    self.library=library
+    #    self.releases = releases
+    #    self.behaviour = behaviour
+def __parse1(element, releaseTypes):
+    """Retrieve updated info on an existing release.
+
+    Arguments:
+    element -- db element containing existing info (it is db[<artist_name>])
+    releaseTypes -- types of releases to check for
+
+    Note: It is meant for internal usage only!
+    """
+    soup = BeautifulSoup(urllib2.urlopen(
+        u'http://www.metal-archives.com/' + element[u'url'][u'metalArchives']
+        ).read())
+    albums = []
+    years = []
+    for release in releaseTypes:
+        navigation = [t for t
+                in soup.findAll(text = re.compile(u'%s.*' % release))]
+        albums.extend([unescape(a.previous.previous.previous.previous.string)
+            for a in navigation])
+        years.extend([unescape(y[-4:]) for y in navigation])
+    return {
+            u'choice': element[u'url'][u'metalArchives'],
+            u'artist': element,
+            u'albums': albums,
+            u'years': years
+            }
+def __parse2(soup, artist, element, releaseTypes):
+    """Retrieve info on an new release.
+
+    Arguments:
+    soup -- search results HTML soup
+    artist -- artist to check against
+    element -- db element containing existing info (it is db[<artist_name>])
+    releaseTypes -- types of releases to check for
+
+    Note: It is meant for internal usage only!
+    """
+    if soup.findAll(u'script')[0].contents:
+        partial = [soup.findAll(u'script')[0].contents[0][18:-2]]
+    else:
+        partial = [r[u'href'] for r in soup.findAll(u'a')
+                if (r.contents[0] + u' (').startswith(artist + u' (')]
+    try:
+        sensor = Bandsensor(partial, element[u'albums'], releaseTypes)
+        data = sensor.run()
+        if data:
+            result = {
+                    u'choice': data[0],
+                    u'artist': artist,
+                    u'albums': data[1][0],
+                    u'years': data[1][1]
+                    }
         else:
-            partial = [r[u'href'] for r in soup.findAll(u'a')
-                    if (r.contents[0] + u' (').startswith(artist + u' (')]
+            result = {u'choice': u'no_band', u'artist': artist}
+    except urllib2.HTTPError:
+        result = {u'choice': u'error', u'artist': artist}
+    return result
+def work(artist, element, releaseTypes):
+    """Retrieve new or updated info for specified artist.
+
+    Arguments:
+    artist -- artist to check against
+    element -- db element containing existing info (it is db[<artist_name>])
+    releaseTypes -- types of releases to check for
+
+    Note: Should be threaded in real application.
+    """
+    #self.stepped.emit(artist)
+    if element[u'url'] and u'metalArchives' in element[u'url'].keys():
+        result = __parse1(element, releaseTypes)
+        result[u'artist'] = artist
+    else:
+        artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
         try:
-            sensor = Bandsensor(partial, elem[u'albums'], self.releases)
-            data = sensor.run()
-            if data:
-                result = {
-                        u'choice': data[0],
-                        u'artist': artist,
-                        u'albums': data[1][0],
-                        u'years': data[1][1]
-                        }
-            else:
-                result = {u'choice': u'no_band', u'artist': artist}
+            soup = BeautifulSoup(urllib2.urlopen(
+                u'http://www.metal-archives.com/search.php?string=' +
+                artist_ + u'&type=band'
+                ).read())
         except urllib2.HTTPError:
-            result = {u'choice': u'error', u'artist': artist}
-        return result
-    def done(self,_,result):
-        if result[u'choice'] == u'no_band':
-            self.errors.emit(u'metal-archives.com',
-                    u'errors',
-                    result[u'artist'],
-                    u'No such band has been found')
-        elif result[u'choice'] == u'error':
-            self.errors.emit(u'metal-archives.com',
-                    u'errors',
-                    result[u'artist'],
-                    u'An unknown error occurred (no internet?)')
-        elif result[u'choice'] != u'block':
-            elem = self.library[result[u'artist']]
-            elem[u'url'][u'metalArchives'] = result[u'choice']
-            added = False
-            toDelete = []
-            for k, v in elem[u'albums'].iteritems():
-                if k not in result[u'albums']:
-                    if not v[u'digital'] and not v[u'analog']:
-                        toDelete.append(k)
-                    else:
-                        v[u'remote'] = False
-            for todel in toDelete:
-                del elem[u'albums'][todel]
-            def true(eee):
-                for e in eee:
-                    if e[u'remote']:
-                        return True
-                return False
-            if not true(elem[u'albums'].values()):
-                del elem[u'url'][u'metalArchives']
-            for a, y in map(None, result[u'albums'], result[u'years']):
-                try:
-                    elem[u'albums'][a]
-                except KeyError:
-                    added = True
-                    elem[u'albums'][a] = {
-                            u'date': y,
-                            u'tracks': {},
-                            u'digital': False,
-                            u'analog': False,
-                            u'remote': True
-                            }
-                else:
-                    elem[u'albums'][a][u'remote'] = True
-            if added and toDelete:
-                message = u'Something has been changed'
-            elif added:
-                message = u'Something has been added'
-            elif toDelete:
-                message = u'Something has been removed'
-            else:
-                message = u'Nothing has been changed'
-            self.errors.emit(u'metal-archives.com',
-                    u'info',
-                    result[u'artist'],
-                    message)
-    def work(self, artist, elem):
-        self.stepped.emit(artist)
-        if elem[u'url'] and u'metalArchives' in elem[u'url'].keys():
-            result = self.parse1(elem)
-            result[u'artist'] = artist
+            result = {u'choice': u'block', u'artist': artist}
+            #self.errors.emit(u'metal-archives.com',
+            #        u'errors',
+            #        artist,
+            #        u'No internet or blocked by upstream (Delaying for 60 secs)')
+            #self.stepped.emit(u'Waiting...')
+            #self.sleep(60) # should we sleep here or what?
         else:
-            artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
-            try:
-                soup=BeautifulSoup(urllib2.urlopen(
-                    u'http://www.metal-archives.com/search.php?string=' + artist_ + u'&type=band').read())
-            except urllib2.HTTPError:
-                result = {u'choice': u'block', u'artist': artist}
-                self.errors.emit(u'metal-archives.com',
-                        u'errors',
-                        artist,
-                        u'No internet or blocked by upstream (Delaying for 60 secs)')
-                self.stepped.emit(u'Waiting...')
-                self.sleep(60)
-            else:
-                result = self.parse2(soup, artist, elem)
-        return result
-    def run(self):
-        if not self.behaviour:
-            temp = {k: v for k, v in self.library.iteritems()
-                    if not v[u'url'] or u'metalArchives' in v[u'url'].keys()}
-            if temp:
-                requests = threadpool.makeRequests(self.work, temp, self.done)
-            else:
-                requests = None
-        else:
-            requests = threadpool.makeRequests(self.work, self.library, self.done)
-        # metal-archives is blocking members on high load, that's why I use only 1 thread here.
-        # (It sometimes gets blocked anyway).
-        # If they'll ever get a pack of decent servers, this will be fixed by just changing the
-        # number below.
-        if requests:
-            main = threadpool.ThreadPool(1)
-            for req in requests:
-                main.putRequest(req)
-            main.wait()
+            result = __parse2(soup, artist, element, releaseTypes)
+    return result
+    #def done(self,_,result):
+    #    if result[u'choice'] == u'no_band':
+    #        self.errors.emit(u'metal-archives.com',
+    #                u'errors',
+    #                result[u'artist'],
+    #                u'No such band has been found')
+    #    elif result[u'choice'] == u'error':
+    #        self.errors.emit(u'metal-archives.com',
+    #                u'errors',
+    #                result[u'artist'],
+    #                u'An unknown error occurred (no internet?)')
+    #    elif result[u'choice'] != u'block':
+    #        elem = self.library[result[u'artist']]
+    #        elem[u'url'][u'metalArchives'] = result[u'choice']
+    #        added = False
+    #        toDelete = []
+    #        for k, v in elem[u'albums'].iteritems():
+    #            if k not in result[u'albums']:
+    #                if not v[u'digital'] and not v[u'analog']:
+    #                    toDelete.append(k)
+    #                else:
+    #                    v[u'remote'] = False
+    #        for todel in toDelete:
+    #            del elem[u'albums'][todel]
+    #        def true(eee):
+    #            for e in eee:
+    #                if e[u'remote']:
+    #                    return True
+    #            return False
+    #        if not true(elem[u'albums'].values()):
+    #            del elem[u'url'][u'metalArchives']
+    #        for a, y in map(None, result[u'albums'], result[u'years']):
+    #            try:
+    #                elem[u'albums'][a]
+    #            except KeyError:
+    #                added = True
+    #                elem[u'albums'][a] = {
+    #                        u'date': y,
+    #                        u'tracks': {},
+    #                        u'digital': False,
+    #                        u'analog': False,
+    #                        u'remote': True
+    #                        }
+    #            else:
+    #                elem[u'albums'][a][u'remote'] = True
+    #        if added and toDelete:
+    #            message = u'Something has been changed'
+    #        elif added:
+    #            message = u'Something has been added'
+    #        elif toDelete:
+    #            message = u'Something has been removed'
+    #        else:
+    #            message = u'Nothing has been changed'
+    #        self.errors.emit(u'metal-archives.com',
+    #                u'info',
+    #                result[u'artist'],
+    #                message)
+    #def run(self):
+    #    if not self.behaviour:
+    #        temp = {k: v for k, v in self.library.iteritems()
+    #                if not v[u'url'] or u'metalArchives' in v[u'url'].keys()}
+    #        if temp:
+    #            requests = threadpool.makeRequests(self.work, temp, self.done)
+    #        else:
+    #            requests = None
+    #    else:
+    #        requests = threadpool.makeRequests(self.work, self.library, self.done)
+    #    # metal-archives is blocking members on high load, that's why I use only 1 thread here.
+    #    # (It sometimes gets blocked anyway).
+    #    # If they'll ever get a pack of decent servers, this will be fixed by just changing the
+    #    # number below.
+    #    if requests:
+    #        main = threadpool.ThreadPool(1)
+    #        for req in requests:
+    #            main.putRequest(req)
+    #        main.wait()
