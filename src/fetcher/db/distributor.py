@@ -18,6 +18,7 @@
 from threading import Thread
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings
+from sys import modules
 
 class Bee(Thread):
     def __init__(self, tasks):
@@ -27,19 +28,37 @@ class Bee(Thread):
         self.start()
     def run(self):
         while True:
-            function, args, kargs = self.tasks.get()
+            function, (artist, element), types = self.tasks.get()
             try:
-                function(*args, **kargs)
-            except Exception:
-                self.tasks.task_done()
+                function(artist, element, types)
+            except:
+                pass # here we'll catch "band not found", but it's not implemented yet
 
 class Distributor(QThread):
     __settings = QSettings(u'fetcher', u'Databases')
     def __init__(self, library):
         QThread.__init__(self)
-        self.library = library
-        self.tasks = Queue(1)
-        Bee(self.tasks)
+        self.bases = [
+                (unicode(self.__settings.value(x + u'/module').toString()),
+                    self.__settings.value(x + u'/size').toInt()[0],
+                    [unicode(t) for t, e in
+                        self.__settings.value(x +
+                            u'/types').toPyObject().iteritems() if e])
+                for x in self.__settings.value(u'order').toPyObject()
+                if self.__settings.value(x + u'/Enabled').toBool()]
+        self.library = library[0]
         self.start()
     def run(self):
-        pass
+        for (name, threads, types) in self.bases:
+            print types
+            try:
+                function = getattr(modules[u'bees.' + name], u'work') #that's strange :|
+            except:
+                pass # signal sth to GUI
+            else:
+                tasks = Queue(threads)
+                for _ in range(threads):
+                    Bee(tasks)
+                for entry in self.library.iteritems():
+                    tasks.put((function, entry, types))
+                tasks.join()
