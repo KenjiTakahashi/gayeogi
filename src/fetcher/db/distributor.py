@@ -18,7 +18,6 @@
 from threading import Thread
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings
-from sys import modules
 
 class Bee(Thread):
     def __init__(self, tasks):
@@ -52,7 +51,7 @@ class Distributor(QThread):
         for (name, threads, types) in self.bases:
             print types
             try:
-                function = getattr(modules[u'bees.' + name], u'work') #that's strange :|
+                db = __import__(u'bees.' + name, globals(), locals(), [u'work'], -1)
             except:
                 pass # signal sth to GUI
             else:
@@ -60,5 +59,5 @@ class Distributor(QThread):
                 for _ in range(threads):
                     Bee(tasks)
                 for entry in self.library.iteritems():
-                    tasks.put((function, entry, types))
+                    tasks.put((db.work, entry, types))
                 tasks.join()
