@@ -56,6 +56,23 @@ def unescape(text):
         return text # leave as is
     return re.sub("&#?\w+;", fixup, text)
 
+class Error(Exception):
+    """General Error class."""
+    def __init__(self, message):
+        self.message = message
+    def __str__(self):
+        return repr(self.message)
+
+class NoBandError(Error):
+    """Raised in case specified band has not been found in the database."""
+    def __init__(self):
+        self.message = u'No such band has been found.'
+
+class ConnError(Error):
+    """Raised in case an connection error appeared."""
+    def __init__(self):
+        self.message = u'An unknown error occurred (no internet?).'
+
 class Bandsensor(object):
     def __init__(self, artists, albums, releases):
         self.artists = artists
@@ -105,14 +122,6 @@ class Bandsensor(object):
                     best = k
             return (best, self.results[best])
 
-#class MetalArchives(QThread):
-    #errors = pyqtSignal(unicode, unicode, unicode, unicode)
-    #stepped = pyqtSignal(unicode)
-    #def __init__(self, library, releases, behaviour):
-    #    QThread.__init__(self)
-    #    self.library=library
-    #    self.releases = releases
-    #    self.behaviour = behaviour
 def __parse1(element, releaseTypes):
     """Retrieve updated info on an existing release.
 
@@ -139,6 +148,7 @@ def __parse1(element, releaseTypes):
             u'albums': albums,
             u'years': years
             }
+
 def __parse2(soup, artist, element, releaseTypes):
     """Retrieve info on an new release.
 
@@ -166,10 +176,11 @@ def __parse2(soup, artist, element, releaseTypes):
                     u'years': data[1][1]
                     }
         else:
-            result = {u'choice': u'no_band', u'artist': artist}
+            raise NoBandError()
     except urllib2.HTTPError:
-        result = {u'choice': u'error', u'artist': artist}
+        raise ConnError()
     return result
+
 def work(artist, element, releaseTypes):
     """Retrieve new or updated info for specified artist.
 
@@ -180,7 +191,6 @@ def work(artist, element, releaseTypes):
 
     Note: Should be threaded in real application.
     """
-    #self.stepped.emit(artist)
     if element[u'url'] and u'metalArchives' in element[u'url'].keys():
         result = __parse1(element, releaseTypes)
         result[u'artist'] = artist
@@ -192,27 +202,12 @@ def work(artist, element, releaseTypes):
                 artist_ + u'&type=band'
                 ).read())
         except urllib2.HTTPError:
-            result = {u'choice': u'block', u'artist': artist}
-            #self.errors.emit(u'metal-archives.com',
-            #        u'errors',
-            #        artist,
-            #        u'No internet or blocked by upstream (Delaying for 60 secs)')
-            #self.stepped.emit(u'Waiting...')
+            raise ConnError()
             #self.sleep(60) # should we sleep here or what?
         else:
             result = __parse2(soup, artist, element, releaseTypes)
     return result
     #def done(self,_,result):
-    #    if result[u'choice'] == u'no_band':
-    #        self.errors.emit(u'metal-archives.com',
-    #                u'errors',
-    #                result[u'artist'],
-    #                u'No such band has been found')
-    #    elif result[u'choice'] == u'error':
-    #        self.errors.emit(u'metal-archives.com',
-    #                u'errors',
-    #                result[u'artist'],
-    #                u'An unknown error occurred (no internet?)')
     #    elif result[u'choice'] != u'block':
     #        elem = self.library[result[u'artist']]
     #        elem[u'url'][u'metalArchives'] = result[u'choice']

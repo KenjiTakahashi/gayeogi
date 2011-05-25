@@ -27,15 +27,21 @@ class Bee(Thread):
         self.start()
     def run(self):
         while True:
-            function, (artist, element), types = self.tasks.get()
+            db, (artist, element), types = self.tasks.get()
             try:
-                function(artist, element, types)
-            except:
-                pass # here we'll catch "band not found", but it's not implemented yet
+                result = db.work(artist, element, types)
+            except db.NoBandError as e:
+                pass
+            except db.ConnError as e:
+                pass
+            else:
+                pass
+            finally:
+                self.tasks.task_done()
 
 class Distributor(QThread):
     __settings = QSettings(u'fetcher', u'Databases')
-    def __init__(self, library):
+    def __init__(self, library, behaviour):
         QThread.__init__(self)
         self.bases = [
                 (unicode(self.__settings.value(x + u'/module').toString()),
@@ -46,12 +52,14 @@ class Distributor(QThread):
                 for x in self.__settings.value(u'order').toPyObject()
                 if self.__settings.value(x + u'/Enabled').toBool()]
         self.library = library[0]
+        self.behaviour = behaviour
         self.start()
     def run(self):
+        queues = list()
         for (name, threads, types) in self.bases:
-            print types
             try:
-                db = __import__(u'bees.' + name, globals(), locals(), [u'work'], -1)
+                db = __import__(u'bees.' + name, globals(),
+                        locals(), [u'work', u'NoBandError', u'ConnError'], -1)
             except:
                 pass # signal sth to GUI
             else:
@@ -59,5 +67,11 @@ class Distributor(QThread):
                 for _ in range(threads):
                     Bee(tasks)
                 for entry in self.library.iteritems():
-                    tasks.put((db.work, entry, types))
-                tasks.join()
+                    tasks.put((db, entry, types))
+                if self.behaviour:
+                    queues.append(tasks)
+                else:
+                    tasks.join() #need to change self.library here (probably we'll operate on copy)
+        if self.behaviour:
+            for q in queues:
+                q.join()
