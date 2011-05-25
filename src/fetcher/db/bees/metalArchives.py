@@ -18,7 +18,6 @@
 import urllib2
 from BeautifulSoup import BeautifulSoup
 import threadpool
-#from PyQt4.QtCore import QThread,pyqtSignal
 import re
 from htmlentitydefs import name2codepoint
 
@@ -198,8 +197,8 @@ def work(artist, element, releaseTypes):
         artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
         try:
             soup = BeautifulSoup(urllib2.urlopen(
-                u'http://www.metal-archives.com/search.php?string=' +
-                artist_ + u'&type=band'
+                u'http://www.metal-archives.com/search?searchString=' +
+                artist_ + u'&type=band_name'
                 ).read())
         except urllib2.HTTPError:
             raise ConnError()
@@ -208,7 +207,6 @@ def work(artist, element, releaseTypes):
             result = __parse2(soup, artist, element, releaseTypes)
     return result
     #def done(self,_,result):
-    #    elif result[u'choice'] != u'block':
     #        elem = self.library[result[u'artist']]
     #        elem[u'url'][u'metalArchives'] = result[u'choice']
     #        added = False

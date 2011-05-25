@@ -27,13 +27,13 @@ class Bee(Thread):
         self.start()
     def run(self):
         while True:
-            db, (artist, element), types = self.tasks.get()
+            db, (artist, element), types, library = self.tasks.get()
             try:
                 result = db.work(artist, element, types)
             except db.NoBandError as e:
-                pass
+                pass # emit signal here and then in Distributor redirect it to GUI?
             except db.ConnError as e:
-                pass
+                pass # same as above?
             else:
                 pass
             finally:
@@ -67,7 +67,7 @@ class Distributor(QThread):
                 for _ in range(threads):
                     Bee(tasks)
                 for entry in self.library.iteritems():
-                    tasks.put((db, entry, types))
+                    tasks.put((db, entry, types, self.library))
                 if self.behaviour:
                     queues.append(tasks)
                 else:
