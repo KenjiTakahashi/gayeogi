@@ -16,6 +16,7 @@
 # -*- coding: utf-8 -*-
 
 import urllib2
+import json
 from BeautifulSoup import BeautifulSoup
 import threadpool
 import re
@@ -71,6 +72,28 @@ class ConnError(Error):
     """Raised in case an connection error appeared."""
     def __init__(self):
         self.message = u'An unknown error occurred (no internet?).'
+
+class JParse(json.JSONDecoder):
+    """Decode metal-archives JSON object.
+    
+    Note: It is meant for internal usage only!
+    """
+    def __init__(self, artist):
+        self.artist = artist.lower() + u'('
+        json.JSONDecoder.__init__(self, object_hook = self.jparse)
+    def jparse(self, element):
+        """Parse the given JSON element and return list of artists IDs.
+
+        Arguments:
+        element -- a JSON element given by json module default decoder
+        """
+        result = list()
+        for e in element[u'aaData']:
+            s = e[0].split(u'>', 2)
+            a = s[1][0: -3]
+            if (a.lower() + u'(').startswith(self.artist):
+                result.append(s[0].rsplit(u'/', 1)[1][:-1])
+        return result
 
 class Bandsensor(object):
     def __init__(self, artists, albums, releases):
@@ -130,9 +153,9 @@ def __parse1(element, releaseTypes):
 
     Note: It is meant for internal usage only!
     """
-    soup = BeautifulSoup(urllib2.urlopen(
-        u'http://www.metal-archives.com/' + element[u'url'][u'metalArchives']
-        ).read())
+    soup = urllib2.urlopen(u'http://www.metal-archives.com/band/discography/id/' +
+            element[u'url'][u'metalArchives'] +
+            u'/tab/all').read()
     albums = []
     years = []
     for release in releaseTypes:
@@ -148,25 +171,24 @@ def __parse1(element, releaseTypes):
             u'years': years
             }
 
-def __parse2(soup, artist, element, releaseTypes):
-    """Retrieve info on an new release.
+def __parse2(json, artist, element, releaseTypes):
+    """Retrieve info on an new release and return list of results.
 
     Arguments:
-    soup -- search results HTML soup
+    json -- Actually, a string retrieved from metal-archives JSON search
     artist -- artist to check against
     element -- db element containing existing info (it is db[<artist_name>])
     releaseTypes -- types of releases to check for
 
     Note: It is meant for internal usage only!
     """
-    if soup.findAll(u'script')[0].contents:
-        partial = [soup.findAll(u'script')[0].contents[0][18:-2]]
-    else:
-        partial = [r[u'href'] for r in soup.findAll(u'a')
-                if (r.contents[0] + u' (').startswith(artist + u' (')]
+    urls = JParse(artist).decode(json)
     try:
-        sensor = Bandsensor(partial, element[u'albums'], releaseTypes)
+        sensor = Bandsensor(urls, element[u'albums'], releaseTypes)
         data = sensor.run()
+    except urllib2.HTTPError:
+        raise ConnError()
+    else:
         if data:
             result = {
                     u'choice': data[0],
@@ -176,8 +198,6 @@ def __parse2(soup, artist, element, releaseTypes):
                     }
         else:
             raise NoBandError()
-    except urllib2.HTTPError:
-        raise ConnError()
     return result
 
 def work(artist, element, releaseTypes):
@@ -196,15 +216,16 @@ def work(artist, element, releaseTypes):
     else:
         artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
         try:
-            soup = BeautifulSoup(urllib2.urlopen(
-                u'http://www.metal-archives.com/search?searchString=' +
-                artist_ + u'&type=band_name'
-                ).read())
+            json = urllib2.urlopen(
+                    u'http://www.metal-archives.com/search/ajax-band-search/?field=name&query=' +
+                    artist_ +
+                    '&sEcho=1&iColumns=3&sColumns=&iDisplayStart=0&iDisplayLength=100&sNames=%2C%2C'
+                    ).read()
         except urllib2.HTTPError:
             raise ConnError()
             #self.sleep(60) # should we sleep here or what?
         else:
-            result = __parse2(soup, artist, element, releaseTypes)
+            result = __parse2(json, artist, element, releaseTypes)
     return result
     #def done(self,_,result):
     #        elem = self.library[result[u'artist']]
