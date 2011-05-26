@@ -17,44 +17,7 @@
 
 import urllib2
 import json
-from BeautifulSoup import BeautifulSoup
-import threadpool
-import re
-from htmlentitydefs import name2codepoint
-
-def unescape(text):
-    """Removes HTML or XML character references 
-    and entities from a text string.
-    keep &amp;, &gt;, &lt; in the source code.
-    from Fredrik Lundh
-    http://effbot.org/zone/re-sub.htm#unescape-html
-    """
-    def fixup(m):
-        text = m.group(0)
-        if text[:2] == "&#":
-            # character reference
-            try:
-                if text[:3] == "&#x":
-                    return unichr(int(text[3:-1], 16))
-                else:
-                    return unichr(int(text[2:-1]))
-            except ValueError:
-                pass
-        else:
-            # named entity
-            try:
-                if text[1:-1] == "amp":
-                    text = "&amp;amp;"
-                elif text[1:-1] == "gt":
-                    text = "&amp;gt;"
-                elif text[1:-1] == "lt":
-                    text = "&amp;lt;"
-                else:
-                    text = unichr(name2codepoint[text[1:-1]])
-            except KeyError:
-                pass
-        return text # leave as is
-    return re.sub("&#?\w+;", fixup, text)
+from lxml import etree
 
 class Error(Exception):
     """General Error class."""
@@ -95,56 +58,80 @@ class JParse(json.JSONDecoder):
                 result.append(s[0].rsplit(u'/', 1)[1][:-1])
         return result
 
-class Bandsensor(object):
-    def __init__(self, artists, albums, releases):
-        self.artists = artists
-        self.albums = albums
-        self.releases = releases
-        self.results = {}
-    def sense(self, data):
-        try:
-            soup = BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/' + data).read())
-        except urllib2.HTTPError:
-            pass
-        else:
-            albums = []
-            years = []
-            for release in self.releases:
-                navigation = [t for t in soup.findAll(text = re.compile(u'%s.*' % release))]
-                albums.extend([unescape(a.previous.previous.previous.previous.string)
-                    for a in navigation])
-                years.extend([unescape(y[-4:]) for y in navigation])
-            for album in albums:
-                for eAlbum in self.albums.keys():
-                    if album.lower() == eAlbum.lower():
-                        return {data: (albums, years)}
-    def finish(self, _, result):
-        if result:
-            self.results.update(result)
-    def run(self):
-        #drop threadpool here!
-        requests = threadpool.makeRequests(self.sense, self.artists, self.finish)
-        main = threadpool.ThreadPool(5)
-        for req in requests:
-            main.putRequest(req)
-        main.wait()
-        values = {}
-        for data, (albums, _) in self.results.items():
-            for album in albums:
-                for eAlbum in self.albums.keys():
-                    if album.lower() == eAlbum.lower():
-                        if data in values.keys():
-                            values[data] += 1
-                        else:
-                            values[data] = 1
-        if values.keys():
-            best = values.keys()[0]
-            for k, v in values.items():
-                if v > values[best]:
-                    best = k
-            return (best, self.results[best])
+def __getalbums(site, releases):
+    """Parse discography website and return list of albums and years.
 
-def __parse1(element, releaseTypes):
+    Arguments:
+    site -- string containing HTML content
+    releases -- list of release types to check for
+
+    Return value:
+    a list of tuples in a form of (<album_name>, <year>)
+    """
+    result = list()
+    def __internal(context, albums, types, years):
+        for i, t in enumerate(types):
+            if t.text in releases:
+                result.append((albums[i].text.encode(u'utf-8'),
+                    years[i].text.encode(u'utf-8')))
+        return False
+    root = etree.HTML(site)
+    ns = etree.FunctionNamespace(u'http://fake.fetcher/functions')
+    ns.prefix = u'ma'
+    ns[u'test'] = __internal
+    root.xpath(u'body/table/tbody/tr[ma:test(td[1]/a, td[2], td[3])]')
+    return result
+
+#class Bandsensor(object):
+#    def __init__(self, artists, albums, releases):
+#        self.artists = artists
+#        self.albums = albums
+#        self.releases = releases
+#        self.results = {}
+#    def sense(self, data):
+#        try:
+#            soup = BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/' + data).read())
+#        except urllib2.HTTPError:
+#            pass
+#        else:
+#            albums = []
+#            years = []
+#            for release in self.releases:
+#                navigation = [t for t in soup.findAll(text = re.compile(u'%s.*' % release))]
+#                albums.extend([unescape(a.previous.previous.previous.previous.string)
+#                    for a in navigation])
+#                years.extend([unescape(y[-4:]) for y in navigation])
+#            for album in albums:
+#                for eAlbum in self.albums.keys():
+#                    if album.lower() == eAlbum.lower():
+#                        return {data: (albums, years)}
+#    def finish(self, _, result):
+#        if result:
+#            self.results.update(result)
+#    def run(self):
+#        #drop threadpool here!
+#        requests = threadpool.makeRequests(self.sense, self.artists, self.finish)
+#        main = threadpool.ThreadPool(5)
+#        for req in requests:
+#            main.putRequest(req)
+#        main.wait()
+#        values = {}
+#        for data, (albums, _) in self.results.items():
+#            for album in albums:
+#                for eAlbum in self.albums.keys():
+#                    if album.lower() == eAlbum.lower():
+#                        if data in values.keys():
+#                            values[data] += 1
+#                        else:
+#                            values[data] = 1
+#        if values.keys():
+#            best = values.keys()[0]
+#            for k, v in values.items():
+#                if v > values[best]:
+#                    best = k
+#            return (best, self.results[best])
+
+def __parse1(element, releases):
     """Retrieve updated info on an existing release.
 
     Arguments:
@@ -155,20 +142,10 @@ def __parse1(element, releaseTypes):
     """
     soup = urllib2.urlopen(u'http://www.metal-archives.com/band/discography/id/' +
             element[u'url'][u'metalArchives'] +
-            u'/tab/all').read()
-    albums = []
-    years = []
-    for release in releaseTypes:
-        navigation = [t for t
-                in soup.findAll(text = re.compile(u'%s.*' % release))]
-        albums.extend([unescape(a.previous.previous.previous.previous.string)
-            for a in navigation])
-        years.extend([unescape(y[-4:]) for y in navigation])
-    return {
-            u'choice': element[u'url'][u'metalArchives'],
+            u'/tab/all').read().decode(u'utf-8')
+    return {u'choice': element[u'url'][u'metalArchives'],
             u'artist': element,
-            u'albums': albums,
-            u'years': years
+            u'result': __getalbums(soup, releases)
             }
 
 def __parse2(json, artist, element, releaseTypes):
@@ -194,7 +171,8 @@ def __parse2(json, artist, element, releaseTypes):
                     u'choice': data[0],
                     u'artist': artist,
                     u'albums': data[1][0],
-                    u'years': data[1][1]
+                    u'years': data[1][1],
+                    u'result': data
                     }
         else:
             raise NoBandError()
