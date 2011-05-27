@@ -15,10 +15,56 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # -*- coding: utf-8 -*-
 
+from threading import Thread
+from Queue import Queue
+
+class BandBee(Thread):
+    def __init__(self, tasks):
+        Thread.__init__(self)
+        self.tasks = tasks
+        self.daemon = True
+        self.start()
+    def run(self):
+        while True:
+            sense, url, results, releases = self.tasks.get()
+            try:
+                result = [sense(url, releases)]
+            except:
+                raise # do sth with it!
+            else:
+                if result:
+                    results.extend(result) # use a mutex probably
+            finally:
+                self.tasks.task_done()
+
 class Bandsensor(object):
-    def __init__(self, func, artists, albums, releases = None):
+    def __init__(self, func, urls, albums, releases = None):
         self.sense = func
-        self.artists = artists
+        self.urls = urls
         self.albums = albums
         self.releases = releases
-        self.results = dict()
+        self.results = list()
+    def run(self):
+        tasks = Queue(5)
+        for _ in range(5):
+            BandBee(tasks)
+        for url in self.urls:
+            tasks.put((self.sense, url, self.results, self.releases))
+        tasks.join()
+        values = dict()
+        for i, (url, single) in enumerate(self.results):
+            for album, year in single:
+                for eAlbum in self.albums.keys():
+                    if album.lower() == eAlbum.lower():
+                        try:
+                            values[url][0] += 1
+                        except KeyError:
+                            values[url] = list()
+                            values[url].append(1)
+                            values[url].append(i)
+        if values.keys():
+            best = values.keys()[0]
+            for k, v in values.iteritems():
+                if v[0] > values[best][0]:
+                    best = k
+            return (best, self.results[values[best][1]][1])

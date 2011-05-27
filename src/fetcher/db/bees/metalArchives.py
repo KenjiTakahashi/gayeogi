@@ -18,6 +18,7 @@
 import urllib2
 import json
 from lxml import etree
+from bandsensor import Bandsensor
 
 class Error(Exception):
     """General Error class."""
@@ -72,8 +73,8 @@ def __getalbums(site, releases):
     def __internal(context, albums, types, years):
         for i, t in enumerate(types):
             if t.text in releases:
-                result.append((albums[i].text.encode(u'utf-8'),
-                    years[i].text.encode(u'utf-8')))
+                result.append((albums[i].text,
+                    years[i].text))
         return False
     root = etree.HTML(site)
     ns = etree.FunctionNamespace(u'http://fake.fetcher/functions')
@@ -82,57 +83,26 @@ def __getalbums(site, releases):
     root.xpath(u'body/table/tbody/tr[ma:test(td[1]/a, td[2], td[3])]')
     return result
 
-#class Bandsensor(object):
-#    def __init__(self, artists, albums, releases):
-#        self.artists = artists
-#        self.albums = albums
-#        self.releases = releases
-#        self.results = {}
-#    def sense(self, data):
-#        try:
-#            soup = BeautifulSoup(urllib2.urlopen(u'http://www.metal-archives.com/' + data).read())
-#        except urllib2.HTTPError:
-#            pass
-#        else:
-#            albums = []
-#            years = []
-#            for release in self.releases:
-#                navigation = [t for t in soup.findAll(text = re.compile(u'%s.*' % release))]
-#                albums.extend([unescape(a.previous.previous.previous.previous.string)
-#                    for a in navigation])
-#                years.extend([unescape(y[-4:]) for y in navigation])
-#            for album in albums:
-#                for eAlbum in self.albums.keys():
-#                    if album.lower() == eAlbum.lower():
-#                        return {data: (albums, years)}
-#    def finish(self, _, result):
-#        if result:
-#            self.results.update(result)
-#    def run(self):
-#        #drop threadpool here!
-#        requests = threadpool.makeRequests(self.sense, self.artists, self.finish)
-#        main = threadpool.ThreadPool(5)
-#        for req in requests:
-#            main.putRequest(req)
-#        main.wait()
-#        values = {}
-#        for data, (albums, _) in self.results.items():
-#            for album in albums:
-#                for eAlbum in self.albums.keys():
-#                    if album.lower() == eAlbum.lower():
-#                        if data in values.keys():
-#                            values[data] += 1
-#                        else:
-#                            values[data] = 1
-#        if values.keys():
-#            best = values.keys()[0]
-#            for k, v in values.items():
-#                if v > values[best]:
-#                    best = k
-#            return (best, self.results[best])
+def __sense(url, releases):
+    """Function injected into Bandsensor
+
+    Arguments:
+    url -- ID of the current band
+    releases -- types of releases to search for
+
+    Note: It is meant for internal usage only!
+    """
+    try:
+        soup = urllib2.urlopen(
+                u'http://www.metal-archives.com/band/discography/id/' +
+                url + u'/tab/all').read().decode(u'utf-8')
+    except urllib2.URLError:
+        raise ConnError()
+    else:
+        return (url, __getalbums(soup, releases))
 
 def __parse1(element, releases):
-    """Retrieve updated info on an existing release.
+    """Retrieve updated info on an existing release and return results.
 
     Arguments:
     element -- db element containing existing info (it is db[<artist_name>])
@@ -148,7 +118,7 @@ def __parse1(element, releases):
             u'result': __getalbums(soup, releases)
             }
 
-def __parse2(json, artist, element, releaseTypes):
+def __parse2(json, artist, element, releases):
     """Retrieve info on an new release and return list of results.
 
     Arguments:
@@ -161,7 +131,7 @@ def __parse2(json, artist, element, releaseTypes):
     """
     urls = JParse(artist).decode(json)
     try:
-        sensor = Bandsensor(urls, element[u'albums'], releaseTypes)
+        sensor = Bandsensor(__sense, urls, element[u'albums'], releases)
         data = sensor.run()
     except urllib2.HTTPError:
         raise ConnError()
@@ -170,9 +140,7 @@ def __parse2(json, artist, element, releaseTypes):
             result = {
                     u'choice': data[0],
                     u'artist': artist,
-                    u'albums': data[1][0],
-                    u'years': data[1][1],
-                    u'result': data
+                    u'result': data[1]
                     }
         else:
             raise NoBandError()
