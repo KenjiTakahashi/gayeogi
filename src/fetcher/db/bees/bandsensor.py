@@ -15,27 +15,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # -*- coding: utf-8 -*-
 
-from threading import Thread
+from threading import Thread, RLock
 from Queue import Queue
 
 class BandBee(Thread):
-    def __init__(self, tasks):
+    def __init__(self, tasks, lock):
         Thread.__init__(self)
         self.tasks = tasks
+        self.lock = lock
         self.daemon = True
         self.start()
     def run(self):
         while True:
             sense, url, results, releases = self.tasks.get()
-            try:
-                result = [sense(url, releases)]
-            except:
-                raise # do sth with it!
-            else:
-                if result:
-                    results.extend(result) # use a mutex probably
-            finally:
-                self.tasks.task_done()
+            result = [sense(url, releases)]
+            if result:
+                self.lock.acquire()
+                results.extend(result)
+                self.lock.release()
+            self.tasks.task_done()
 
 class Bandsensor(object):
     def __init__(self, func, urls, albums, releases = None):
@@ -46,8 +44,9 @@ class Bandsensor(object):
         self.results = list()
     def run(self):
         tasks = Queue(5)
+        lock = RLock()
         for _ in range(5):
-            BandBee(tasks)
+            BandBee(tasks, lock)
         for url in self.urls:
             tasks.put((self.sense, url, self.results, self.releases))
         tasks.join()
