@@ -36,6 +36,7 @@ class Filesystem(QThread):
         self.directory = directory
         self.library = library[1]
         self.paths = library[2]
+        self.avai = library[4]
         self.ignores = ignores
     def append(self, path, existing = False):
         u"""Append new entry to the library.
@@ -94,6 +95,8 @@ class Filesystem(QThread):
                                     partial[tags[u'title']] = item
             self.paths[path] = tags
             self.paths[path][u'modified'] = os.stat(path).st_mtime
+            self.avai[tags[u'artist'] + tags[u'date'] + tags[u'album']] \
+                    [u'digital'] = True
     def remove(self, path):
         u"""Remove specified item from the library.
 
