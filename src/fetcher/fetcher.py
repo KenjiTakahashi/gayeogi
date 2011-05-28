@@ -413,7 +413,7 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
         for i, l in enumerate(self.library[1].keys()):
-            item = QtGui.QTreeWidgetItem(QStringList([l,
+            item = QtGui.QTreeWidgetItem(QStringList([l.encode(u'utf-8'),
                 self.statistics[u'detailed'][i][0] and u'YES' or u'NO',
                 self.statistics[u'detailed'][i][1] and u'YES' or u'NO'
                 ]))
@@ -461,7 +461,7 @@ class Main(QtGui.QMainWindow):
                 for album, data in albums.iteritems():
                     key = self.library[4][artist + date + album]
                     item_ = QtGui.QTreeWidgetItem(QStringList([
-                        date, album,
+                        date.encode(u'utf-8'), album.encode(u'utf-8'),
                         key[u'digital'] and u'YES' or u'NO',
                         key[u'analog'] and u'YES' or u'NO'
                         ]))

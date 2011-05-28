@@ -37,7 +37,8 @@ class Filesystem(QThread):
         self.library = library[1]
         self.paths = library[2]
         self.avai = library[4]
-        self.ignores = ignores
+        self.ignores = [v for (v, _) in ignores]
+        self.toremove = set()
     def append(self, path, existing = False):
         u"""Append new entry to the library.
         
@@ -49,7 +50,7 @@ class Filesystem(QThread):
         tags = self.tagsread(path)
         if tags:
             if existing:
-                self.remove(path)
+                self.toremove.add(self.remove(path))
             item = {tags[u'date']: {
                         tags[u'album']: {
                             tags[u'tracknumber']: {
@@ -102,24 +103,35 @@ class Filesystem(QThread):
 
         Arguments:
         path -- path to the file one wants to remove
+
+        Return value:
+        artist who can probably be removed completely
         """
-        del self.paths[path]
+        result = None
         path_ = self.paths[path]
-        item = self.library[path_[u'artist']][path_[u'date']][path_[u'album']] \
-                [path_[u'tracknumber']]
+        item = self.library[path_[u'artist']][path_[u'date']] \
+                [path_[u'album']][path_[u'tracknumber']]
         del item[path_[u'title']]
         if not item:
             item = self.library[path_[u'artist']][path_[u'date']] \
                     [path_[u'album']]
             del item[path_[u'tracknumber']]
+            key = path_[u'artist'] + path_[u'date'] + path_[u'album']
             if not item:
-                item = self.library[path_[u'artist']][path_[u'date']]
-                del item[path_[u'album']]
-                if not item:
-                    item = self.library[path_[u'artist']]
-                    del item[path_[u'date']]
+                result = path_[u'artist']
+                if not self.avai[key][u'analog'] and \
+                        not self.avai[key][u'remote']:
+                    item = self.library[path_[u'artist']][path_[u'date']]
+                    del item[path_[u'album']]
                     if not item:
-                        del self.library[path_[u'artist']]
+                        item = self.library[path_[u'artist']]
+                        del item[path_[u'date']]
+                        if not item:
+                            del self.library[path_[u'artist']]
+                else:
+                    self.avai[key][u'digital'] = False
+        del self.paths[path]
+        return result
     def ignored(self, root):
         u"""Check if specified folder is on list to ignore.
 
@@ -197,7 +209,7 @@ class Filesystem(QThread):
         Note: This is executed after settings changes.
         """
         self.directory = directory
-        self.ignores = ignores
+        self.ignores = [v for (v, _) in ignores]
     def run(self):
         u"""Run the creating/updating process (or rather a thread ;).
         
@@ -221,7 +233,19 @@ class Filesystem(QThread):
                         except KeyError:
                             pass
                 elif path in self.paths.keys():
-                    self.remove(path)
+                    self.toremove.add(self.remove(path))
         for tf in tfiles:
-            self.remove(tf)
+            self.toremove.add(self.remove(tf))
+        print self.toremove
+        for tr in self.toremove:
+            if tr:
+                flength = 0
+                length = 0
+                for dates in self.library[tr].values():
+                    for albums in dates.values():
+                        flength += len(albums)
+                        if not albums:
+                            length += 1
+                if flength == length:
+                    del self.library[tr]
         self.updated.emit()
