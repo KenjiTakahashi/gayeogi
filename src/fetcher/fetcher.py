@@ -25,12 +25,12 @@ from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator
 from copy import deepcopy
 from db.local import Filesystem
 from interfaces.settings import Settings
-from db.metalArchives import MetalArchives
-from db.discogs import Discogs
+#from db.metalArchives import MetalArchives
+#from db.discogs import Discogs
 import plugins
 
-version = '0.5'
-if sys.platform=='win32':
+version = u'0.6'
+if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()
     dbPath = os.path.join(unicode(service.storageLocation(9)), u'fetcher')
@@ -64,7 +64,11 @@ class DB(object):
         result = cPickle.load(handler)
         handler.close()
         if isinstance(result[0], list):
-            return (self.convert(result[0]), result[1])
+            result = (self.convert(result[0]), result[1])
+        try:
+            result[2]
+        except IndexError:
+            return self.convert2(result[0])
         else:
             return result
     def convert(self, data):
@@ -94,6 +98,39 @@ class DB(object):
                             u'modified': tracks[u'modified']
                             }
         return results
+    def convert2(self, data):
+        main = dict()
+        path = dict()
+        for artist, albums in data.iteritems():
+            main[artist] = dict()
+            main[artist][u'url'] = albums[u'url']
+            for album, tracks in albums[u'albums'].iteritems():
+                try:
+                    main[artist][tracks[u'date']]
+                except KeyError:
+                    main[artist][tracks[u'date']] = dict()
+                main[artist][tracks[u'date']][album] = dict()
+                main[artist][tracks[u'date']][album][u'digital'] \
+                        = tracks[u'digital']
+                main[artist][tracks[u'date']][album][u'analog'] \
+                        = tracks[u'analog']
+                main[artist][tracks[u'date']][album][u'remote'] \
+                        = tracks[u'remote']
+                for track, deepest in tracks[u'tracks'].iteritems():
+                    main[artist][tracks[u'date']][album] \
+                            [deepest[u'tracknumber']] = {
+                                    track: {
+                                        }
+                                    }
+                    path[deepest[u'path']] = {
+                        u'artist': artist,
+                        u'date': tracks[u'date'],
+                        u'album': album,
+                        u'tracknumber': deepest[u'tracknumber'],
+                        u'title': track,
+                        u'modified': deepest[u'modified']
+                    }
+        return (version, main, path)
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'fetcher', u'Fetcher')

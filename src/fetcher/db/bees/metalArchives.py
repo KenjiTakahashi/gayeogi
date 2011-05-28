@@ -106,7 +106,7 @@ def __parse1(element, releases):
 
     Arguments:
     element -- db element containing existing info (it is db[<artist_name>])
-    releaseTypes -- types of releases to check for
+    releases -- types of releases to check for
 
     Note: It is meant for internal usage only!
     """
@@ -125,7 +125,7 @@ def __parse2(json, artist, element, releases):
     json -- Actually, a string retrieved from metal-archives JSON search
     artist -- artist to check against
     element -- db element containing existing info (it is db[<artist_name>])
-    releaseTypes -- types of releases to check for
+    releases -- types of releases to check for
 
     Note: It is meant for internal usage only!
     """
@@ -146,18 +146,18 @@ def __parse2(json, artist, element, releases):
             raise NoBandError()
     return result
 
-def work(artist, element, releaseTypes):
+def work(artist, element, releases):
     """Retrieve new or updated info for specified artist.
 
     Arguments:
     artist -- artist to check against
     element -- db element containing existing info (it is db[<artist_name>])
-    releaseTypes -- types of releases to check for
+    releases -- types of releases to check for
 
     Note: Should be threaded in real application.
     """
     if element[u'url'] and u'metalArchives' in element[u'url'].keys():
-        result = __parse1(element, releaseTypes)
+        result = __parse1(element, releases)
         result[u'artist'] = artist
     else:
         artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
@@ -170,7 +170,7 @@ def work(artist, element, releaseTypes):
         except urllib2.HTTPError:
             raise ConnError()
         else:
-            result = __parse2(json, artist, element, releaseTypes)
+            result = __parse2(json, artist, element, releases)
     return result
     #def done(self,_,result):
     #        elem = self.library[result[u'artist']]

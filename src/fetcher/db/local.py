@@ -1,5 +1,5 @@
 # This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
-# Karol "Kenji Takahashi" Wozniak (C) 2010
+# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from copy import deepcopy
 from fnmatch import fnmatch
 from PyQt4.QtCore import QThread, pyqtSignal
 from mutagen.id3 import ID3
@@ -31,95 +32,122 @@ class Filesystem(QThread):
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
-    def __init__(self):
+    def __init__(self, directory, library, ignores):
         QThread.__init__(self)
-        self.directory = None
-        self.library = []
-        self.paths = []
-        self.doUpdate = False
-        self.ignores = []
-    def append(self, tags, library):
-        u"""Append new entry to the library"""
-        try:
-            albums = library[tags[u'artist']][u'albums']
-        except KeyError:
-            library[tags[u'artist']] = {
-                    u'albums': {
+        self.directory = directory
+        self.library = library[1]
+        self.paths = library[2]
+        self.ignores = ignores
+    def append(self, path, existing = False):
+        u"""Append new entry to the library.
+        
+        Arguments:
+        path -- path to the file one wants to append
+        existing -- (bool) whether path points to completely new entry
+        or an changed one
+        """
+        tags = self.tagsread(path)
+        if tags:
+            if existing:
+                self.remove(path)
+            item = {tags[u'date']: {
                         tags[u'album']: {
-                            u'date': tags[u'date'],
-                            u'tracks': {
+                            tags[u'tracknumber']: {
                                 tags[u'title']: {
-                                    u'tracknumber': tags[u'tracknumber'],
-                                    u'path': tags[u'path'],
-                                    u'modified': os.stat(tags[u'path']).st_mtime
                                     }
-                                },
-                            u'digital': True,
-                            u'analog': False,
-                            u'remote': False
-                            }
-                        },
-                    u'url': {}
-                    }
-        else:
-            try:
-                tracks = albums[tags[u'album']][u'tracks']
-            except KeyError:
-                albums[tags[u'album']] = {
-                        u'date': tags[u'date'],
-                        u'tracks': {
-                            tags[u'title']: {
-                                u'tracknumber': tags[u'tracknumber'],
-                                u'path': tags[u'path'],
-                                u'modified': os.stat(tags[u'path']).st_mtime
                                 }
-                            },
-                        u'digital': True,
-                        u'analog': False,
-                        u'remote': False
-                        }
-            else:
-                albums[tags[u'album']][u'digital'] = True
-                try:
-                    tracks[tags[u'title']]
-                except KeyError:
-                    tracks[tags[u'title']] = {
-                            u'tracknumber': tags[u'tracknumber'],
-                            u'path': tags[u'path'],
-                            u'modified': os.stat(tags[u'path']).st_mtime
                             }
+                        }
+                    }
+            try:
+                partial = self.library[tags[u'artist']]
+            except KeyError:
+                self.library[tags[u'artist']] = item
+            else:
+                item = item[tags[u'date']]
+                try:
+                    partial = partial[tags[u'date']]
+                except KeyError:
+                    partial[tags[u'date']] = item
+                else:
+                    item = item[tags[u'album']]
+                    try:
+                        partial = partial[tags[u'album']]
+                    except KeyError:
+                        partial[tags[u'album']] = item
+                    else:
+                        item = item[tags[u'tracknumber']]
+                        try:
+                            partial = partial[tags[u'tracknumber']]
+                        except KeyError:
+                            partial[tags[u'tracknumber']] = item
+                        else:
+                            item = item[tags[u'title']]
+                            try:
+                                partial = partial[tags[u'tracknumber']]
+                            except KeyError:
+                                partial[tags[u'tracknumber']] = item
+                            else:
+                                item = item[tags[u'title']]
+                                try:
+                                    partial = partial[tags[u'title']]
+                                except KeyError:
+                                    partial[tags[u'title']] = item
+            self.paths[path] = tags
+            self.paths[path][u'modified'] = os.stat(path).st_mtime
+    def remove(self, path):
+        u"""Remove specified item from the library.
+
+        Arguments:
+        path -- path to the file one wants to remove
+        """
+        del self.paths[path]
+        path_ = self.paths[path]
+        item = self.library[path_[u'artist']][path_[u'date']][path_[u'album']] \
+                [path_[u'tracknumber']]
+        del item[path_[u'title']]
+        if not item:
+            item = self.library[path_[u'artist']][path_[u'date']] \
+                    [path_[u'album']]
+            del item[path_[u'tracknumber']]
+            if not item:
+                item = self.library[path_[u'artist']][path_[u'date']]
+                del item[path_[u'album']]
+                if not item:
+                    item = self.library[path_[u'artist']]
+                    del item[path_[u'date']]
+                    if not item:
+                        del self.library[path_[u'artist']]
     def ignored(self, root):
+        u"""Check if specified folder is on list to ignore.
+
+        Arguments:
+        root -- folder to check against
+        """
         for ignore in self.ignores:
             if fnmatch(root, u'*/' + ignore + u'/*'):
                 return True
         return False
-    def flyby(self, library, paths):
-        u"""Create new library from scratch, going through every
-        sub-directory or add new directories to an existing library"""
-        for root, _, filenames in os.walk(self.directory):
-            if not self.ignored(root):
-                for filename in filenames:
-                    path = os.path.join(root, filename)
-                    if path not in paths:
-                        tags = self.tagsread(path)
-                        if tags:
-                            paths.append(path)
-                            self.append(tags, library)
     def tagsread(self, filepath):
-        u"""Read needed tags (metadata/ID3) from specified file"""
+        u"""Read needed tags (metadata/ID3) from specified file.
+        
+        Arguments:
+        filepath --  path to the files one wants to read
+
+        Return value:
+        a dictionary of tags
+        """
         ext = os.path.splitext(filepath)[1]
         try:
             if ext == u'.mp3':
                 self.stepped.emit(filepath)
                 f = ID3(filepath)
                 try:
-                    return {
-                            u'artist': f[u'TPE1'].text[0],
+                    return {u'artist': f[u'TPE1'].text[0],
                             u'album': f[u'TALB'].text[0],
                             u'date': str(f[u'TDRC'].text[0]),
                             u'title': f[u'TIT2'].text[0],
                             u'tracknumber': f[u'TRCK'].text[0],
-                            u'path': filepath
                             }
                 except KeyError:
                     self.errors.emit(u'local',
@@ -141,13 +169,11 @@ class Filesystem(QThread):
                     return False
                 self.stepped.emit(filepath)
                 try:
-                    return {
-                            u'artist': f[u'artist'][0],
+                    return {u'artist': f[u'artist'][0],
                             u'album': f[u'album'][0],
                             u'date': f[u'date'][0],
                             u'title': f[u'title'][0],
                             u'tracknumber': f[u'tracknumber'][0],
-                            u'path': filepath
                             }
                 except KeyError:
                     self.errors.emit(u'local',
@@ -159,68 +185,29 @@ class Filesystem(QThread):
                     u'errors',
                     filepath,
                     u'Cannot open file')
-    def create(self):
-        u"""Create new library"""
-        library = {}
-        paths = []
-        self.flyby(library, paths)
-        return (library, paths)
-    def update(self, library, paths):
-        u"""Check existing library entries for changes and update if necessary"""
-        toTrackDelete = set()
-        toAlbumDelete = set()
-        toArtistDelete = set()
-        toAppend = {}
-        for artist, albums in library.iteritems():
-            for album, tracks in albums[u'albums'].iteritems():
-                for track, props in tracks[u'tracks'].iteritems():
-                    if os.path.exists(props[u'path']) and not self.ignored(props[u'path']):
-                        modified = os.stat(props[u'path']).st_mtime
-                        if modified != props[u'modified']:
-                            tags = self.tagsread(props[u'path'])
-                            if tags:
-                                toTrackDelete.add(track)
-                                toAppend[track] = tags
-                    else:
-                        toTrackDelete.add(track)
-                        del paths[paths.index(props[u'path'])]
-                toAppend_ = toAppend.values()
-                toAppend = {}
-                for i in range(len(toTrackDelete)):
-                    del tracks[u'tracks'][toTrackDelete.pop()]
-                for i in range(len(toAppend_)):
-                    self.append(toAppend_.pop(), library)
-                if not tracks[u'tracks'] and not tracks[u'remote'] and not tracks[u'analog']:
-                    toAlbumDelete.add(album)
-            for i in range(len(toAlbumDelete)):
-                del albums[u'albums'][toAlbumDelete.pop()]
-            if not albums[u'albums'] and not albums[u'url']:
-                toArtistDelete.add(artist)
-        for i in range(len(toArtistDelete)):
-            del library[toArtistDelete.pop()]
-        for path in paths:
-            if self.ignored(path):
-                del paths[paths.index(path)]
-        self.flyby(library, paths)
-    def setDirectory(self, directory):
-        u"""Set library directory"""
-        self.directory = directory
-    def setIgnores(self, ignores):
-        u"""Set ignores list"""
-        self.ignores = [v for (v, _) in ignores]
-    def setArgs(self, library, paths, ignores, update = False):
-        u"""Set library object, paths list, ignores list and
-        update state (whether to update or create new library)"""
-        self.library = library
-        self.paths = paths
-        self.doUpdate = update
-        self.ignores = [v for (v, _) in ignores]
     def run(self):
-        u"""Run the creating/updating process (or rather a thread ;)"""
+        u"""Run the creating/updating process (or rather a thread ;).
+        
+        Note: Should be called using start() method.
+        """
         self.stepped.emit(u'Working')
-        if self.doUpdate:
-            self.update(self.library, self.paths)
-            self.updated.emit()
-        else:
-            result = self.create()
-            self.created.emit(result)
+        tfiles = deepcopy(self.paths)
+        for root, _, filenames in os.walk(self.directory):
+            for filename in filenames:
+                path = os.path.join(root, filename)
+                if not self.ignored(root):
+                    try:
+                        modified = self.paths[path][u'modified']
+                    except KeyError:
+                        self.append(path)
+                    else:
+                        if os.stat(path).st_mtime != modified:
+                            self.append(path, True)
+                        try:
+                            del tfiles[path]
+                        except KeyError:
+                            pass
+                elif path in self.paths.keys():
+                    self.remove(path)
+        for tf in tfiles:
+            self.remove(tf)
