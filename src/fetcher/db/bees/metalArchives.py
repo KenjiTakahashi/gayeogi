@@ -169,7 +169,6 @@ def work(artist, element, releaseTypes):
                     ).read()
         except urllib2.HTTPError:
             raise ConnError()
-            #self.sleep(60) # should we sleep here or what?
         else:
             result = __parse2(json, artist, element, releaseTypes)
     return result

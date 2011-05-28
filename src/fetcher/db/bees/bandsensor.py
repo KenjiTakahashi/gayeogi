@@ -26,8 +26,10 @@ class BandBee(Thread):
         self.daemon = True
         self.start()
     def run(self):
-        while True:
+        while True: # we need to catch ConnError here
             sense, url, results, releases = self.tasks.get()
+            if(sense == False):
+                break
             result = [sense(url, releases)]
             if result:
                 self.lock.acquire()
@@ -45,16 +47,22 @@ class Bandsensor(object):
     def run(self):
         tasks = Queue(5)
         lock = RLock()
+        threads = list()
         for _ in range(5):
-            BandBee(tasks, lock)
+            threads.append(BandBee(tasks, lock))
         for url in self.urls:
             tasks.put((self.sense, url, self.results, self.releases))
         tasks.join()
+        for _ in range(5):
+            tasks.put((False, False, False, False))
+        for thread in threads:
+            thread.join()
         values = dict()
         for i, (url, single) in enumerate(self.results):
             for album, year in single:
                 for eAlbum in self.albums.keys():
-                    if album.lower() == eAlbum.lower():
+                    if album.lower() == eAlbum.lower() and \
+                            year == self.albums[eAlbum][u'date']:
                         try:
                             values[url][0] += 1
                         except KeyError:
