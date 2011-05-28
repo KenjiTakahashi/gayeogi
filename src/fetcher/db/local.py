@@ -28,7 +28,6 @@ from mutagen import File
 
 class Filesystem(QThread):
     u"""Create/Update local file info library"""
-    created = pyqtSignal(tuple)
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
@@ -185,6 +184,17 @@ class Filesystem(QThread):
                     u'errors',
                     filepath,
                     u'Cannot open file')
+    def actualize(self, directory, ignores):
+        u"""Actualize directory and ignores list.
+
+        Arguments:
+        directory -- new directory
+        ignores -- new ignores list
+
+        Note: This is executed after settings changes.
+        """
+        self.directory = directory
+        self.ignores = ignores
     def run(self):
         u"""Run the creating/updating process (or rather a thread ;).
         
@@ -211,3 +221,4 @@ class Filesystem(QThread):
                     self.remove(path)
         for tf in tfiles:
             self.remove(tf)
+        self.updated.emit()

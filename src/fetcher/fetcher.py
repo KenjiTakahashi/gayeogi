@@ -19,14 +19,11 @@ import sys
 import os
 import cPickle
 import re
-from threading import Thread
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator
 from copy import deepcopy
 from db.local import Filesystem
 from interfaces.settings import Settings
-#from db.metalArchives import MetalArchives
-#from db.discogs import Discogs
 import plugins
 
 version = u'0.6'
@@ -101,21 +98,22 @@ class DB(object):
     def convert2(self, data):
         main = dict()
         path = dict()
+        urls = dict()
+        avai = dict()
         for artist, albums in data.iteritems():
             main[artist] = dict()
-            main[artist][u'url'] = albums[u'url']
+            avai[artist] = dict()
             for album, tracks in albums[u'albums'].iteritems():
                 try:
                     main[artist][tracks[u'date']]
                 except KeyError:
                     main[artist][tracks[u'date']] = dict()
+                avai[artist + tracks[u'date'] + album] = {
+                        u'digital': tracks[u'digital'],
+                        u'analog': tracks[u'analog'],
+                        u'remote': tracks[u'remote']
+                        }
                 main[artist][tracks[u'date']][album] = dict()
-                main[artist][tracks[u'date']][album][u'digital'] \
-                        = tracks[u'digital']
-                main[artist][tracks[u'date']][album][u'analog'] \
-                        = tracks[u'analog']
-                main[artist][tracks[u'date']][album][u'remote'] \
-                        = tracks[u'remote']
                 for track, deepest in tracks[u'tracks'].iteritems():
                     main[artist][tracks[u'date']][album] \
                             [deepest[u'tracknumber']] = {
@@ -130,11 +128,10 @@ class DB(object):
                         u'title': track,
                         u'modified': deepest[u'modified']
                     }
-        return (version, main, path)
+        return (version, main, path, urls, avai)
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'fetcher', u'Fetcher')
-    runningThreads = 0
     oldLib = None
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -143,35 +140,31 @@ class Main(QtGui.QMainWindow):
             os.mkdir(dbPath)
         self.metalArchives = None
         self.discogs = None
-        self.fs = Filesystem()
-        self.fs.stepped.connect(self.statusBar().showMessage)
-        self.fs.created.connect(self.create)
-        self.fs.updated.connect(self.update)
-        self.fs.errors.connect(self.logs)
         self.db = DB()
         from interfaces.main import Ui_main
-        self.ui=Ui_main()
-        widget=QtGui.QWidget()
+        self.ui = Ui_main()
+        widget = QtGui.QWidget()
         self.ui.setupUi(widget)
         self.ui.plugins = {}
-        self.ui.splitter.restoreState(self.__settings.value(u'splitters').toByteArray())
+        self.ui.splitter.restoreState(
+                self.__settings.value(u'splitters').toByteArray())
         self.setCentralWidget(widget)
-        firstStart = not os.path.exists(os.path.join(dbPath, u'db.pkl'))
-        if firstStart:
-            dialog = Settings()
-            dialog.exec_()
-        self.fs.setDirectory(unicode(self.__settings.value(u'directory').toPyObject()))
         self.library = {}
         self.ignores = self.__settings.value(u'ignores').toPyObject()
         if not self.ignores:
             self.ignores = []
-        if firstStart:
-            self.fs.setArgs(self.library, [], self.ignores, False)
+        if not os.path.exists(os.path.join(dbPath, u'db.pkl')):
+            dialog = Settings()
+            dialog.exec_()
         else:
-            (self.library, self.paths) = self.db.read()
+            self.library = self.db.read()
             self.oldLib = deepcopy(self.library)
-            self.fs.setArgs(self.library, self.paths, self.ignores, True)
             self.update()
+        directory = unicode(self.__settings.value(u'directory').toPyObject())
+        self.fs = Filesystem(directory, self.library, self.ignores)
+        self.fs.stepped.connect(self.statusBar().showMessage)
+        self.fs.updated.connect(self.update)
+        self.fs.errors.connect(self.logs)
         self.ui.artists.setHeaderLabels(QStringList([
             self.trUtf8('Artist'),
             self.trUtf8('Digital'),
@@ -190,8 +183,8 @@ class Main(QtGui.QMainWindow):
             self.trUtf8('File/Entry'),
             self.trUtf8('Message')]))
         self.ui.albums.itemActivated.connect(self.setAnalog)
-        self.ui.local.clicked.connect(self.fs.start)
-        self.ui.remote.clicked.connect(self.refresh)
+        self.ui.local.clicked.connect(self.local)
+        #self.ui.remote.clicked.connect(self.refresh)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
@@ -203,6 +196,17 @@ class Main(QtGui.QMainWindow):
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
         self.loadPlugins()
+    def local(self):
+        u"""Start local database update.
+
+        Note: Also disable some buttons one mustn't use during the update.
+        They are then enabled in the update() method.
+        """
+        self.ui.local.setDisabled(True)
+        self.ui.remote.setDisabled(True)
+        self.ui.save.setDisabled(True)
+        self.ui.settings.setDisabled(True)
+        self.fs.start()
     def loadPlugins(self):
         reload(plugins)
         def depends(plugin):
@@ -230,6 +234,38 @@ class Main(QtGui.QMainWindow):
                         del self.ui.plugins[d]
                 if not depends(plugin):
                     del self.ui.plugins[plugin]
+    def appendPlugin(self, parent, child, position):
+        parent = getattr(self.ui, parent)
+        if isinstance(parent, QtGui.QLayout):
+            widget = parent.itemAt(position)
+            if not widget:
+                parent.insertWidget(position, child)
+            else:
+                if isinstance(widget, QtGui.QTabWidget):
+                    widget.addTab(child, child.name)
+                else:
+                    widget = parent.takeAt(position).widget()
+                    tab = QtGui.QTabWidget()
+                    tab.setTabPosition(tab.South)
+                    tab.addTab(widget, widget.name)
+                    tab.addTab(child, child.name)
+                    parent.insertWidget(position, tab)
+    def removePlugin(self, parent, child, position):
+        parent = getattr(self.ui, parent)
+        if isinstance(parent, QtGui.QLayout):
+            widget = parent.itemAt(position).widget()
+            try:
+                if widget.name == child.name:
+                    parent.takeAt(position).widget().deleteLater()
+            except AttributeError:
+                for i in range(widget.count()):
+                    if widget.widget(i).name == child.name:
+                        widget.removeTab(i)
+                if widget.count() == 1:
+                    tmp = widget.widget(0)
+                    parent.takeAt(position).widget().deleteLater()
+                    parent.insertWidget(position, tmp)
+                    parent.itemAt(position).widget().show()
     def filter_(self, text):
         columns = []
         arguments = []
@@ -251,7 +287,8 @@ class Main(QtGui.QMainWindow):
                 for j, c in enumerate(num_columns):
                     try:
                         if item not in hidden:
-                            if not re.search(arguments[j], (unicode(item.text(c)).lower())):
+                            if not re.search(arguments[j],
+                                    (unicode(item.text(c)).lower())):
                                 item.setHidden(True)
                                 hidden.append(item)
                             else:
@@ -262,25 +299,6 @@ class Main(QtGui.QMainWindow):
             tree = self.sender().parent().children()[2]
             for i in range(tree.topLevelItemCount()):
                 tree.topLevelItem(i).setHidden(False)
-    def confirm(self, event):
-        def unload():
-            for plugin in self.ui.plugins.values():
-                plugin.unload()
-            self.__settings.setValue(u'splitters', self.ui.splitter.saveState())
-        if self.oldLib != self.library:
-            def save():
-                self.save()
-            def reject():
-                event.ignore()
-            from interfaces.confirmation import ConfirmationDialog
-            dialog = ConfirmationDialog()
-            dialog.buttons.accepted.connect(save)
-            dialog.buttons.accepted.connect(unload)
-            dialog.buttons.rejected.connect(reject)
-            dialog.buttons.helpRequested.connect(unload)
-            dialog.exec_()
-        else:
-            unload()
     def saveLogs(self):
         dialog = QtGui.QFileDialog()
         filename = dialog.getSaveFileName()
@@ -296,22 +314,13 @@ class Main(QtGui.QMainWindow):
                 fh.write(u'\n')
             fh.close()
             self.statusBar().showMessage(u'Saved logs')
-    def create(self, (library, paths)):
-        self.library.update(library)
-        self.oldLib = deepcopy(self.library)
-        self.paths = paths
-        self.computeStats()
-        self.update()
-        self.fs.setArgs(self.library, self.paths, self.ignores, True)
     def showSettings(self):
+        u"""Show settings dialog and then update accordingly."""
         def __save():
-            directory = unicode(self.__settings.value(u'directory', u'').toString())
+            directory = unicode(
+                    self.__settings.value(u'directory', u'').toString())
             self.ignores = self.__settings.value(u'ignores', []).toPyObject()
-            if self.fs.directory != directory:
-                self.fs.setDirectory(directory)
-                self.fs.setArgs([], [], self.ignores, False)
-            else:
-                self.fs.setIgnores(self.ignores)
+            self.fs.actualize(directory, self.ignores)
             self.loadPlugins()
         dialog = Settings()
         dialog.ok.clicked.connect(__save)
@@ -394,45 +403,27 @@ class Main(QtGui.QMainWindow):
                     setColor(artist,Qt.yellow,states[u'analog'])
                 else:
                     setColor(artist,Qt.green,states[u'analog'])
-    def refresh(self):
-        def __refresh():
-            behaviour = self.__settings.value(u'behaviour', 0).toInt()[0]
-            for o in self.__settings.value(u'order').toPyObject():
-                if self.__settings.value(o, 0).toInt()[0]:
-                    releases = [unicode(k) for k, v
-                            in self.__settings.value(u'options/' + o, {}).toPyObject().iteritems()
-                            if v == 2]
-                    if unicode(o) == u'metal-archives.com':
-                        thread = self.metalArchives = MetalArchives(self.library, releases, behaviour)
-                    elif unicode(o) == u'discogs.com':
-                        thread = self.discogs = Discogs(self.library, releases, behaviour)
-                    thread.finished.connect(self.decrement)
-                    thread.stepped.connect(self.statusBar().showMessage)
-                    thread.errors.connect(self.logs)
-                    self.runningThreads += 1
-                    thread.start()
-                    if not behaviour:
-                        thread.wait()
-        Thread(target = __refresh).start()
-    def decrement(self):
-        self.runningThreads -= 1
-        if not self.runningThreads:
-            self.update()
     def update(self):
         self.computeStats()
         self.statusBar().showMessage(u'Done')
+        self.ui.local.setEnabled(True)
+        self.ui.remote.setEnabled(True)
+        self.ui.save.setEnabled(True)
+        self.ui.settings.setEnabled(True)
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
-        for i, l in enumerate(self.library.keys()):
+        for i, l in enumerate(self.library[1].keys()):
             item = QtGui.QTreeWidgetItem(QStringList([l,
                 self.statistics[u'detailed'][i][0] and u'YES' or u'NO',
                 self.statistics[u'detailed'][i][1] and u'YES' or u'NO'
                 ]))
-            if self.statistics[u'detailed'][i][0] and self.statistics[u'detailed'][i][1]:
+            if self.statistics[u'detailed'][i][0] and \
+                    self.statistics[u'detailed'][i][1]:
                 for j in range(3):
                     item.setBackground(j, Qt.green)
                     item.setForeground(j, Qt.black)
-            elif self.statistics[u'detailed'][i][0] or self.statistics[u'detailed'][i][1]:
+            elif self.statistics[u'detailed'][i][0] or \
+                    self.statistics[u'detailed'][i][1]:
                 for j in range(3):
                     item.setBackground(j, Qt.yellow)
                     item.setForeground(j, Qt.black)
@@ -452,54 +443,61 @@ class Main(QtGui.QMainWindow):
         self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
         self.ui.albumsRed.setText(self.statistics[u'albums'][2])
     def save(self):
+        u"""Save database to file."""
         try:
-            self.db.write((self.library, self.paths))
+            self.db.write(self.library)
         except AttributeError:
             self.statusBar().showMessage(u'Nothing to save...')
         else:
             self.statusBar().showMessage(u'Saved')
             self.oldLib = deepcopy(self.library)
     def fillAlbums(self):
+        items = self.ui.artists.selectedItems()
         self.ui.albums.clear()
-        items=self.ui.artists.selectedItems()
         self.ui.albums.setSortingEnabled(False)
         for item in items:
-            for a, props in self.library[unicode(item.text(0))][u'albums'].iteritems():
-                itemm = QtGui.QTreeWidgetItem(QStringList([
-                    props[u'date'], a,
-                    props[u'digital'] and u'YES' or u'NO',
-                    props[u'analog'] and u'YES' or u'NO'
-                    ]))
-                itemm.artist = unicode(item.text(0))
-                if props[u'digital'] and props[u'analog']:
-                    for i in range(4):
-                        itemm.setBackground(i, Qt.green)
-                        itemm.setForeground(i, Qt.black)
-                elif props[u'digital'] or props[u'analog']:
-                    for i in range(4):
-                        itemm.setBackground(i, Qt.yellow)
-                        itemm.setForeground(i, Qt.black)
-                else:
-                    for i in range(4):
-                        itemm.setBackground(i, Qt.red)
-                        itemm.setForeground(i, Qt.black)
-                self.ui.albums.addTopLevelItem(itemm)
+            artist = unicode(item.text(0))
+            for date, albums in self.library[1][artist].iteritems():
+                for album, data in albums.iteritems():
+                    key = self.library[4][artist + date + album]
+                    item_ = QtGui.QTreeWidgetItem(QStringList([
+                        date, album,
+                        key[u'digital'] and u'YES' or u'NO',
+                        key[u'analog'] and u'YES' or u'NO'
+                        ]))
+                    item_.artist = artist
+                    if key[u'digital'] and key[u'analog']:
+                        for i in range(4):
+                            item_.setBackground(i, Qt.green)
+                            item_.setForeground(i, Qt.black)
+                    elif key[u'digital'] or key[u'analog']:
+                        for i in range(4):
+                            item_.setBackground(i, Qt.yellow)
+                            item_.setForeground(i, Qt.black)
+                    else:
+                        for i in range(4):
+                            item_.setBackground(i, Qt.red)
+                            item_.setForeground(i, Qt.black)
+                    self.ui.albums.addTopLevelItem(item_)
         self.ui.albums.setSortingEnabled(True)
         self.ui.albums.sortItems(0, 0)
         for i in range(4):
             self.ui.albums.resizeColumnToContents(i)
     def fillTracks(self):
+        items = self.ui.albums.selectedItems()
         self.ui.tracks.clear()
-        albums = self.ui.albums.selectedItems()
         self.ui.tracks.setSortingEnabled(False)
-        for album in albums:
-            for k, props in self.library[album.artist][u'albums']\
-                    [unicode(album.text(1))][u'tracks'].iteritems():
-                item = NumericTreeWidgetItem(QStringList([
-                    props[u'tracknumber'], k]))
-                item.album = unicode(album.text(1))
-                item.artist = album.artist
-                self.ui.tracks.addTopLevelItem(item)
+        for item in items:
+            date = unicode(item.text(0))
+            album = unicode(item.text(1))
+            for num, titles in self.library[1][item.artist] \
+                    [date][album].iteritems():
+                for title in titles.keys():
+                    item_ = NumericTreeWidgetItem(QStringList([
+                        num, title]))
+                    item_.album = album
+                    item_.artist = item.artist
+                    self.ui.tracks.addTopLevelItem(item_)
         self.ui.tracks.setSortingEnabled(True)
         self.ui.tracks.sortItems(0, 0)
         self.ui.tracks.resizeColumnToContents(0)
@@ -508,23 +506,25 @@ class Main(QtGui.QMainWindow):
         artists = [0, 0, 0]
         albums = [0, 0, 0]
         detailed = []
-        for l, a in self.library.iteritems():
+        for a, d in self.library[1].iteritems():
             artist = 0
-            for t in a[u'albums'].values():
-                if not t[u'digital'] and not t[u'analog']:
-                    albums[2] += 1
-                    artist = 1
-                elif t[u'digital'] and t[u'analog']:
-                    albums[0] += 1
-                    if not artist:
-                        artist = 4
-                else:
-                    albums[1] += 1
-                    if not artist or artist == 4:
-                        if t[u'digital']:
-                            artist = 2
-                        else:
-                            artist = 3
+            for y, t in d.iteritems():
+                for aa in t.keys():
+                    key = self.library[4][a + y + aa]
+                    if not key[u'digital'] and not key[u'analog']:
+                        albums[2] += 1
+                        artist = 1
+                    elif key[u'digital'] and key[u'analog']:
+                        albums[0] += 1
+                        if not artist:
+                            artist = 4
+                    else:
+                        albums[1] += 1
+                        if not artist or artist == 4:
+                            if key[u'digital']:
+                                artist = 2
+                            else:
+                                artist = 3
             if artist == 4:
                 artists[0] += 1
                 detailed.append((1, 1))
@@ -542,40 +542,25 @@ class Main(QtGui.QMainWindow):
                 u'albums': (unicode(albums[0]), unicode(albums[1]), unicode(albums[2])),
                 u'detailed': detailed
                 }
-    def appendPlugin(self, parent, child, position):
-        parent = getattr(self.ui, parent)
-        if isinstance(parent, QtGui.QLayout):
-            widget = parent.itemAt(position)
-            if not widget:
-                parent.insertWidget(position, child)
-            else:
-                if isinstance(widget, QtGui.QTabWidget):
-                    widget.addTab(child, child.name)
-                else:
-                    widget = parent.takeAt(position).widget()
-                    tab = QtGui.QTabWidget()
-                    tab.setTabPosition(tab.South)
-                    tab.addTab(widget, widget.name)
-                    tab.addTab(child, child.name)
-                    parent.insertWidget(position, tab)
-    def removePlugin(self, parent, child, position):
-        parent = getattr(self.ui, parent)
-        if isinstance(parent, QtGui.QLayout):
-            widget = parent.itemAt(position).widget()
-            try:
-                if widget.name == child.name:
-                    parent.takeAt(position).widget().deleteLater()
-            except AttributeError:
-                for i in range(widget.count()):
-                    if widget.widget(i).name == child.name:
-                        widget.removeTab(i)
-                if widget.count() == 1:
-                    tmp = widget.widget(0)
-                    parent.takeAt(position).widget().deleteLater()
-                    parent.insertWidget(position, tmp)
-                    parent.itemAt(position).widget().show()
     def closeEvent(self, event):
-        self.confirm(event)
+        def unload():
+            for plugin in self.ui.plugins.values():
+                plugin.unload()
+            self.__settings.setValue(u'splitters', self.ui.splitter.saveState())
+        if self.oldLib != self.library:
+            def save():
+                self.save()
+            def reject():
+                event.ignore()
+            from interfaces.confirmation import ConfirmationDialog
+            dialog = ConfirmationDialog()
+            dialog.buttons.accepted.connect(save)
+            dialog.buttons.accepted.connect(unload)
+            dialog.buttons.rejected.connect(reject)
+            dialog.buttons.helpRequested.connect(unload)
+            dialog.exec_()
+        else:
+            unload()
 
 def run():
     app=QtGui.QApplication(sys.argv)
