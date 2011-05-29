@@ -17,25 +17,35 @@
 
 from threading import Thread, RLock
 from Queue import Queue
+from beeexceptions import ConnError
 
 class BandBee(Thread):
-    def __init__(self, tasks, lock):
+    def __init__(self, tasks, releases, rlock, elock):
         Thread.__init__(self)
         self.tasks = tasks
-        self.lock = lock
+        self.releases = releases
+        self.rlock = rlock
+        self.elock = elock
         self.daemon = True
         self.start()
     def run(self):
-        while True: # we need to catch ConnError here
-            sense, url, results, releases = self.tasks.get()
+        while True:
+            sense, url, results, errors = self.tasks.get()
             if(sense == False):
                 break
-            result = [sense(url, releases)]
-            if result:
-                self.lock.acquire()
-                results.extend(result)
-                self.lock.release()
-            self.tasks.task_done()
+            try:
+                result = [sense(url, self.releases)]
+            except ConnError as e:
+                self.elock.acquire()
+                errors.append(e)
+                self.elock.release()
+            else:
+                if result:
+                    self.rlock.acquire()
+                    results.extend(result)
+                    self.rlock.release()
+            finally:
+                self.tasks.task_done()
 
 class Bandsensor(object):
     def __init__(self, func, urls, albums, releases = None):
@@ -43,15 +53,17 @@ class Bandsensor(object):
         self.urls = urls
         self.albums = albums
         self.releases = releases
+        self.errors = list()
         self.results = list()
     def run(self):
         tasks = Queue(5)
-        lock = RLock()
+        rlock = RLock()
+        elock = RLock()
         threads = list()
         for _ in range(5):
-            threads.append(BandBee(tasks, lock))
+            threads.append(BandBee(tasks, self.releases, rlock, elock))
         for url in self.urls:
-            tasks.put((self.sense, url, self.results, self.releases))
+            tasks.put((self.sense, url, self.results, self.errors))
         tasks.join()
         for _ in range(5):
             tasks.put((False, False, False, False))
@@ -60,15 +72,16 @@ class Bandsensor(object):
         values = dict()
         for i, (url, single) in enumerate(self.results):
             for album, year in single:
-                for eAlbum in self.albums.keys():
-                    if album.lower() == eAlbum.lower() and \
-                            year == self.albums[eAlbum][u'date']:
-                        try:
-                            values[url][0] += 1
-                        except KeyError:
-                            values[url] = list()
-                            values[url].append(1)
-                            values[url].append(i)
+                for eYear, data in self.albums.iteritems():
+                    for eAlbum in data.keys():
+                        if album.lower() == eAlbum.lower() and \
+                                year == eYear[-4:]:
+                            try:
+                                values[url][0] += 1
+                            except KeyError:
+                                values[url] = list()
+                                values.append(1)
+                                values.append(i)
         if values.keys():
             best = values.keys()[0]
             for k, v in values.iteritems():

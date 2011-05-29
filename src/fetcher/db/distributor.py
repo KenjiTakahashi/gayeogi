@@ -18,21 +18,25 @@
 from threading import Thread
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings
+from bees.beeexceptions import ConnError, NoBandError
 
 class Bee(Thread):
-    def __init__(self, tasks):
+    def __init__(self, tasks, library, urls, avai):
         Thread.__init__(self)
         self.tasks = tasks
+        self.library = library
+        self.urls = urls
+        self.avai = avai
         self.daemon = True
         self.start()
     def run(self):
         while True:
-            db, (artist, element), types, library = self.tasks.get()
+            work, (artist, element), types = self.tasks.get()
             try:
-                result = db.work(artist, element, types)
-            except db.NoBandError as e:
+                result = work(artist, element, self.urls[artist], types)
+            except NoBandError as e:
                 pass # emit signal here and then in Distributor redirect it to GUI?
-            except db.ConnError as e:
+            except ConnError as e:
                 pass # same as above?
             else:
                 pass
@@ -51,7 +55,9 @@ class Distributor(QThread):
                             u'/types').toPyObject().iteritems() if e])
                 for x in self.__settings.value(u'order').toPyObject()
                 if self.__settings.value(x + u'/Enabled').toBool()]
-        self.library = library[0]
+        self.library = library[1]
+        self.urls = library[3]
+        self.avai = library[4]
         self.behaviour = behaviour
         self.start()
     def run(self):
@@ -59,15 +65,15 @@ class Distributor(QThread):
         for (name, threads, types) in self.bases:
             try:
                 db = __import__(u'bees.' + name, globals(),
-                        locals(), [u'work', u'NoBandError', u'ConnError'], -1)
+                        locals(), [u'work'], -1)
             except:
                 pass # signal sth to GUI
             else:
                 tasks = Queue(threads)
                 for _ in range(threads):
-                    Bee(tasks)
+                    Bee(tasks, self.library, self.urls, self.avai)
                 for entry in self.library.iteritems():
-                    tasks.put((db, entry, types, self.library))
+                    tasks.put((db.work, entry, types))
                 if self.behaviour:
                     queues.append(tasks)
                 else:

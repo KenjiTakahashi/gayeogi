@@ -130,8 +130,7 @@ class Filesystem(QThread):
                         not self.avai[key][u'remote']:
                     item = self.library[path_[u'artist']][path_[u'date']]
                     del item[path_[u'album']]
-                    del self.avai[path_[u'artist']][path_[u'date']] \
-                            [path_[u'album']]
+                    del self.avai[key]
                     if not item:
                         item = self.library[path_[u'artist']]
                         del item[path_[u'date']]
@@ -249,11 +248,14 @@ class Filesystem(QThread):
             if tr:
                 flength = 0
                 length = 0
-                for dates in self.library[tr].values():
-                    for albums in dates.values():
-                        flength += len(albums)
-                        if not albums:
-                            length += 1
-                if flength == length:
-                    del self.library[tr]
+                try:
+                    for dates in self.library[tr].values():
+                        for albums in dates.values():
+                            flength += len(albums)
+                            if not albums:
+                                length += 1
+                    if flength == length:
+                        del self.library[tr]
+                except KeyError:
+                    pass
         self.updated.emit()

@@ -19,23 +19,7 @@ import urllib2
 import json
 from lxml import etree
 from bandsensor import Bandsensor
-
-class Error(Exception):
-    """General Error class."""
-    def __init__(self, message):
-        self.message = message
-    def __str__(self):
-        return repr(self.message)
-
-class NoBandError(Error):
-    """Raised in case specified band has not been found in the database."""
-    def __init__(self):
-        self.message = u'No such band has been found.'
-
-class ConnError(Error):
-    """Raised in case an connection error appeared."""
-    def __init__(self):
-        self.message = u'An unknown error occurred (no internet?).'
+from beeexceptions import ConnError, NoBandError
 
 class JParse(json.JSONDecoder):
     """Decode metal-archives JSON object.
@@ -92,30 +76,35 @@ def __sense(url, releases):
 
     Note: It is meant for internal usage only!
     """
+    raise ConnError()
     try:
         soup = urllib2.urlopen(
                 u'http://www.metal-archives.com/band/discography/id/' +
                 url + u'/tab/all').read().decode(u'utf-8')
-    except urllib2.URLError:
+    except (urllib2.HTTPError, urllib2.URLError):
         raise ConnError()
     else:
         return (url, __getalbums(soup, releases))
 
-def __parse1(element, releases):
+def __parse1(element, url, releases):
     """Retrieve updated info on an existing release and return results.
 
     Arguments:
     element -- db element containing existing info (it is db[<artist_name>])
+    url -- url pointing at the given artist
     releases -- types of releases to check for
 
     Note: It is meant for internal usage only!
     """
-    soup = urllib2.urlopen(u'http://www.metal-archives.com/band/discography/id/' +
-            element[u'url'][u'metalArchives'] +
-            u'/tab/all').read().decode(u'utf-8')
-    return {u'choice': element[u'url'][u'metalArchives'],
+    try:
+        soup = urllib2.urlopen(u'http://www.metal-archives.com/band/discography/id/' +
+                url + u'/tab/all').read().decode(u'utf-8')
+    except (urllib2.HTTPError, urllib2.URLError):
+        raise ConnError()
+    return {u'choice': url,
             u'artist': element,
-            u'result': __getalbums(soup, releases)
+            u'result': __getalbums(soup, releases),
+            u'errors': []
             }
 
 def __parse2(json, artist, element, releases):
@@ -131,33 +120,33 @@ def __parse2(json, artist, element, releases):
     """
     urls = JParse(artist).decode(json)
     try:
-        sensor = Bandsensor(__sense, urls, element[u'albums'], releases)
+        sensor = Bandsensor(__sense, urls, element, releases)
         data = sensor.run()
-    except urllib2.HTTPError:
+    except (urllib2.HTTPError, urllib2.URLError):
         raise ConnError()
     else:
         if data:
-            result = {
-                    u'choice': data[0],
+            return {u'choice': data[0],
                     u'artist': artist,
-                    u'result': data[1]
+                    u'result': data[1],
+                    u'errors': sensor.errors
                     }
         else:
             raise NoBandError()
-    return result
 
-def work(artist, element, releases):
+def work(artist, element, urls, releases):
     """Retrieve new or updated info for specified artist.
 
     Arguments:
     artist -- artist to check against
     element -- db element containing existing info (it is db[<artist_name>])
+    urls -- urls previously retrieved for given artist
     releases -- types of releases to check for
 
     Note: Should be threaded in real application.
     """
-    if element[u'url'] and u'metalArchives' in element[u'url'].keys():
-        result = __parse1(element, releases)
+    if urls and u'metalArchives' in urls.keys():
+        result = __parse1(element, urls[u'metalArchives'], releases)
         result[u'artist'] = artist
     else:
         artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
@@ -167,7 +156,7 @@ def work(artist, element, releases):
                     artist_ +
                     '&sEcho=1&iColumns=3&sColumns=&iDisplayStart=0&iDisplayLength=100&sNames=%2C%2C'
                     ).read()
-        except urllib2.HTTPError:
+        except (urllib2.HTTPError, urllib2.URLError):
             raise ConnError()
         else:
             result = __parse2(json, artist, element, releases)
