@@ -37,7 +37,7 @@ class BandBee(Thread):
                 result = [sense(url, self.releases)]
             except ConnError as e:
                 self.elock.acquire()
-                errors.append(e)
+                errors.add(e)
                 self.elock.release()
             else:
                 if result:
@@ -53,7 +53,7 @@ class Bandsensor(object):
         self.urls = urls
         self.albums = albums
         self.releases = releases
-        self.errors = list()
+        self.errors = set()
         self.results = list()
     def run(self):
         tasks = Queue(5)
