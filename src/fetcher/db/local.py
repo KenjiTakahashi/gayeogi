@@ -96,8 +96,15 @@ class Filesystem(QThread):
                                     partial[tags[u'title']] = item
             self.paths[path] = tags
             self.paths[path][u'modified'] = os.stat(path).st_mtime
-            self.avai[tags[u'artist'] + tags[u'date'] + tags[u'album']] \
-                    [u'digital'] = True
+            key = tags[u'artist'] + tags[u'date'] + tags[u'album']
+            try:
+                self.avai[key][u'digital'] = True
+            except KeyError:
+                self.avai[key] = {
+                        u'digital': True,
+                        u'analog': False,
+                        u'remote': False
+                        }
     def remove(self, path):
         u"""Remove specified item from the library.
 
@@ -123,6 +130,8 @@ class Filesystem(QThread):
                         not self.avai[key][u'remote']:
                     item = self.library[path_[u'artist']][path_[u'date']]
                     del item[path_[u'album']]
+                    del self.avai[path_[u'artist']][path_[u'date']] \
+                            [path_[u'album']]
                     if not item:
                         item = self.library[path_[u'artist']]
                         del item[path_[u'date']]
@@ -159,7 +168,7 @@ class Filesystem(QThread):
                 try:
                     return {u'artist': f[u'TPE1'].text[0],
                             u'album': f[u'TALB'].text[0],
-                            u'date': str(f[u'TDRC'].text[0]),
+                            u'date': unicode(f[u'TDRC'].text[0]),
                             u'title': f[u'TIT2'].text[0],
                             u'tracknumber': f[u'TRCK'].text[0],
                             }
@@ -187,7 +196,7 @@ class Filesystem(QThread):
                             u'album': f[u'album'][0],
                             u'date': f[u'date'][0],
                             u'title': f[u'title'][0],
-                            u'tracknumber': f[u'tracknumber'][0],
+                            u'tracknumber': f[u'tracknumber'][0]
                             }
                 except KeyError:
                     self.errors.emit(u'local',
@@ -236,7 +245,6 @@ class Filesystem(QThread):
                     self.toremove.add(self.remove(path))
         for tf in tfiles:
             self.toremove.add(self.remove(tf))
-        print self.toremove
         for tr in self.toremove:
             if tr:
                 flength = 0
