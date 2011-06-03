@@ -22,7 +22,7 @@ class ConfirmationDialog(QDialog):
         QDialog.__init__(self, parent)
         save = QPushButton(self.tr(u'&Save'))
         save.clicked.connect(self.close)
-        close = QPushButton(self.tr(u'C&lose without saving'))
+        close = QPushButton(self.tr(u'Close &without saving'))
         close.clicked.connect(self.close)
         cancel = QPushButton(self.tr(u'&Cancel'))
         cancel.clicked.connect(self.close)

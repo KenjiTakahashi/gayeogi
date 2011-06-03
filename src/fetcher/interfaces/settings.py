@@ -32,22 +32,22 @@ class QHoveringRadioButton(QtGui.QRadioButton):
         self.unhovered.emit(self.tab)
 
 class Settings(QtGui.QDialog):
-    dirChanged = pyqtSignal(str)
-    __settings=QSettings(u'fetcher',u'Fetcher')
+    __settings = QSettings(u'fetcher', u'Fetcher')
+    __dbsettings = QSettings(u'fetcher', u'Databases')
     def __init__(self,parent=None):
-        QtGui.QDialog.__init__(self,parent)
+        QtGui.QDialog.__init__(self, parent)
         self.tabs = QtGui.QTabWidget()
         self.tabs.currentChanged.connect(self.globalMessage)
         self.info = QtGui.QLabel()
         self.info.setWordWrap(True)
         self.dbList = QtGui.QListWidget()
         self.dbList.currentTextChanged.connect(self.dbDisplayOptions)
-        order = self.__settings.value(u'order',
-                [u'metal-archives.com', u'discogs.com']).toPyObject()
+        order = self.__dbsettings.value(u'order', []).toPyObject()
         for o in order:
             item = QtGui.QListWidgetItem(o)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(self.__settings.value(o, 0).toInt()[0])
+            item.setCheckState(self.__settings.value(
+                o + u'/Enabled', 0).toInt()[0])
             self.dbList.addItem(item)
         dbUp = QtGui.QPushButton(self.tr(u'&Up'))
         dbUp.clicked.connect(self.dbUp)
@@ -86,7 +86,8 @@ class Settings(QtGui.QDialog):
         dbOptionsLayout = QtGui.QGridLayout()
         self.dbOptions.setLayout(dbOptionsLayout)
         self.dbOptions.setVisible(False)
-        checkStates = self.__settings.value(u'options/metal-archives.com').toPyObject()
+        checkStates = self.__settings.value(
+                u'metal-archives.com/types', {}).toPyObject()
         items = [[u'Full-length', u'Live album', u'Demo'],
                 [u'Single', u'EP', u'DVD'],
                 [u'Boxed set', u'Split', u'Video/VHS'],
