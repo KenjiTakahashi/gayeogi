@@ -80,8 +80,8 @@ class Bandsensor(object):
                                 values[url][0] += 1
                             except KeyError:
                                 values[url] = list()
-                                values.append(1)
-                                values.append(i)
+                                values[url].append(1)
+                                values[url].append(i)
         if values.keys():
             best = values.keys()[0]
             for k, v in values.iteritems():

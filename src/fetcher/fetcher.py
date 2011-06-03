@@ -1,5 +1,5 @@
 # This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
-# Karol "Kenji Takahashi" Wozniak (C) 2010
+# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator
 from copy import deepcopy
 from db.local import Filesystem
 from interfaces.settings import Settings
+from db.distributor import Distributor
 import plugins
 
 version = u'0.6'
@@ -165,6 +166,8 @@ class Main(QtGui.QMainWindow):
         self.fs.stepped.connect(self.statusBar().showMessage)
         self.fs.updated.connect(self.update)
         self.fs.errors.connect(self.logs)
+        self.rt = Distributor(self.library)
+        self.rt.updated.connect(self.update)
         self.ui.artists.setHeaderLabels(QStringList([
             self.trUtf8('Artist'),
             self.trUtf8('Digital'),
@@ -184,7 +187,7 @@ class Main(QtGui.QMainWindow):
             self.trUtf8('Message')]))
         self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.local.clicked.connect(self.local)
-        #self.ui.remote.clicked.connect(self.refresh)
+        self.ui.remote.clicked.connect(self.remote)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
@@ -196,17 +199,23 @@ class Main(QtGui.QMainWindow):
         self.statusBar()
         self.setWindowTitle(u'Fetcher '+version)
         self.loadPlugins()
-    def local(self):
-        u"""Start local database update.
+    def disableButtons(self):
+        u"""Disable some buttons one mustn't use during the update.
 
-        Note: Also disable some buttons one mustn't use during the update.
-        They are then enabled in the update() method.
+        Note: They are then re-enabled in the update() method.
         """
         self.ui.local.setDisabled(True)
         self.ui.remote.setDisabled(True)
         self.ui.save.setDisabled(True)
         self.ui.settings.setDisabled(True)
+    def local(self):
+        u"""Start local database update."""
+        self.disableButtons()
         self.fs.start()
+    def remote(self):
+        u"""Start remote databases update."""
+        self.disableButtons()
+        self.rt.start()
     def loadPlugins(self):
         reload(plugins)
         def depends(plugin):

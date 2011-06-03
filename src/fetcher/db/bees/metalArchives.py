@@ -27,7 +27,7 @@ class JParse(json.JSONDecoder):
     Note: It is meant for internal usage only!
     """
     def __init__(self, artist):
-        self.artist = artist.lower() + u'('
+        self.artist = artist.lower()
         json.JSONDecoder.__init__(self, object_hook = self.jparse)
     def jparse(self, element):
         """Parse the given JSON element and return list of artists IDs.
@@ -39,7 +39,7 @@ class JParse(json.JSONDecoder):
         for e in element[u'aaData']:
             s = e[0].split(u'>', 2)
             a = s[1][0: -3]
-            if (a.lower() + u'(').startswith(self.artist):
+            if a.lower().startswith(self.artist):
                 result.append(s[0].rsplit(u'/', 1)[1][:-1])
         return result
 
@@ -76,7 +76,6 @@ def __sense(url, releases):
 
     Note: It is meant for internal usage only!
     """
-    raise ConnError()
     try:
         soup = urllib2.urlopen(
                 u'http://www.metal-archives.com/band/discography/id/' +
@@ -97,14 +96,14 @@ def __parse1(element, url, releases):
     Note: It is meant for internal usage only!
     """
     try:
-        soup = urllib2.urlopen(u'http://www.metal-archives.com/band/discography/id/' +
+        soup = urllib2.urlopen(
+                u'http://www.metal-archives.com/band/discography/id/' +
                 url + u'/tab/all').read().decode(u'utf-8')
     except (urllib2.HTTPError, urllib2.URLError):
         raise ConnError()
     return {u'choice': url,
-            u'artist': element,
             u'result': __getalbums(soup, releases),
-            u'errors': []
+            u'errors': set()
             }
 
 def __parse2(json, artist, element, releases):
@@ -127,7 +126,6 @@ def __parse2(json, artist, element, releases):
     else:
         if data:
             return {u'choice': data[0],
-                    u'artist': artist,
                     u'result': data[1],
                     u'errors': sensor.errors
                     }
@@ -149,7 +147,7 @@ def work(artist, element, urls, releases):
         result = __parse1(element, urls[u'metalArchives'], releases)
         result[u'artist'] = artist
     else:
-        artist_ = urllib2.quote(artist.encode(u'latin-1')).replace(u'%20', u'+')
+        artist_ = urllib2.quote(artist.encode(u'utf-8')).replace(u'%20', u'+')
         try:
             json = urllib2.urlopen(
                     u'http://www.metal-archives.com/search/ajax-band-search/?field=name&query=' +

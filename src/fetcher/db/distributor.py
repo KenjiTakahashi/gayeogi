@@ -17,17 +17,19 @@
 
 from threading import Thread, RLock
 from Queue import Queue
-from PyQt4.QtCore import QThread, QSettings
+from PyQt4.QtCore import QThread, QSettings, pyqtSignal
 from bees.beeexceptions import ConnError, NoBandError
 
 class Bee(Thread):
-    def __init__(self, tasks, library, urls, avai, elock):
+    def __init__(self, tasks, library, urls, avai, name, elock, rlock):
         Thread.__init__(self)
         self.tasks = tasks
         self.library = library
         self.urls = urls
         self.avai = avai
+        self.name = name
         self.elock = elock
+        self.rlock = rlock
         self.daemon = True
         self.start()
     def run(self):
@@ -36,7 +38,12 @@ class Bee(Thread):
             if not work:
                 break
             try:
-                result = work(artist, element, self.urls[artist], types)
+                try:
+                    val = self.urls[artist]
+                except KeyError:
+                    result = work(artist, element, {}, types)
+                else:
+                    result = work(artist, element, val, types)
             except NoBandError as e:
                 self.elock.acquire()
                 errors.append(e)
@@ -46,15 +53,53 @@ class Bee(Thread):
                 errors.append(e)
                 self.elock.release()
             else:
-                pass
+                errors |= result[u'errors']
+                for (album, year) in result[u'result']:
+                    self.rlock.acquire()
+                    partial = self.library[artist]
+                    try:
+                        partial = partial[year]
+                    except KeyError:
+                        partial[year] = {album: {}}
+                    else:
+                        try:
+                            partial = partial[album]
+                        except KeyError:
+                            partial[album] = {}
+                    try:
+                        partial = self.avai[artist + year + album]
+                    except KeyError:
+                        self.avai[artist + year + album] = {
+                                u'digital': False,
+                                u'analog': False,
+                                u'remote': True
+                                }
+                    else:
+                        partial[u'remote'] = True
+                    try:
+                        partial = self.urls[artist]
+                    except KeyError:
+                        self.urls[artist] = {self.name: result[u'choice']}
+                    else:
+                        try:
+                            partial[self.name]
+                        except KeyError:
+                            partial[self.name] = result[u'choice']
+                    self.rlock.release()
             finally:
                 self.tasks.task_done()
 
 class Distributor(QThread):
     __settings = QSettings(u'fetcher', u'Databases')
-    def __init__(self, library, behaviour):
+    updated = pyqtSignal()
+    def __init__(self, library):
         QThread.__init__(self)
-        self.bases = [
+        self.library = library[1]
+        self.urls = library[3]
+        self.avai = library[4]
+        self.errors = set()
+    def run(self):
+        bases = [
                 (unicode(self.__settings.value(x + u'/module').toString()),
                     self.__settings.value(x + u'/size').toInt()[0],
                     [unicode(t) for t, e in
@@ -62,14 +107,8 @@ class Distributor(QThread):
                             u'/types').toPyObject().iteritems() if e])
                 for x in self.__settings.value(u'order').toPyObject()
                 if self.__settings.value(x + u'/Enabled').toBool()]
-        self.library = library[1]
-        self.urls = library[3]
-        self.avai = library[4]
-        self.behaviour = behaviour
-        self.errors = list()
-        self.start()
-    def run(self):
-        for (name, threads, types) in self.bases:
+        behaviour = self.__settings.value(u'behaviour').toInt()[0]
+        for (name, threads, types) in bases:
             try:
                 db = __import__(u'bees.' + name, globals(),
                         locals(), [u'work'], -1)
@@ -79,14 +118,22 @@ class Distributor(QThread):
                 tasks = Queue(threads)
                 threa = list()
                 elock = RLock()
+                rlock = RLock()
                 for _ in range(threads):
                     threa.append(Bee(tasks, self.library,
-                        self.urls, self.avai, elock))
+                        self.urls, self.avai, name, elock, rlock))
                 for entry in self.library.iteritems():
-                    if not self.behaviour and not name in self.avai[entry[0]]:
-                        tasks.put((db.work, entry, types, self.errors))
+                    if not behaviour:
+                        try:
+                            val = self.urls[entry[0]].keys()
+                        except KeyError:
+                            tasks.put((db.work, entry, types, self.errors))
+                        else:
+                            if name in val:
+                                tasks.put((db.work, entry, types, self.errors))
                 tasks.join()
                 for _ in range(threads):
-                    tasks.put((False, False, False, False))
+                    tasks.put((False, (False, False), False, False))
                 for t in threa:
                     t.join()
+            self.updated.emit()

@@ -100,3 +100,11 @@ unsaved changes.
 ===LASTFM:
 
 -Initial release
+
+==0.6:
+
+===DATABASES:
+
+-Completely rewritten engine (modular, more flexible and what not...).
+-metal-archives.com: Adapted to new version.
+-metal-archives.com: Dropped BeautifulSoup in favour of lxml.
