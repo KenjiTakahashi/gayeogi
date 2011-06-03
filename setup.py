@@ -27,17 +27,11 @@ setup(
         url='http://github.com/KenjiTakahashi/fetcher',
         packages = [
             'fetcher',
-            'fetcher/interfaces',
-            'fetcher/db',
-            'fetcher/plugins'
+            'fetcher.interfaces',
+            'fetcher.db',
+            'fetcher.plugins'
             ],
-        package_dir = {
-            'fetcher': 'src/fetcher',
-            'fetcher/interfaces': 'src/fetcher/interfaces',
-            'fetcher/db': 'src/fetcher/db',
-            'fetcher/plugins': 'src/fetcher/plugins'
-            },
-        scripts = ['fetcher'],
+        scripts = ['scripts/fetcher'],
         install_requires = [
             'BeautifulSoup>=3.0',
             'mutagen'

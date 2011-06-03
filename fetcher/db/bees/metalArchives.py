@@ -21,6 +21,11 @@ from lxml import etree
 from bandsensor import Bandsensor
 from beeexceptions import ConnError, NoBandError
 
+items = [[u'Full-length', u'Live album', u'Demo'],
+        [u'Single', u'EP', u'DVD'],
+        [u'Boxed set', u'Split', u'Video/VHS'],
+        [u'Best of/Compilation', u'Split album', u'Split DVD / Video']]
+
 class JParse(json.JSONDecoder):
     """Decode metal-archives JSON object.
     

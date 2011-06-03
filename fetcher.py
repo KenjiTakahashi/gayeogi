@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env python2
 # This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
 # Karol "Kenji Takahashi" Wozniak (C) 2010
 #
@@ -15,5 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-LIB=`python2 -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
-python2 $LIB/fetcher/fetcher.py
+#LIB=`python2 -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
+#python2 $LIB/fetcher/fetcher.py
+import src
+src.fetcher.run()

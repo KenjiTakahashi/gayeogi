@@ -22,7 +22,7 @@ import re
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator
 from copy import deepcopy
-from db.local import Filesystem
+from fetcher.db.local import Filesystem
 from interfaces.settings import Settings
 from db.distributor import Distributor
 import plugins
@@ -574,15 +574,12 @@ class Main(QtGui.QMainWindow):
             unload()
 
 def run():
-    app=QtGui.QApplication(sys.argv)
+    app = QtGui.QApplication(sys.argv)
     app.setApplicationName(u'Fetcher')
     locale = QLocale.system().name()
     translator = QTranslator()
     if translator.load(u'fetcher_' + locale, u'langs/'):
         app.installTranslator(translator)
-    main=Main()
+    main = Main()
     main.show()
     sys.exit(app.exec_())
-
-if __name__=='__main__':
-    run()

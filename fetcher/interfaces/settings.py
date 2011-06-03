@@ -43,12 +43,25 @@ class Settings(QtGui.QDialog):
         self.dbList = QtGui.QListWidget()
         self.dbList.currentTextChanged.connect(self.dbDisplayOptions)
         order = self.__dbsettings.value(u'order', []).toPyObject()
+        dbOptionsLayout = QtGui.QGridLayout()
         for o in order:
             item = QtGui.QListWidgetItem(o)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(self.__settings.value(
+            item.setCheckState(self.__dbsettings.value(
                 o + u'/Enabled', 0).toInt()[0])
             self.dbList.addItem(item)
+            checkStates = self.__dbsettings.value(
+                    o + u'/types', {}).toPyObject()
+            items = [[u'Full-length', u'Live album', u'Demo'],
+                    [u'Single', u'EP', u'DVD'],
+                    [u'Boxed set', u'Split', u'Video/VHS'],
+                    [u'Best of/Compilation', u'Split album', u'Split DVD / Video']]
+            for i, item in enumerate(items):
+                for j, subitem in enumerate(item):
+                    widget = QtGui.QCheckBox(subitem)
+                    if checkStates:
+                        widget.setCheckState(checkStates[QString(subitem)])
+                    dbOptionsLayout.addWidget(widget, i, j)
         dbUp = QtGui.QPushButton(self.tr(u'&Up'))
         dbUp.clicked.connect(self.dbUp)
         dbDown = QtGui.QPushButton(self.tr(u'&Down'))
@@ -83,21 +96,9 @@ class Settings(QtGui.QDialog):
         dbUpperLayout.addWidget(self.dbList)
         dbUpperLayout.addLayout(arrowsLayout)
         self.dbOptions = QtGui.QGroupBox(u'Releases')
-        dbOptionsLayout = QtGui.QGridLayout()
         self.dbOptions.setLayout(dbOptionsLayout)
         self.dbOptions.setVisible(False)
-        checkStates = self.__settings.value(
-                u'metal-archives.com/types', {}).toPyObject()
-        items = [[u'Full-length', u'Live album', u'Demo'],
-                [u'Single', u'EP', u'DVD'],
-                [u'Boxed set', u'Split', u'Video/VHS'],
-                [u'Best of/Compilation', u'Split album', u'Split DVD / Video']]
-        for i, item in enumerate(items):
-            for j, subitem in enumerate(item):
-                widget = QtGui.QCheckBox(subitem)
-                if checkStates:
-                    widget.setCheckState(checkStates[QString(subitem)])
-                dbOptionsLayout.addWidget(widget, i, j)
+        ###
         dbLayout = QtGui.QVBoxLayout()
         dbLayout.addLayout(dbUpperLayout)
         dbLayout.addWidget(self.dbOptions)
@@ -242,6 +243,8 @@ class Settings(QtGui.QDialog):
             self.dbList.insertItem(current, self.dbList.takeItem(current - 1))
             self.dbList.setCurrentRow(current)
     def dbDisplayOptions(self, text):
+        items = __import__(u'db.bees.metalArchives', globals(), locals(), [u'items'], -1).items
+        print items
         if text == u'metal-archives.com':
             self.dbOptions.setVisible(True)
         else:
