@@ -17,7 +17,7 @@
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString
-import plugins
+import fetcher.plugins
 
 class QHoveringRadioButton(QtGui.QRadioButton):
     hovered = pyqtSignal(unicode)
@@ -157,8 +157,8 @@ class Settings(QtGui.QDialog):
         self.pluginsLayout.addWidget(self.pluginsList)
         self.__plugins = {}
         self.__depends = {}
-        for plugin in plugins.__all__:
-            ref = getattr(plugins, plugin).Main
+        for plugin in fetcher.plugins.__all__:
+            ref = getattr(fetcher.plugins, plugin).Main
             item = QtGui.QListWidgetItem(ref.name)
             item.depends = ref.depends
             ref2 = ref.QConfiguration()
@@ -243,7 +243,7 @@ class Settings(QtGui.QDialog):
             self.dbList.insertItem(current, self.dbList.takeItem(current - 1))
             self.dbList.setCurrentRow(current)
     def dbDisplayOptions(self, text):
-        items = __import__(u'db.bees.metalArchives', globals(), locals(), [u'items'], -1).items
+        items = __import__(u'fetcher.db.bees.metalArchives', globals(), locals(), [u'items'], -1).items
         print items
         if text == u'metal-archives.com':
             self.dbOptions.setVisible(True)

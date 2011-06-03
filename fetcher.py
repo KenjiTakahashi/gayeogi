@@ -17,5 +17,5 @@
 
 #LIB=`python2 -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
 #python2 $LIB/fetcher/fetcher.py
-import src
-src.fetcher.run()
+import fetcher
+fetcher.run()

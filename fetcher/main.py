@@ -23,9 +23,9 @@ from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator
 from copy import deepcopy
 from fetcher.db.local import Filesystem
-from interfaces.settings import Settings
-from db.distributor import Distributor
-import plugins
+from fetcher.db.distributor import Distributor
+from fetcher.interfaces.settings import Settings
+import fetcher.plugins
 
 version = u'0.6'
 if sys.platform == 'win32':
@@ -219,15 +219,15 @@ class Main(QtGui.QMainWindow):
         self.disableButtons()
         self.rt.start()
     def loadPlugins(self):
-        reload(plugins)
+        reload(fetcher.plugins)
         def depends(plugin):
-            for p in plugins.__all__:
-                class_ = getattr(getattr(plugins, p), u'Main')
+            for p in fetcher.plugins.__all__:
+                class_ = getattr(getattr(fetcher.plugins, p), u'Main')
                 if plugin in class_.depends and class_.loaded:
                     return True
             return False
-        for plugin in plugins.__all__:
-            class_ = getattr(getattr(plugins, plugin), u'Main')
+        for plugin in fetcher.plugins.__all__:
+            class_ = getattr(getattr(fetcher.plugins, plugin), u'Main')
             __settings_ = QSettings(u'fetcher', class_.name)
             option = __settings_.value(u'enabled', 0).toInt()[0]
             if option and not class_.loaded:
