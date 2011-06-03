@@ -17,7 +17,7 @@
 
 from threading import Thread, RLock
 from Queue import Queue
-from beeexceptions import ConnError
+from fetcher.db.bees.beeexceptions import ConnError
 
 class BandBee(Thread):
     def __init__(self, tasks, releases, rlock, elock):

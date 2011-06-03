@@ -18,13 +18,15 @@
 import urllib2
 import json
 from lxml import etree
-from bandsensor import Bandsensor
-from beeexceptions import ConnError, NoBandError
+from fetcher.db.bees.bandsensor import Bandsensor
+from fetcher.db.bees.beeexceptions import ConnError, NoBandError
 
 items = [[u'Full-length', u'Live album', u'Demo'],
         [u'Single', u'EP', u'DVD'],
         [u'Boxed set', u'Split', u'Video/VHS'],
         [u'Best of/Compilation', u'Split album', u'Split DVD / Video']]
+
+name = u'metal-archives.com'
 
 class JParse(json.JSONDecoder):
     """Decode metal-archives JSON object.

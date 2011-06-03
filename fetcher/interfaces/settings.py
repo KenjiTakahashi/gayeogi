@@ -43,25 +43,25 @@ class Settings(QtGui.QDialog):
         self.dbList = QtGui.QListWidget()
         self.dbList.currentTextChanged.connect(self.dbDisplayOptions)
         order = self.__dbsettings.value(u'order', []).toPyObject()
-        dbOptionsLayout = QtGui.QGridLayout()
+        self.dbOptionsLayout = QtGui.QGridLayout()
+        if not order:
+            from fetcher.db.bees import __names__, __all__
+            order = __names__
+            for (o, m) in zip(order, __all__):
+                self.__dbsettings.setValue(o + u'/module', m)
         for o in order:
-            item = QtGui.QListWidgetItem(o)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(self.__dbsettings.value(
-                o + u'/Enabled', 0).toInt()[0])
-            self.dbList.addItem(item)
-            checkStates = self.__dbsettings.value(
-                    o + u'/types', {}).toPyObject()
-            items = [[u'Full-length', u'Live album', u'Demo'],
-                    [u'Single', u'EP', u'DVD'],
-                    [u'Boxed set', u'Split', u'Video/VHS'],
-                    [u'Best of/Compilation', u'Split album', u'Split DVD / Video']]
-            for i, item in enumerate(items):
-                for j, subitem in enumerate(item):
-                    widget = QtGui.QCheckBox(subitem)
-                    if checkStates:
-                        widget.setCheckState(checkStates[QString(subitem)])
-                    dbOptionsLayout.addWidget(widget, i, j)
+            module = unicode(
+                    self.__dbsettings.value(o + u'/module', u'').toString())
+            try:
+                __import__(u'fetcher.db.bees.' + module)
+            except ImportError:
+                pass
+            else:
+                item = QtGui.QListWidgetItem(o)
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+                item.setCheckState(self.__dbsettings.value(
+                    o + u'/Enabled', 0).toInt()[0])
+                self.dbList.addItem(item)
         dbUp = QtGui.QPushButton(self.tr(u'&Up'))
         dbUp.clicked.connect(self.dbUp)
         dbDown = QtGui.QPushButton(self.tr(u'&Down'))
@@ -96,9 +96,8 @@ class Settings(QtGui.QDialog):
         dbUpperLayout.addWidget(self.dbList)
         dbUpperLayout.addLayout(arrowsLayout)
         self.dbOptions = QtGui.QGroupBox(u'Releases')
-        self.dbOptions.setLayout(dbOptionsLayout)
+        self.dbOptions.setLayout(self.dbOptionsLayout)
         self.dbOptions.setVisible(False)
-        ###
         dbLayout = QtGui.QVBoxLayout()
         dbLayout.addLayout(dbUpperLayout)
         dbLayout.addWidget(self.dbOptions)
@@ -207,30 +206,32 @@ class Settings(QtGui.QDialog):
             dialog.setText(u'Directory field cannot be empty!')
         else:
             self.__settings.setValue(u'directory', self.fsDir.text())
-            self.__settings.setValue(u'metal-archives.com', self.dbList.item(0).checkState())
-            self.__settings.setValue(u'discogs.com', self.dbList.item(1).checkState())
             ignores = [(unicode(v.text()), v.checkState()) for v
                     in self.fsIgnores.findItems(u'*', Qt.MatchWildcard)]
             self.__settings.setValue(u'ignores', ignores)
-            self.__settings.setValue(u'logs/errors', self.logsList.item(0).checkState())
-            self.__settings.setValue(u'logs/info', self.logsList.item(1).checkState())
-            maOptions = {}
-            for o in self.dbOptions.findChildren(QtGui.QCheckBox):
-                maOptions[o.text()] = o.checkState()
-            self.__settings.setValue(u'options/metal-archives.com', maOptions)
+            self.__settings.setValue(u'logs/errors',
+                    self.logsList.item(0).checkState())
+            self.__settings.setValue(u'logs/info',
+                    self.logsList.item(1).checkState())
             if self.crossed.isChecked():
-                self.__settings.setValue(u'behaviour', 1)
+                self.__dbsettings.setValue(u'behaviour', 1)
             else:
-                self.__settings.setValue(u'behaviour', 0)
+                self.__dbsettings.setValue(u'behaviour', 0)
             order = []
             for item in self.dbList.findItems(u'*', Qt.MatchWildcard):
                 text = unicode(item.text())
-                self.__settings.setValue(text, item.checkState())
+                self.__dbsettings.setValue(
+                        text + u'/Enabled', item.checkState())
                 order.append(text)
-            self.__settings.setValue(u'order', order)
+                maOptions = {}
+                for o in self.dbOptions.findChildren(QtGui.QCheckBox):
+                    maOptions[o.text()] = o.checkState()
+                self.__dbsettings.setValue(text + u'/types', maOptions)
+            self.__dbsettings.setValue(u'order', order)
             for i in range(self.pluginsList.count()):
                 item = self.pluginsList.item(i)
-                self.__plugins[unicode(item.text())].setSetting(u'enabled', item.checkState())
+                self.__plugins[unicode(item.text())].setSetting(u'enabled',
+                        item.checkState())
             self.close()
     def dbUp(self):
         current = self.dbList.currentRow() - 1
@@ -243,12 +244,26 @@ class Settings(QtGui.QDialog):
             self.dbList.insertItem(current, self.dbList.takeItem(current - 1))
             self.dbList.setCurrentRow(current)
     def dbDisplayOptions(self, text):
-        items = __import__(u'fetcher.db.bees.metalArchives', globals(), locals(), [u'items'], -1).items
-        print items
-        if text == u'metal-archives.com':
-            self.dbOptions.setVisible(True)
-        else:
+        module = unicode(self.__dbsettings.value(
+            text + u'/module', u'').toString())
+        try:
+            items = __import__(u'fetcher.db.bees.' + module, globals(),
+                    locals(), [u'items'], -1).items
+        except TypeError:
             self.dbOptions.setVisible(False)
+            for child in self.dbOptions.children()[1:]:
+                self.dbOptionsLayout.removeWidget(child)
+                child.deleteLater()
+        else:
+            checkStates = self.__dbsettings.value(
+                    text + u'/types', {}).toPyObject()
+            for i, item in enumerate(items):
+                for j, subitem in enumerate(item):
+                    widget = QtGui.QCheckBox(subitem)
+                    if checkStates:
+                        widget.setCheckState(checkStates[QString(subitem)])
+                    self.dbOptionsLayout.addWidget(widget, i, j)
+                    self.dbOptions.setVisible(True)
     def pluginsDisplayOptions(self, text):
         for k, v in self.__plugins.iteritems():
             if unicode(text) == k:

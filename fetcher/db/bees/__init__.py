@@ -13,3 +13,24 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# -*- coding: utf-8 -*-
+
+from pkgutil import iter_modules
+from os.path import realpath, dirname
+
+__names__ = list()
+__all__ = list()
+for _, name, _ in iter_modules([dirname(realpath(__file__))]):
+    try:
+        tmp = __import__(u'fetcher.db.bees.' + name, globals(),
+                locals(), [u'name'], -1)
+    except ImportError:
+        pass
+    else:
+        try:
+            tmp.name
+        except AttributeError:
+            pass
+        else:
+            __names__.append(tmp.name)
+            __all__.append(name)

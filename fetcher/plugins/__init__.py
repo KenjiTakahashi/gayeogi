@@ -21,7 +21,7 @@ from os.path import realpath, dirname
 __tmp__ = []
 for _, name, _ in iter_modules([dirname(realpath(__file__))]):
     try:
-        __import__(u'plugins.' + name)
+        __import__(u'fetcher.plugins.' + name)
     except:
         pass
     else:
@@ -30,7 +30,8 @@ for _, name, _ in iter_modules([dirname(realpath(__file__))]):
 __all__ = []
 while __tmp__:
     tmp = __tmp__.pop(0)
-    e = getattr(__import__(u'plugins'), tmp)
+    e = __import__(u'fetcher.plugins.' + tmp, globals(),
+            locals(), [u'Main'], -1)
     error = False
     for d in e.Main.depends:
         try:

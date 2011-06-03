@@ -18,7 +18,7 @@
 from threading import RLock
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings, pyqtSignal
-from bees.beeexceptions import ConnError, NoBandError
+from fetcher.db.bees.beeexceptions import ConnError, NoBandError
 
 class Bee(QThread):
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
@@ -106,7 +106,7 @@ class Distributor(QThread):
         behaviour = self.__settings.value(u'behaviour').toInt()[0]
         for (name, threads, types) in bases:
             try:
-                db = __import__(u'bees.' + name, globals(),
+                db = __import__(u'fetcher.db.bees.' + name, globals(),
                         locals(), [u'work'], -1)
             except ImportError:
                 pass # signal sth to GUI
