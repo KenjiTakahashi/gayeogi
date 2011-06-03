@@ -22,14 +22,13 @@ from bees.beeexceptions import ConnError, NoBandError
 
 class Bee(QThread):
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
-    def __init__(self, tasks, library, urls, avai, name, elock, rlock):
+    def __init__(self, tasks, library, urls, avai, name, rlock):
         QThread.__init__(self)
         self.tasks = tasks
         self.library = library
         self.urls = urls
         self.avai = avai
         self.name = name
-        self.elock = elock
         self.rlock = rlock
         self.start()
     def run(self):
@@ -114,11 +113,10 @@ class Distributor(QThread):
             else:
                 tasks = Queue(threads)
                 threa = list()
-                elock = RLock()
                 rlock = RLock()
                 for _ in range(threads):
                     t = Bee(tasks, self.library,
-                        self.urls, self.avai, name, elock, rlock)
+                        self.urls, self.avai, name, rlock)
                     t.errors.connect(self.errors)
                     threa.append(t)
                 for entry in self.library.iteritems():
