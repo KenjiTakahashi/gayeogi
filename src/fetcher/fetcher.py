@@ -167,7 +167,9 @@ class Main(QtGui.QMainWindow):
         self.fs.updated.connect(self.update)
         self.fs.errors.connect(self.logs)
         self.rt = Distributor(self.library)
+        self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
+        self.rt.errors.connect(self.logs)
         self.ui.artists.setHeaderLabels(QStringList([
             self.trUtf8('Artist'),
             self.trUtf8('Digital'),
@@ -323,17 +325,6 @@ class Main(QtGui.QMainWindow):
                 fh.write(u'\n')
             fh.close()
             self.statusBar().showMessage(u'Saved logs')
-    def showSettings(self):
-        u"""Show settings dialog and then update accordingly."""
-        def __save():
-            directory = unicode(
-                    self.__settings.value(u'directory', u'').toString())
-            self.ignores = self.__settings.value(u'ignores', []).toPyObject()
-            self.fs.actualize(directory, self.ignores)
-            self.loadPlugins()
-        dialog = Settings()
-        dialog.ok.clicked.connect(__save)
-        dialog.exec_()
     def logs(self, db, kind, filename, message):
         if self.__settings.value(u'logs/' + kind).toInt()[0]:
             item = QtGui.QTreeWidgetItem(QStringList([
@@ -346,6 +337,17 @@ class Main(QtGui.QMainWindow):
             self.ui.logs.scrollToItem(item)
         for i in range(4):
             self.ui.logs.resizeColumnToContents(i)
+    def showSettings(self):
+        u"""Show settings dialog and then update accordingly."""
+        def __save():
+            directory = unicode(
+                    self.__settings.value(u'directory', u'').toString())
+            self.ignores = self.__settings.value(u'ignores', []).toPyObject()
+            self.fs.actualize(directory, self.ignores)
+            self.loadPlugins()
+        dialog = Settings()
+        dialog.ok.clicked.connect(__save)
+        dialog.exec_()
     def setAnalog(self, item, column):
         if column == 3:
             digital = item.text(2)

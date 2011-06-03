@@ -15,14 +15,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # -*- coding: utf-8 -*-
 
-from threading import Thread, RLock
+from threading import RLock
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings, pyqtSignal
 from bees.beeexceptions import ConnError, NoBandError
 
-class Bee(Thread):
+class Bee(QThread):
+    errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, tasks, library, urls, avai, name, elock, rlock):
-        Thread.__init__(self)
+        QThread.__init__(self)
         self.tasks = tasks
         self.library = library
         self.urls = urls
@@ -30,11 +31,10 @@ class Bee(Thread):
         self.name = name
         self.elock = elock
         self.rlock = rlock
-        self.daemon = True
         self.start()
     def run(self):
         while True:
-            work, (artist, element), types, errors = self.tasks.get()
+            work, (artist, element), types = self.tasks.get()
             if not work:
                 break
             try:
@@ -45,15 +45,12 @@ class Bee(Thread):
                 else:
                     result = work(artist, element, val, types)
             except NoBandError as e:
-                self.elock.acquire()
-                errors.append(e)
-                self.elock.release()
+                self.errors.emit(self.name, u'errors', artist, e)
             except ConnError as e:
-                self.elock.acquire()
-                errors.append(e)
-                self.elock.release()
+                self.errors.emit(self.name, u'errors', artist, e)
             else:
-                errors |= result[u'errors']
+                for error in result[u'errors']:
+                    self.errors.emit(self.name, u'errors', artist, error)
                 for (album, year) in result[u'result']:
                     self.rlock.acquire()
                     partial = self.library[artist]
@@ -92,15 +89,15 @@ class Bee(Thread):
 class Distributor(QThread):
     __settings = QSettings(u'fetcher', u'Databases')
     updated = pyqtSignal()
+    stepped = pyqtSignal(unicode)
+    errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, library):
         QThread.__init__(self)
         self.library = library[1]
         self.urls = library[3]
         self.avai = library[4]
-        self.errors = set()
     def run(self):
-        bases = [
-                (unicode(self.__settings.value(x + u'/module').toString()),
+        bases = [(unicode(self.__settings.value(x + u'/module').toString()),
                     self.__settings.value(x + u'/size').toInt()[0],
                     [unicode(t) for t, e in
                         self.__settings.value(x +
@@ -120,20 +117,23 @@ class Distributor(QThread):
                 elock = RLock()
                 rlock = RLock()
                 for _ in range(threads):
-                    threa.append(Bee(tasks, self.library,
-                        self.urls, self.avai, name, elock, rlock))
+                    t = Bee(tasks, self.library,
+                        self.urls, self.avai, name, elock, rlock)
+                    t.errors.connect(self.errors)
+                    threa.append(t)
                 for entry in self.library.iteritems():
                     if not behaviour:
                         try:
                             val = self.urls[entry[0]].keys()
                         except KeyError:
-                            tasks.put((db.work, entry, types, self.errors))
+                            tasks.put((db.work, entry, types))
                         else:
                             if name in val:
-                                tasks.put((db.work, entry, types, self.errors))
+                                tasks.put((db.work, entry, types))
+                    self.stepped.emit(entry[0])
                 tasks.join()
                 for _ in range(threads):
-                    tasks.put((False, (False, False), False, False))
+                    tasks.put((False, (False, False), False))
                 for t in threa:
-                    t.join()
+                    t.wait()
             self.updated.emit()
