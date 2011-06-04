@@ -44,13 +44,18 @@ class Bee(QThread):
                 else:
                     result = work(artist, element, val, types)
             except NoBandError as e:
-                self.errors.emit(self.name, u'errors', artist, e)
+                self.errors.emit(self.name, u'errors', artist, e.message)
             except ConnError as e:
-                self.errors.emit(self.name, u'errors', artist, e)
+                self.errors.emit(self.name, u'errors', artist, e.message)
             else:
                 for error in result[u'errors']:
                     self.errors.emit(self.name, u'errors', artist, error)
+                albums = dict()
                 for (album, year) in result[u'result']:
+                    try:
+                        albums[year].add(album)
+                    except KeyError:
+                        albums[year] = set([album])
                     self.rlock.acquire()
                     partial = self.library[artist]
                     try:
@@ -82,6 +87,27 @@ class Bee(QThread):
                         except KeyError:
                             partial[self.name] = result[u'choice']
                     self.rlock.release()
+                self.rlock.acquire()
+                torem = set()
+                for year, a in self.library[artist].iteritems():
+                    try:
+                        for album in set(a) ^ albums[year]:
+                            key = artist + year + album
+                            if not self.avai[key][u'digital'] and \
+                                    not self.avai[key][u'analog']:
+                                torem.add((artist, year, album))
+                    except KeyError:
+                        for album in a:
+                            key = artist + year + album
+                            if not self.avai[key][u'digital'] and \
+                                    not self.avai[key][u'analog']:
+                                torem.add((artist, year, album))
+                while torem:
+                    (artist, year, album) = torem.pop()
+                    del self.library[artist][year][album]
+                    if not self.library[artist][year]:
+                        del self.library[artist][year]
+                self.rlock.release()
             finally:
                 self.tasks.task_done()
 
