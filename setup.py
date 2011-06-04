@@ -18,28 +18,28 @@
 from setuptools import setup
 
 setup(
-        name = 'Fetcher',
-        version = '0.5',
-        description = 'A fully-featured music management suite.',
-        author = 'Karol "Kenji Takahashi" Wozniak',
-        author_email = 'wozniakk@gmail.com',
-        license = 'GPL3',
-        url='http://github.com/KenjiTakahashi/fetcher',
+        name = u'Fetcher',
+        version = u'0.6',
+        description = u'A fully-featured music management suite.',
+        author = u'Karol "Kenji Takahashi" Wozniak',
+        author_email = u'wozniakk@gmail.com',
+        license = u'GPL3',
+        url = u'http://github.com/KenjiTakahashi/fetcher',
         packages = [
-            'fetcher',
-            'fetcher.interfaces',
-            'fetcher.db',
-            'fetcher.plugins'
+            u'fetcher',
+            u'fetcher.interfaces',
+            u'fetcher.db',
+            u'fetcher.plugins'
             ],
-        scripts = ['scripts/fetcher'],
+        scripts = [u'scripts/fetcher'],
         install_requires = [
-            'BeautifulSoup>=3.0',
-            'mutagen'
+            u'mutagen'
             ],
         extras_require = {
-            'Last.FM': ['pylast']
+            u'Last.FM': [u'pylast'],
+            u'metal-archives.com': [u'lxml']
             },
-        classifiers = [f.strip() for f in """
+        classifiers = [f.strip() for f in u"""
         Development Status :: 4 - Beta
         Environment :: Win32 (MS Windows)
         Environment :: X11 Applications :: Qt

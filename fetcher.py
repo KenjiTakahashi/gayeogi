@@ -14,8 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# -*- coding: utf-8 -*-
 
-#LIB=`python2 -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
-#python2 $LIB/fetcher/fetcher.py
 import fetcher
 fetcher.run()
