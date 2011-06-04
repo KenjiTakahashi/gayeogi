@@ -246,16 +246,18 @@ class Filesystem(QThread):
             self.toremove.add(self.remove(tf))
         for tr in self.toremove:
             if tr:
-                flength = 0
-                length = 0
+                remove = True
                 try:
-                    for dates in self.library[tr].values():
-                        for albums in dates.values():
-                            flength += len(albums)
-                            if not albums:
-                                length += 1
-                    if flength == length:
-                        del self.library[tr]
+                    for year, albums in self.library[tr].iteritems():
+                        for tracks in albums.values():
+                            if tracks:
+                                remove = False
+                                break
+                        if not remove:
+                            break
                 except KeyError:
                     pass
+                else:
+                    if remove:
+                        del self.library[tr]
         self.updated.emit()
