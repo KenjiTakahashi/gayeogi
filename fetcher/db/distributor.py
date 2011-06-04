@@ -22,7 +22,7 @@ from fetcher.db.bees.beeexceptions import ConnError, NoBandError
 
 class Bee(QThread):
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
-    def __init__(self, tasks, library, urls, avai, name, rlock):
+    def __init__(self, tasks, library, urls, avai, name, rlock, processed):
         QThread.__init__(self)
         self.tasks = tasks
         self.library = library
@@ -30,6 +30,7 @@ class Bee(QThread):
         self.avai = avai
         self.name = name
         self.rlock = rlock
+        self.processed = processed
         self.start()
     def run(self):
         while True:
@@ -44,6 +45,20 @@ class Bee(QThread):
                 else:
                     result = work(artist, element, val, types)
             except NoBandError as e:
+                self.rlock.acquire()
+                try:
+                    self.urls[artist][self.name]
+                except KeyError:
+                    pass
+                else:
+                    del self.urls[artist][self.name]
+                try:
+                    self.processed[artist]
+                except KeyError:
+                    pass
+                else:
+                    del self.processed[artist]
+                self.rlock.release()
                 self.errors.emit(self.name, u'errors', artist, e.message)
             except ConnError as e:
                 self.errors.emit(self.name, u'errors', artist, e.message)
@@ -87,11 +102,10 @@ class Bee(QThread):
                         partial = self.urls[artist]
                     except KeyError:
                         self.urls[artist] = {self.name: result[u'choice']}
+                        self.processed[artist] = True
                     else:
-                        try:
-                            partial[self.name]
-                        except KeyError:
-                            partial[self.name] = result[u'choice']
+                        partial[self.name] = result[u'choice']
+                        self.processed[artist] = True
                     self.rlock.release()
                 self.rlock.acquire()
                 torem = set()
@@ -111,6 +125,12 @@ class Bee(QThread):
                 if torem:
                     self.errors.emit(self.name, u'info', artist,
                             u'Something has been removed.')
+                    try:
+                        self.processed[artist]
+                    except KeyError:
+                        pass
+                    else:
+                        del self.processed[artist]
                 elif not added:
                     self.errors.emit(self.name, u'info', artist,
                             u'Nothing has been changed.')
@@ -146,11 +166,12 @@ class Distributor(QThread):
                 for x in self.__settings.value(u'order').toPyObject()
                 if self.__settings.value(x + u'/Enabled').toBool()]
         behaviour = self.__settings.value(u'behaviour').toInt()[0]
+        processed = dict()
         for (name, threads, types) in bases:
             try:
                 db = __import__(u'fetcher.db.bees.' + name, globals(),
                         locals(), [u'work', u'name'], -1)
-            except ImportError:
+            except ImportError: # it should not ever happen
                 self.errors.emit(db.name, u'errors', u'fetcher.db.bees.' + name,
                         u'No such module has been found!!!')
             else:
@@ -159,18 +180,15 @@ class Distributor(QThread):
                 rlock = RLock()
                 for _ in range(threads):
                     t = Bee(tasks, self.library,
-                        self.urls, self.avai, db.name, rlock)
+                        self.urls, self.avai, db.name, rlock, processed)
                     t.errors.connect(self.errors)
                     threa.append(t)
                 for entry in self.library.iteritems():
                     if not behaviour:
                         try:
-                            val = self.urls[entry[0]].keys()
+                            processed[entry[0]]
                         except KeyError:
                             tasks.put((db.work, entry, types))
-                        else:
-                            if name in val:
-                                tasks.put((db.work, entry, types))
                     self.stepped.emit(entry[0])
                 tasks.join()
                 for _ in range(threads):
