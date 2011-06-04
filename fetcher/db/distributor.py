@@ -51,6 +51,7 @@ class Bee(QThread):
                 for error in result[u'errors']:
                     self.errors.emit(self.name, u'errors', artist, error)
                 albums = dict()
+                added = False
                 for (album, year) in result[u'result']:
                     try:
                         albums[year].add(album)
@@ -62,11 +63,16 @@ class Bee(QThread):
                         partial = partial[year]
                     except KeyError:
                         partial[year] = {album: {}}
+                        added = True
                     else:
                         try:
                             partial = partial[album]
                         except KeyError:
                             partial[album] = {}
+                            added = True
+                    if added:
+                        self.errors.emit(self.name, u'info', artist,
+                                u'Something has been added.')
                     try:
                         partial = self.avai[artist + year + album]
                     except KeyError:
@@ -102,11 +108,21 @@ class Bee(QThread):
                             if not self.avai[key][u'digital'] and \
                                     not self.avai[key][u'analog']:
                                 torem.add((artist, year, album))
+                if torem:
+                    self.errors.emit(self.name, u'info', artist,
+                            u'Something has been removed.')
+                elif not added:
+                    self.errors.emit(self.name, u'info', artist,
+                            u'Nothing has been changed.')
                 while torem:
                     (artist, year, album) = torem.pop()
                     del self.library[artist][year][album]
+                    del self.avai[artist + year + album]
                     if not self.library[artist][year]:
                         del self.library[artist][year]
+                    if not self.library[artist]:
+                        del self.library[artist]
+                        del self.urls[artist]
                 self.rlock.release()
             finally:
                 self.tasks.task_done()
@@ -133,16 +149,17 @@ class Distributor(QThread):
         for (name, threads, types) in bases:
             try:
                 db = __import__(u'fetcher.db.bees.' + name, globals(),
-                        locals(), [u'work'], -1)
+                        locals(), [u'work', u'name'], -1)
             except ImportError:
-                pass # signal sth to GUI
+                self.errors.emit(db.name, u'errors', u'fetcher.db.bees.' + name,
+                        u'No such module has been found!!!')
             else:
                 tasks = Queue(threads)
                 threa = list()
                 rlock = RLock()
                 for _ in range(threads):
                     t = Bee(tasks, self.library,
-                        self.urls, self.avai, name, rlock)
+                        self.urls, self.avai, db.name, rlock)
                     t.errors.connect(self.errors)
                     threa.append(t)
                 for entry in self.library.iteritems():
