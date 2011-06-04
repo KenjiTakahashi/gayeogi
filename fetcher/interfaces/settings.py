@@ -16,7 +16,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString
+from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString, QStringList
 import fetcher.plugins
 
 class QHoveringRadioButton(QtGui.QRadioButton):
@@ -40,8 +40,11 @@ class Settings(QtGui.QDialog):
         self.tabs.currentChanged.connect(self.globalMessage)
         self.info = QtGui.QLabel()
         self.info.setWordWrap(True)
-        self.dbList = QtGui.QListWidget()
-        self.dbList.currentTextChanged.connect(self.dbDisplayOptions)
+        self.dbList = QtGui.QTreeWidget()
+        self.dbList.setColumnCount(2)
+        self.dbList.setIndentation(0)
+        self.dbList.setHeaderLabels(QStringList([u'Name', u'Threads']))
+        self.dbList.currentItemChanged.connect(self.dbDisplayOptions)
         order = self.__dbsettings.value(u'order', []).toPyObject()
         self.dbOptionsLayout = QtGui.QGridLayout()
         if not order:
@@ -57,11 +60,19 @@ class Settings(QtGui.QDialog):
             except ImportError:
                 pass
             else:
-                item = QtGui.QListWidgetItem(o)
+                item = QtGui.QTreeWidgetItem()
+                item.setText(0, o)
                 item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-                item.setCheckState(self.__dbsettings.value(
+                item.setCheckState(0, self.__dbsettings.value(
                     o + u'/Enabled', 0).toInt()[0])
-                self.dbList.addItem(item)
+                self.dbList.addTopLevelItem(item)
+                spin = QtGui.QSpinBox()
+                spin.setRange(1, 20)
+                spin.setValue(self.__dbsettings.value(
+                    o + u'/size', 1).toInt()[0])
+                self.dbList.setItemWidget(item, 1, spin)
+        self.dbList.resizeColumnToContents(0)
+        self.dbList.resizeColumnToContents(1)
         dbUp = QtGui.QPushButton(self.tr(u'&Up'))
         dbUp.clicked.connect(self.dbUp)
         dbDown = QtGui.QPushButton(self.tr(u'&Down'))
@@ -219,14 +230,16 @@ class Settings(QtGui.QDialog):
                 self.__dbsettings.setValue(u'behaviour', 0)
             order = []
             for item in self.dbList.findItems(u'*', Qt.MatchWildcard):
-                text = unicode(item.text())
+                text = unicode(item.text(0))
                 self.__dbsettings.setValue(
-                        text + u'/Enabled', item.checkState())
+                        text + u'/Enabled', item.checkState(0))
                 order.append(text)
                 maOptions = {}
                 for o in self.dbOptions.findChildren(QtGui.QCheckBox):
                     maOptions[o.text()] = o.checkState()
                 self.__dbsettings.setValue(text + u'/types', maOptions)
+                self.__dbsettings.setValue(text + u'/size',
+                        self.dbList.itemWidget(item, 1).value())
             self.__dbsettings.setValue(u'order', order)
             for i in range(self.pluginsList.count()):
                 item = self.pluginsList.item(i)
@@ -243,7 +256,8 @@ class Settings(QtGui.QDialog):
         if current < self.dbList.count():
             self.dbList.insertItem(current, self.dbList.takeItem(current - 1))
             self.dbList.setCurrentRow(current)
-    def dbDisplayOptions(self, text):
+    def dbDisplayOptions(self, item, _):
+        text = unicode(item.text(0))
         module = unicode(self.__dbsettings.value(
             text + u'/module', u'').toString())
         try:
