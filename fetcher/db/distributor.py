@@ -125,12 +125,6 @@ class Bee(QThread):
                 if torem:
                     self.errors.emit(self.name, u'info', artist,
                             u'Something has been removed.')
-                    try:
-                        self.processed[artist]
-                    except KeyError:
-                        pass
-                    else:
-                        del self.processed[artist]
                 elif not added:
                     self.errors.emit(self.name, u'info', artist,
                             u'Nothing has been changed.')
@@ -143,6 +137,12 @@ class Bee(QThread):
                     if not self.library[artist]:
                         del self.library[artist]
                         del self.urls[artist]
+                        try:
+                            self.processed[artist]
+                        except KeyError:
+                            pass
+                        else:
+                            del self.processed[artist]
                 self.rlock.release()
             finally:
                 self.tasks.task_done()
