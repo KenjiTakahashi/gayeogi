@@ -194,6 +194,11 @@
         <source>Here you can choose and configure additional plugins.</source>
         <translation>Tutaj możesz wybrać i skonfigurować dodatki.</translation>
     </message>
+    <message>
+        <location filename="fetcher/interfaces/settings.py" line="87"/>
+        <source>O&amp;ne-by-one</source>
+        <translation>Kolej&amp;no</translation>
+    </message>
 </context>
 <context>
     <name>main</name>
@@ -245,7 +250,7 @@
     <message>
         <location filename="fetcher/interfaces/main.py" line="289"/>
         <source>&amp;Local</source>
-        <translation>&amp;Localny</translation>
+        <translation>P&amp;liki</translation>
     </message>
     <message>
         <location filename="fetcher/interfaces/main.py" line="290"/>

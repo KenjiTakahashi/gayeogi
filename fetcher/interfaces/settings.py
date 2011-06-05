@@ -86,7 +86,7 @@ class Settings(QtGui.QDialog):
         self.crossed.unhovered.connect(self.globalMessage)
         oneByOne = QHoveringRadioButton(0,
                 self.trUtf8('Search databases in order and in every next database, search only for bands not yet found elsewhere.'),
-                self.trUtf8(u'O&ne-be-one'))
+                self.trUtf8('O&ne-by-one'))
         oneByOne.hovered.connect(self.info.setText)
         oneByOne.unhovered.connect(self.globalMessage)
         behaviour = self.__settings.value(u'behaviour', 0).toInt()[0]
