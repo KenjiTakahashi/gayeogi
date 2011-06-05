@@ -575,7 +575,8 @@ def run():
     app.setApplicationName(u'Fetcher')
     locale = QLocale.system().name()
     translator = QTranslator()
-    if translator.load(u'main_' + locale, u'langs/'):
+    path = os.path.dirname(os.path.realpath(__file__)) + u'/langs/'
+    if translator.load(u'main_' + locale, path):
         app.installTranslator(translator)
     main = Main()
     main.show()
