@@ -171,17 +171,12 @@ class Main(QtGui.QMainWindow):
         self.rt.updated.connect(self.update)
         self.rt.errors.connect(self.logs)
         self.ui.artists.setHeaderLabels(QStringList([
-            self.trUtf8('Artist'),
-            self.trUtf8('Digital'),
-            self.trUtf8('Analog')]))
+            u'Artist', u'Digital', u'Analog']))
         self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
         self.ui.albums.setHeaderLabels(QStringList([
-            self.trUtf8('Year'),
-            self.trUtf8('Album'),
-            self.trUtf8('Digital'),
-            self.trUtf8('Analog')]))
+            u'Year', u'Album', u'Digital', u'Analog']))
         self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
-        self.ui.tracks.setHeaderLabels(QStringList(['#', self.trUtf8('Title')]))
+        self.ui.tracks.setHeaderLabels(QStringList(['#', u'Title']))
         self.ui.logs.setHeaderLabels(QStringList([
             self.trUtf8('Module'),
             self.trUtf8('Type'),
@@ -199,7 +194,7 @@ class Main(QtGui.QMainWindow):
         self.ui.albumFilter.textEdited.connect(self.filter_)
         self.ui.trackFilter.textEdited.connect(self.filter_)
         self.statusBar()
-        self.setWindowTitle(u'Fetcher '+version)
+        self.setWindowTitle(u'Fetcher ' + version)
         self.loadPlugins()
     def disableButtons(self):
         u"""Disable some buttons one mustn't use during the update.
@@ -315,7 +310,7 @@ class Main(QtGui.QMainWindow):
         filename = dialog.getSaveFileName()
         if filename:
             fh = open(filename, u'w')
-            fh.write(u'Database:Type:File/Entry:Message')
+            fh.write(self.trUtf8('Database:Type:File/Entry:Message'))
             for i in range(self.ui.logs.topLevelItemCount()):
                 item = self.ui.logs.topLevelItem(i)
                 for c in range(4):
@@ -324,7 +319,7 @@ class Main(QtGui.QMainWindow):
                         fh.write(u':')
                 fh.write(u'\n')
             fh.close()
-            self.statusBar().showMessage(u'Saved logs')
+            self.statusBar().showMessage(self.trUtf8('Logs saved'))
     def logs(self, db, kind, filename, message):
         if self.__settings.value(u'logs/' + kind).toInt()[0]:
             item = QtGui.QTreeWidgetItem(QStringList([
@@ -458,9 +453,9 @@ class Main(QtGui.QMainWindow):
         try:
             self.db.write(self.library)
         except AttributeError:
-            self.statusBar().showMessage(u'Nothing to save...')
+            self.statusBar().showMessage(self.trUtf8('Nothing to save...'))
         else:
-            self.statusBar().showMessage(u'Saved')
+            self.statusBar().showMessage(self.trUtf8('Saved'))
             self.oldLib = deepcopy(self.library)
     def fillAlbums(self):
         items = self.ui.artists.selectedItems()
@@ -549,8 +544,10 @@ class Main(QtGui.QMainWindow):
                 else:
                     detailed.append((0, 1))
         self.statistics = {
-                u'artists': (unicode(artists[0]), unicode(artists[1]), unicode(artists[2])),
-                u'albums': (unicode(albums[0]), unicode(albums[1]), unicode(albums[2])),
+                u'artists': (unicode(artists[0]),
+                    unicode(artists[1]), unicode(artists[2])),
+                u'albums': (unicode(albums[0]),
+                    unicode(albums[1]), unicode(albums[2])),
                 u'detailed': detailed
                 }
     def closeEvent(self, event):
@@ -578,7 +575,7 @@ def run():
     app.setApplicationName(u'Fetcher')
     locale = QLocale.system().name()
     translator = QTranslator()
-    if translator.load(u'fetcher_' + locale, u'langs/'):
+    if translator.load(u'main_' + locale, u'langs/'):
         app.installTranslator(translator)
     main = Main()
     main.show()

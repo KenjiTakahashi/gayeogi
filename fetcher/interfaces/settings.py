@@ -43,7 +43,8 @@ class Settings(QtGui.QDialog):
         self.dbList = QtGui.QTreeWidget()
         self.dbList.setColumnCount(2)
         self.dbList.setIndentation(0)
-        self.dbList.setHeaderLabels(QStringList([u'Name', u'Threads']))
+        self.dbList.setHeaderLabels(QStringList([
+            self.trUtf8('Name'), self.trUtf8('Threads')]))
         self.dbList.currentItemChanged.connect(self.dbDisplayOptions)
         order = self.__dbsettings.value(u'order', []).toPyObject()
         self.dbOptionsLayout = QtGui.QGridLayout()
@@ -73,19 +74,19 @@ class Settings(QtGui.QDialog):
                 self.dbList.setItemWidget(item, 1, spin)
         self.dbList.resizeColumnToContents(0)
         self.dbList.resizeColumnToContents(1)
-        dbUp = QtGui.QPushButton(self.tr(u'&Up'))
+        dbUp = QtGui.QPushButton(self.trUtf8('&Up'))
         dbUp.clicked.connect(self.dbUp)
-        dbDown = QtGui.QPushButton(self.tr(u'&Down'))
+        dbDown = QtGui.QPushButton(self.trUtf8('&Down'))
         dbDown.clicked.connect(self.dbDown)
-        dbBehaviour = QtGui.QGroupBox(u'Behaviour')
-        self.crossed = QHoveringRadioButton(
-                0, u'Search for all bands in all enabled databases.',
-                self.tr(u'C&rossed'))
+        dbBehaviour = QtGui.QGroupBox(self.trUtf8('Behaviour'))
+        self.crossed = QHoveringRadioButton(0,
+                self.trUtf8('Search for all bands in all enabled databases.'),
+                self.trUtf8('C&rossed'))
         self.crossed.hovered.connect(self.info.setText)
         self.crossed.unhovered.connect(self.globalMessage)
-        oneByOne = QHoveringRadioButton(
-                0, u'Search databases in order and in every next database, search only for bands not yet found elsewhere.',
-                self.tr(u'O&ne-be-one'))
+        oneByOne = QHoveringRadioButton(0,
+                self.trUtf8('Search databases in order and in every next database, search only for bands not yet found elsewhere.'),
+                self.trUtf8(u'O&ne-be-one'))
         oneByOne.hovered.connect(self.info.setText)
         oneByOne.unhovered.connect(self.globalMessage)
         behaviour = self.__settings.value(u'behaviour', 0).toInt()[0]
@@ -106,7 +107,7 @@ class Settings(QtGui.QDialog):
         dbUpperLayout = QtGui.QHBoxLayout()
         dbUpperLayout.addWidget(self.dbList)
         dbUpperLayout.addLayout(arrowsLayout)
-        self.dbOptions = QtGui.QGroupBox(u'Releases')
+        self.dbOptions = QtGui.QGroupBox(self.trUtf8('Releases'))
         self.dbOptions.setLayout(self.dbOptionsLayout)
         self.dbOptions.setVisible(False)
         dbLayout = QtGui.QVBoxLayout()
@@ -114,17 +115,17 @@ class Settings(QtGui.QDialog):
         dbLayout.addWidget(self.dbOptions)
         dbWidget = QtGui.QWidget()
         dbWidget.setLayout(dbLayout)
-        self.tabs.addTab(dbWidget, self.tr(u'&Databases'))
-        fsDirLabel = QtGui.QLabel(u'Directory')
+        self.tabs.addTab(dbWidget, self.trUtf8('&Databases'))
+        fsDirLabel = QtGui.QLabel(self.trUtf8('Directory'))
         directory = self.__settings.value(u'directory', u'').toString()
         self.fsDir = QtGui.QLineEdit(directory)
-        fsDirButton = QtGui.QPushButton(self.tr(u'&Browse'))
+        fsDirButton = QtGui.QPushButton(self.trUtf8('&Browse'))
         fsDirButton.clicked.connect(self.selectDir)
         fsDirLayout = QtGui.QHBoxLayout()
         fsDirLayout.addWidget(fsDirLabel)
         fsDirLayout.addWidget(self.fsDir)
         fsDirLayout.addWidget(fsDirButton)
-        fsLabel = QtGui.QLabel(u'Ignores:')
+        fsLabel = QtGui.QLabel(self.trUtf8('Ignores:'))
         self.fsIgnores = QtGui.QListWidget()
         ignores = self.__settings.value(u'ignores').toPyObject()
         if not ignores:
@@ -135,9 +136,9 @@ class Settings(QtGui.QDialog):
             item.setCheckState(i[1])
             self.fsIgnores.addItem(item)
         self.fsName = QtGui.QLineEdit()
-        fsAdd = QtGui.QPushButton(self.tr(u'&Add'))
+        fsAdd = QtGui.QPushButton(self.trUtf8('&Add'))
         fsAdd.clicked.connect(self.add)
-        fsRemove = QtGui.QPushButton(self.tr(u'&Remove'))
+        fsRemove = QtGui.QPushButton(self.trUtf8('&Remove'))
         fsButtonsLayout = QtGui.QHBoxLayout()
         fsButtonsLayout.addWidget(self.fsName)
         fsButtonsLayout.addWidget(fsAdd)
@@ -149,7 +150,7 @@ class Settings(QtGui.QDialog):
         fsLayout.addLayout(fsButtonsLayout)
         fsWidget = QtGui.QWidget()
         fsWidget.setLayout(fsLayout)
-        self.tabs.addTab(fsWidget, self.tr(u'&Local'))
+        self.tabs.addTab(fsWidget, self.trUtf8('&Local'))
         self.logsList = QtGui.QListWidget()
         item = QtGui.QListWidgetItem(u'errors')
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -159,7 +160,7 @@ class Settings(QtGui.QDialog):
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
         item.setCheckState(self.__settings.value(u'logs/info', 0).toInt()[0])
         self.logsList.addItem(item)
-        self.tabs.addTab(self.logsList, self.tr(u'Lo&gs'))
+        self.tabs.addTab(self.logsList, self.trUtf8('Lo&gs'))
         self.pluginsList = QtGui.QListWidget()
         self.pluginsList.currentTextChanged.connect(self.pluginsDisplayOptions)
         self.pluginsList.itemChanged.connect(self.checkDependencies)
@@ -185,10 +186,10 @@ class Settings(QtGui.QDialog):
                     self.__depends[d] = [ref.name]
         pluginsWidget = QtGui.QWidget()
         pluginsWidget.setLayout(self.pluginsLayout)
-        self.tabs.addTab(pluginsWidget, self.tr(u'&Plugins'))
-        self.ok = QtGui.QPushButton(self.tr(u'&OK'))
+        self.tabs.addTab(pluginsWidget, self.trUtf8('&Plugins'))
+        self.ok = QtGui.QPushButton(self.trUtf8('&OK'))
         self.ok.clicked.connect(self.save)
-        self.cancel = QtGui.QPushButton(self.tr(u'&Cancel'))
+        self.cancel = QtGui.QPushButton(self.trUtf8('&Cancel'))
         self.cancel.clicked.connect(self.close)
         buttonsLayout = QtGui.QHBoxLayout()
         buttonsLayout.addStretch()
@@ -214,7 +215,7 @@ class Settings(QtGui.QDialog):
         directory = self.fsDir.text()
         if directory == u'':
             dialog = QtGui.QMessageBox()
-            dialog.setText(u'Directory field cannot be empty!')
+            dialog.setText(self.trUtf8('Directory field cannot be empty!'))
         else:
             self.__settings.setValue(u'directory', self.fsDir.text())
             ignores = [(unicode(v.text()), v.checkState()) for v
@@ -298,10 +299,10 @@ class Settings(QtGui.QDialog):
                 pass
     def globalMessage(self, i):
         if i == 0:
-            self.info.setText(u'Here you can choose which databases should be searched, what releases to search for and how the search should behave.')
+            self.info.setText(self.trUtf8('Here you can choose which databases should be searched, what releases to search for and how the search should behave.'))
         elif i == 1:
-            self.info.setText(u"Here you can choose in which directory you files lies and which files to ignore while searching (you can use wilcards, like '*' or '?')")
+            self.info.setText(self.trUtf8("Here you can choose in which directory you files lies and which files to ignore while searching (you can use wilcards, like '*' or '?')"))
         elif i == 2:
-            self.info.setText(u'Here you can choose what kind of log messages should be displayed in the main window.')
+            self.info.setText(self.trUtf8('Here you can choose what kind of log messages should be displayed in the main window.'))
         elif i == 3:
-            self.info.setText(u'Here you can choose and configure additional plugins.')
+            self.info.setText(self.trUtf8('Here you can choose and configure additional plugins.'))

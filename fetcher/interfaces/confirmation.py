@@ -20,17 +20,18 @@ from PyQt4.QtGui import QDialog, QDialogButtonBox, QLabel, QVBoxLayout, QPushBut
 class ConfirmationDialog(QDialog):
     def __init__(self, parent = None):
         QDialog.__init__(self, parent)
-        save = QPushButton(self.tr(u'&Save'))
+        save = QPushButton(self.trUtf8('&Save'))
         save.clicked.connect(self.close)
-        close = QPushButton(self.tr(u'Close &without saving'))
+        close = QPushButton(self.trUtf8('Close &without saving'))
         close.clicked.connect(self.close)
-        cancel = QPushButton(self.tr(u'&Cancel'))
+        cancel = QPushButton(self.trUtf8('&Cancel'))
         cancel.clicked.connect(self.close)
         self.buttons = QDialogButtonBox()
         self.buttons.addButton(save, QDialogButtonBox.AcceptRole)
         self.buttons.addButton(close, QDialogButtonBox.HelpRole)
         self.buttons.addButton(cancel, QDialogButtonBox.RejectRole)
-        label = QLabel(u"You've got some unsaved changes. What would you like to do?")
+        label = QLabel(self.trUtf8(
+            "You've got some unsaved changes. What would you like to do?"))
         layout = QVBoxLayout()
         layout.addWidget(label)
         layout.addWidget(self.buttons)
