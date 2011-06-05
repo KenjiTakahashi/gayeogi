@@ -216,6 +216,7 @@ class Settings(QtGui.QDialog):
         if directory == u'':
             dialog = QtGui.QMessageBox()
             dialog.setText(self.trUtf8('Directory field cannot be empty!'))
+            dialog.exec_()
         else:
             self.__settings.setValue(u'directory', self.fsDir.text())
             ignores = [(unicode(v.text()), v.checkState()) for v

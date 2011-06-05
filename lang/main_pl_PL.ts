@@ -147,7 +147,7 @@
     <message>
         <location filename="fetcher/interfaces/settings.py" line="153"/>
         <source>&amp;Local</source>
-        <translation>&amp;Localna</translation>
+        <translation>P&amp;liki</translation>
     </message>
     <message>
         <location filename="fetcher/interfaces/settings.py" line="163"/>
