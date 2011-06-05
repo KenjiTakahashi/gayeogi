@@ -109,3 +109,8 @@ unsaved changes.
 -metal-archives.com: Adapted to new version.
 -metal-archives.com: Dropped BeautifulSoup in favour of lxml.
 -Rewrite also caused some bugs to disappear :).
+
+===MAIN:
+
+-Multilanguage support.
+-Polish translation.
