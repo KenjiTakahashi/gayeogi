@@ -54,8 +54,9 @@ class DB(object):
     def __init__(self):
         self.dbPath = os.path.join(dbPath, u'db.pkl')
     def write(self, data):
-        handler = open(self.dbPath, u'wb')
-        cPickle.dump(data, handler, -1)
+        handler = open(self.dbPath, u'r+b')
+        while(cPickle.load(handler) != data):
+            cPickle.dump(data, handler, -1)
         handler.close()
     def read(self):
         handler = open(self.dbPath, u'rb')
