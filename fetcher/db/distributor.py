@@ -85,9 +85,6 @@ class Bee(QThread):
                         except KeyError:
                             partial[album] = {}
                             added = True
-                    if added:
-                        self.errors.emit(self.name, u'info', artist,
-                                u'Something has been added.')
                     try:
                         partial = self.avai[artist + year + album]
                     except KeyError:
@@ -122,6 +119,9 @@ class Bee(QThread):
                             if not self.avai[key][u'digital'] and \
                                     not self.avai[key][u'analog']:
                                 torem.add((artist, year, album))
+                if added:
+                    self.errors.emit(self.name, u'info', artist,
+                            u'Something has been added.')
                 if torem:
                     self.errors.emit(self.name, u'info', artist,
                             u'Something has been removed.')
