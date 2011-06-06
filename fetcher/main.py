@@ -120,6 +120,7 @@ class DB(object):
                     main[artist][tracks[u'date']][album] \
                             [deepest[u'tracknumber']] = {
                                     track: {
+                                        u'path': deepest[u'path']
                                         }
                                     }
                     path[deepest[u'path']] = {
@@ -503,6 +504,7 @@ class Main(QtGui.QMainWindow):
                     item_ = NumericTreeWidgetItem(QStringList([
                         num, title]))
                     item_.album = album
+                    item_.year = date
                     item_.artist = item.artist
                     self.ui.tracks.addTopLevelItem(item_)
         self.ui.tracks.setSortingEnabled(True)

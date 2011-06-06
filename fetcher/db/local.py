@@ -55,6 +55,7 @@ class Filesystem(QThread):
                         tags[u'album']: {
                             tags[u'tracknumber']: {
                                 tags[u'title']: {
+                                    u'path': path
                                     }
                                 }
                             }

@@ -115,8 +115,8 @@ class Main(QtGui.QWidget):
         self.playButton = QtGui.QPushButton(playIcon, u'')
         self.playButton.clicked.connect(self.playByButton)
         self.playButton.playing = False
-        playShortcut = QtGui.QShortcut(
-                QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_P), self.playButton)
+        playShortcut = QtGui.QShortcut(QtGui.QKeySequence(
+            Qt.CTRL + Qt.SHIFT + Qt.Key_P), self.playButton)
         playShortcut.activated.connect(self.playButton.click)
         stopIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaStop)
         stop = QtGui.QPushButton(stopIcon, u'')
@@ -181,7 +181,8 @@ class Main(QtGui.QWidget):
         self.mediaobject.finished.connect(self.stop)
         self.mediaobject.stateChanged.connect(self.state)
         self.audiooutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
-        self.audiooutput.setVolume(self.__settings.value('volume', 1).toReal()[0])
+        self.audiooutput.setVolume(
+                self.__settings.value('volume', 1).toReal()[0])
         Phonon.createPath(self.mediaobject, self.audiooutput)
         progress.setMediaObject(self.mediaobject)
         volume.setAudioOutput(self.audiooutput)
@@ -298,11 +299,13 @@ class Main(QtGui.QWidget):
                     items = []
                     for i in range(self.parent.albums.topLevelItemCount()):
                         item_ = self.parent.albums.topLevelItem(i)
+                        year = unicode(item_.text(0))
                         album = unicode(item_.text(1))
-                        items_ = [self.__createItem((vv[u'tracknumber'], title,
-                            album, item.text(0), vv[u'path'])) for title, vv
-                            in self.library[item_.artist][u'albums']\
-                                    [album][u'tracks'].iteritems()]
+                        items_ = [self.__createItem((tracknumber, title, album,
+                            item.text(0), d[u'path'])) for tracknumber, tracks
+                            in self.library[1][item_.artist][year]\
+                                    [album].iteritems() for title, d in 
+                                    tracks.iteritems()]
                         items_.sort(self.__compare)
                         items.extend(items_)
                     for i in items:
@@ -310,15 +313,16 @@ class Main(QtGui.QWidget):
                 else:
                     for i in range(self.parent.tracks.topLevelItemCount()):
                         item_ = self.parent.tracks.topLevelItem(i)
-                        path = self.library[item_.artist][u'albums'][item_.album]\
-                                [u'tracks'][unicode(item_.text(1))][u'path']
+                        path = self.library[1][item_.artist][item_.year]\
+                                [item_.album][unicode(item_.text(0))]\
+                                [unicode(item_.text(1))][u'path']
                         self.playlist.addItem(self.__createItem((item_.text(0),
                             item_.text(1), item_.album, item_.artist, path)))
             else:
-                path = self.library[item.artist][u'albums'][item.album]\
-                        [u'tracks'][unicode(item.text(1))][u'path']
-                self.playlist.addItem(self.__createItem(
-                    (item.text(0), item.text(1), item.album, item.artist, path)))
+                path = self.library[1][item.artist][item.year][item.album]\
+                        [unicode(item.text(0))][unicode(item.text(1))][u'path']
+                self.playlist.addItem(self.__createItem((item.text(0),
+                    item.text(1), item.album, item.artist, path)))
             if column != -1:
                 self.playByButton()
     def state(self, state):
