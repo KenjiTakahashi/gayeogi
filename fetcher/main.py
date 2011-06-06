@@ -54,10 +54,21 @@ class DB(object):
     def __init__(self):
         self.dbPath = os.path.join(dbPath, u'db.pkl')
     def write(self, data):
-        handler = open(self.dbPath, u'r+b')
-        while(cPickle.load(handler) != data):
-            cPickle.dump(data, handler, -1)
+        handler = open(self.dbPath, u'wb')
+        cPickle.dump(data, handler, -1)
         handler.close()
+        saved = False
+        while(not saved):
+            try:
+                handler = open(self.dbPath, u'rb')
+                cPickle.load(handler)
+            except:
+                handler = open(self.dbPath, u'wb')
+                cPickle.dump(data, handler, -1)
+            else:
+                saved = True
+            finally:
+                handler.close()
     def read(self):
         handler = open(self.dbPath, u'rb')
         result = cPickle.load(handler)
