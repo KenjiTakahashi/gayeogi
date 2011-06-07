@@ -74,8 +74,7 @@ class Bandsensor(object):
             for album, year in single:
                 for eYear, data in self.albums.iteritems():
                     for eAlbum in data.keys():
-                        if album.lower() == eAlbum.lower() and \
-                                year == eYear[-4:]:
+                        if album.lower() == eAlbum.lower():
                             try:
                                 values[url][0] += 1
                             except KeyError:
