@@ -125,19 +125,22 @@ def __parse2(json, artist, element, releases):
     Note: It is meant for internal usage only!
     """
     urls = JParse(artist).decode(json)
-    try:
-        sensor = Bandsensor(__sense, urls, element, releases)
-        data = sensor.run()
-    except (urllib2.HTTPError, urllib2.URLError):
-        raise ConnError()
+    if not urls:
+        raise NoBandError()
     else:
-        if data:
-            return {u'choice': data[0],
-                    u'result': data[1],
-                    u'errors': sensor.errors
-                    }
+        try:
+            sensor = Bandsensor(__sense, urls, element, releases)
+            data = sensor.run()
+        except (urllib2.HTTPError, urllib2.URLError):
+            raise ConnError()
         else:
-            raise NoBandError()
+            if data:
+                return {u'choice': data[0],
+                        u'result': data[1],
+                        u'errors': sensor.errors
+                        }
+            else:
+                raise NoBandError()
 
 def work(artist, element, urls, releases):
     """Retrieve new or updated info for specified artist.
@@ -154,7 +157,9 @@ def work(artist, element, urls, releases):
         result = __parse1(element, urls[u'metalArchives'], releases)
         result[u'artist'] = artist
     else:
-        artist_ = urllib2.quote(artist.encode(u'utf-8')).replace(u'%20', u'+')
+        artist_ = urllib2.quote(
+                artist.replace(u'&', u'and').replace(u'/', u'-').encode(
+                    u'utf-8')).replace(u'%20', u'+')
         try:
             json = urllib2.urlopen(
                     u'http://www.metal-archives.com/search/ajax-band-search/?field=name&query=' +
