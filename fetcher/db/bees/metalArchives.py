@@ -158,7 +158,7 @@ def work(artist, element, urls, releases):
         result[u'artist'] = artist
     else:
         artist_ = urllib2.quote(
-                artist.replace(u'&', u'and').replace(u'/', u'-').encode(
+                artist.replace(u'&', u'and').replace(u'/', u'').encode(
                     u'utf-8')).replace(u'%20', u'+')
         try:
             json = urllib2.urlopen(
