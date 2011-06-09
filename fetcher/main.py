@@ -429,6 +429,9 @@ class Main(QtGui.QMainWindow):
         self.ui.remote.setEnabled(True)
         self.ui.save.setEnabled(True)
         self.ui.settings.setEnabled(True)
+        sArtists = [i.text(0) for i in self.ui.artists.selectedItems()]
+        sAlbums = [i.text(0) for i in self.ui.albums.selectedItems()]
+        sTracks = [i.text(0) for i in self.ui.tracks.selectedItems()]
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
         for i, l in enumerate(self.library[1].keys()):
@@ -453,8 +456,17 @@ class Main(QtGui.QMainWindow):
             self.ui.artists.insertTopLevelItem(i, item)
         self.ui.artists.setSortingEnabled(True)
         self.ui.artists.sortItems(0, 0)
-        self.ui.artists.resizeColumnToContents(0)
-        self.ui.artists.resizeColumnToContents(2)
+        for i in range(3):
+            self.ui.artists.resizeColumnToContents(i)
+        for a in sArtists:
+            i = self.ui.artists.findItems(a, Qt.MatchExactly)
+            i[0].setSelected(True)
+        for a in sAlbums:
+            i = self.ui.albums.findItems(a, Qt.MatchExactly)
+            i[0].setSelected(True)
+        for a in sTracks:
+            i = self.ui.tracks.findItems(a, Qt.MatchExactly)
+            i[0].setSelected(True)
         self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
         self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
         self.ui.artistsRed.setText(self.statistics[u'artists'][2])
