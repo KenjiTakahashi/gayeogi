@@ -31,7 +31,7 @@ class Main(object):
     __opt = {u'Last.FM': u'LastFMNetwork', u'Libre.FM': u'LibreFMNetwork'}
     __settings = QSettings(u'fetcher', u'Last.FM')
     __sem = True
-    def __init__(self, parent, ___, _, __):
+    def __init__(self, parent, ___, _, __, translator):
         username = unicode(Main.__settings.value(u'username', u'').toString())
         password = unicode(
                 Main.__settings.value(u'password_hash', u'').toString())
@@ -56,6 +56,7 @@ class Main(object):
                     t.join()
             Thread(target = __connect).start()
             parent.plugins[u'player'].trackChanged.connect(self.scrobble)
+        self.translator = translator
     def load(self):
         Main.__sem = True
         Main.loaded = True

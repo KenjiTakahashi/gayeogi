@@ -17,9 +17,10 @@
 
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSize, Qt, QModelIndex
+from PyQt4.QtCore import QSize, Qt, QModelIndex, QTranslator, QLocale
 from PyQt4.QtCore import pyqtSignal, QSettings, QString
 from copy import deepcopy
+from os.path import dirname, realpath
 
 class PlayListItemDelegate(QtGui.QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -87,13 +88,17 @@ class Main(QtGui.QWidget):
     trackChanged = pyqtSignal(QString, QString, QString, int)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     __settings = QSettings('fetcher', 'Player')
-    def __init__(self, parent, library, addWidget, removeWidget):
+    def __init__(self, parent, library, addWidget, removeWidget, translator):
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
         self.library = library
         self.addWidget = addWidget
         self.removeWidget = removeWidget
+        self.translator = translator
     def load(self):
+        locale = QLocale().system().name()
+        path = dirname(realpath(__file__)) + u'/langs/'
+        self.translator.load(u'player_' + locale, path)
         add = QtGui.QPushButton(u'A')
         add.setFixedWidth(30)
         add.setStatusTip(self.trUtf8('Add selected item(s) to the playlist.'))
