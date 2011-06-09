@@ -17,7 +17,7 @@
 
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSize, Qt, QModelIndex, QTranslator, QLocale
+from PyQt4.QtCore import QSize, Qt, QModelIndex, QLocale
 from PyQt4.QtCore import pyqtSignal, QSettings, QString
 from copy import deepcopy
 from os.path import dirname, realpath
