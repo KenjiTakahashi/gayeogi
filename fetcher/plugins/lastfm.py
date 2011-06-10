@@ -57,12 +57,13 @@ class Main(object):
                     t.join()
             Thread(target = __connect).start()
             parent.plugins[u'player'].trackChanged.connect(self.scrobble)
-    def translator(self):
+    def translator():
         locale = QLocale().system().name()
         path = dirname(realpath(__file__)) + u'/langs/'
         translator = QTranslator()
         if translator.load(u'lastfm_' + locale, path):
             return translator
+    translator = staticmethod(translator)
     def load(self):
         Main.__sem = True
         Main.loaded = True

@@ -45,8 +45,7 @@ class Settings(QtGui.QDialog):
         self.dbList.setColumnCount(2)
         self.dbList.setIndentation(0)
         self.dbList.setHeaderLabels(QStringList([
-            QCoreApplication.translate('Setings', 'Name'),
-            QCoreApplication.translate('Settings', 'Threads')]))
+            self.trUtf8('Name'), self.trUtf8('Threads')]))
         self.dbList.currentItemChanged.connect(self.dbDisplayOptions)
         order = self.__dbsettings.value(u'order', []).toPyObject()
         self.dbOptionsLayout = QtGui.QGridLayout()
