@@ -28,7 +28,7 @@ from fetcher.interfaces.settings import Settings
 import fetcher.plugins
 
 version = u'0.6'
-translator = QTranslator()
+app = QtGui.QApplication(sys.argv)
 if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()
@@ -241,7 +241,10 @@ class Main(QtGui.QMainWindow):
             option = __settings_.value(u'enabled', 0).toInt()[0]
             if option and not class_.loaded:
                 class__ = class_(self.ui, self.library, self.appendPlugin,
-                        self.removePlugin, translator)
+                        self.removePlugin)
+                translator = class__.translator()
+                if translator:
+                    app.installTranslator(translator)
                 class__.load()
                 if hasattr(class__, 'errors'):
                     class__.errors.connect(self.logs)
@@ -598,10 +601,10 @@ class Main(QtGui.QMainWindow):
             unload()
 
 def run():
-    app = QtGui.QApplication(sys.argv)
     app.setApplicationName(u'Fetcher')
     locale = QLocale.system().name()
     path = os.path.dirname(os.path.realpath(__file__)) + u'/langs/'
+    translator = QTranslator()
     if translator.load(u'main_' + locale, path):
         app.installTranslator(translator)
     main = Main()

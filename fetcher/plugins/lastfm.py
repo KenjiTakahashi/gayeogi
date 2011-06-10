@@ -16,10 +16,11 @@
 # -*- coding: utf-8 -*-
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, Qt
+from PyQt4.QtCore import QSettings, Qt, QLocale, QTranslator
 import pylast
 from threading import Thread
 from time import time, sleep
+from os.path import dirname, realpath
 
 class Main(object):
     name = u'Last.FM'
@@ -31,7 +32,7 @@ class Main(object):
     __opt = {u'Last.FM': u'LastFMNetwork', u'Libre.FM': u'LibreFMNetwork'}
     __settings = QSettings(u'fetcher', u'Last.FM')
     __sem = True
-    def __init__(self, parent, ___, _, __, translator):
+    def __init__(self, parent, ___, _, __):
         username = unicode(Main.__settings.value(u'username', u'').toString())
         password = unicode(
                 Main.__settings.value(u'password_hash', u'').toString())
@@ -56,7 +57,12 @@ class Main(object):
                     t.join()
             Thread(target = __connect).start()
             parent.plugins[u'player'].trackChanged.connect(self.scrobble)
-        self.translator = translator
+    def translator(self):
+        locale = QLocale().system().name()
+        path = dirname(realpath(__file__)) + u'/langs/'
+        translator = QTranslator()
+        if translator.load(u'lastfm_' + locale, path):
+            return translator
     def load(self):
         Main.__sem = True
         Main.loaded = True

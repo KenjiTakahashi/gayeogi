@@ -17,7 +17,7 @@
 
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSize, Qt, QModelIndex, QLocale
+from PyQt4.QtCore import QSize, Qt, QModelIndex, QLocale, QTranslator
 from PyQt4.QtCore import pyqtSignal, QSettings, QString
 from copy import deepcopy
 from os.path import dirname, realpath
@@ -88,17 +88,19 @@ class Main(QtGui.QWidget):
     trackChanged = pyqtSignal(QString, QString, QString, int)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     __settings = QSettings('fetcher', 'Player')
-    def __init__(self, parent, library, addWidget, removeWidget, translator):
+    def __init__(self, parent, library, addWidget, removeWidget):
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
         self.library = library
         self.addWidget = addWidget
         self.removeWidget = removeWidget
-        self.translator = translator
-    def load(self):
+    def translator(self):
         locale = QLocale().system().name()
         path = dirname(realpath(__file__)) + u'/langs/'
-        self.translator.load(u'player_' + locale, path)
+        translator = QTranslator()
+        if translator.load(u'player_' + locale, path):
+            return translator
+    def load(self):
         add = QtGui.QPushButton(u'A')
         add.setFixedWidth(30)
         add.setStatusTip(self.trUtf8('Add selected item(s) to the playlist.'))

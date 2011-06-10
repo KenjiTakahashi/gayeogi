@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="2.0" language="pl_PL" sourcelanguage="en_GB">
+<!DOCTYPE TS>
+<TS version="2.0" language="pl_PL" sourcelanguage="en_GB">
 <context>
     <name>ConfirmationDialog</name>
     <message>
@@ -26,175 +27,191 @@
 <context>
     <name>Main</name>
     <message>
-        <location filename="../fetcher/main.py" line="182"/>
+        <location filename="../fetcher/main.py" line="194"/>
         <source>Module</source>
         <translation>Moduł</translation>
     </message>
     <message>
-        <location filename="../fetcher/main.py" line="182"/>
+        <location filename="../fetcher/main.py" line="194"/>
         <source>Type</source>
         <translation>Typ</translation>
     </message>
     <message>
-        <location filename="../fetcher/main.py" line="182"/>
+        <location filename="../fetcher/main.py" line="194"/>
         <source>File/Entry</source>
         <translation>Plik/Wpis</translation>
     </message>
     <message>
-        <location filename="../fetcher/main.py" line="182"/>
+        <location filename="../fetcher/main.py" line="194"/>
         <source>Message</source>
         <translation>Wiadomość</translation>
     </message>
     <message>
-        <location filename="../fetcher/main.py" line="315"/>
+        <location filename="../fetcher/main.py" line="327"/>
         <source>Database:Type:File/Entry:Message</source>
         <translation>Baza:Typ:Plik/Wpis:Wiadomość</translation>
     </message>
     <message>
-        <location filename="../fetcher/main.py" line="324"/>
+        <location filename="../fetcher/main.py" line="336"/>
         <source>Logs saved</source>
         <translation>Logi zostały zapisane</translation>
     </message>
     <message>
-        <location filename="../fetcher/main.py" line="458"/>
+        <location filename="../fetcher/main.py" line="482"/>
         <source>Nothing to save...</source>
         <translation>Nie ma co zapisać...</translation>
     </message>
     <message>
-        <location filename="../fetcher/main.py" line="460"/>
+        <location filename="../fetcher/main.py" line="484"/>
         <source>Saved</source>
         <translation>Zapisano</translation>
     </message>
 </context>
 <context>
-    <name>Settings</name>
+    <name>QCoreApplication.self</name>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="46"/>
+        <location filename="../fetcher/interfaces/settings.py" line="47"/>
+        <source>Threads</source>
+        <translation type="obsolete">Wątki</translation>
+    </message>
+</context>
+<context>
+    <name>Setings</name>
+    <message>
+        <location filename="../fetcher/interfaces/settings.py" line="47"/>
         <source>Name</source>
         <translation>Nazwa</translation>
     </message>
+</context>
+<context>
+    <name>Settings</name>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="46"/>
+        <location filename="../fetcher/interfaces/settings.py" line="47"/>
+        <source>Name</source>
+        <translation type="obsolete">Nazwa</translation>
+    </message>
+    <message>
+        <location filename="../fetcher/interfaces/settings.py" line="47"/>
         <source>Threads</source>
         <translation>Wątki</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="77"/>
+        <location filename="../fetcher/interfaces/settings.py" line="79"/>
         <source>&amp;Up</source>
         <translation>&amp;Góra</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="79"/>
+        <location filename="../fetcher/interfaces/settings.py" line="81"/>
         <source>&amp;Down</source>
         <translation>&amp;Dół</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="81"/>
+        <location filename="../fetcher/interfaces/settings.py" line="83"/>
         <source>Behaviour</source>
         <translation>Zachowanie</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="82"/>
+        <location filename="../fetcher/interfaces/settings.py" line="84"/>
         <source>Search for all bands in all enabled databases.</source>
         <translation>Szukaj wszystkich wykonawców we wszytkich bazach.</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="82"/>
+        <location filename="../fetcher/interfaces/settings.py" line="84"/>
         <source>C&amp;rossed</source>
         <translation>K&amp;rzyżowy</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="87"/>
+        <location filename="../fetcher/interfaces/settings.py" line="89"/>
         <source>Search databases in order and in every next database, search only for bands not yet found elsewhere.</source>
         <translation>Przeszukuje bazy po kolei i w każdej kolejnej sprawdza tych wykonawców, których nie znalazł jeszcze w innej.</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="110"/>
+        <location filename="../fetcher/interfaces/settings.py" line="112"/>
         <source>Releases</source>
         <translation>Wydawnictwa</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="118"/>
+        <location filename="../fetcher/interfaces/settings.py" line="120"/>
         <source>&amp;Databases</source>
         <translation>Bazy &amp;danych</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="119"/>
+        <location filename="../fetcher/interfaces/settings.py" line="121"/>
         <source>Directory</source>
         <translation>Katalog</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="122"/>
+        <location filename="../fetcher/interfaces/settings.py" line="124"/>
         <source>&amp;Browse</source>
         <translation>&amp;Szukaj</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="128"/>
+        <location filename="../fetcher/interfaces/settings.py" line="130"/>
         <source>Ignores:</source>
         <translation>Ignorowane:</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="139"/>
+        <location filename="../fetcher/interfaces/settings.py" line="141"/>
         <source>&amp;Add</source>
         <translation>Dod&amp;aj</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="141"/>
+        <location filename="../fetcher/interfaces/settings.py" line="143"/>
         <source>&amp;Remove</source>
         <translation>&amp;Usuń</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="153"/>
+        <location filename="../fetcher/interfaces/settings.py" line="155"/>
         <source>&amp;Local</source>
         <translation>P&amp;liki</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="163"/>
+        <location filename="../fetcher/interfaces/settings.py" line="165"/>
         <source>Lo&amp;gs</source>
         <translation>Lo&amp;gi</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="189"/>
+        <location filename="../fetcher/interfaces/settings.py" line="191"/>
         <source>&amp;Plugins</source>
         <translation>&amp;Dodatki</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="190"/>
+        <location filename="../fetcher/interfaces/settings.py" line="192"/>
         <source>&amp;OK</source>
         <translation>&amp;OK</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="192"/>
+        <location filename="../fetcher/interfaces/settings.py" line="194"/>
         <source>&amp;Cancel</source>
         <translation>&amp;Anuluj</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="218"/>
+        <location filename="../fetcher/interfaces/settings.py" line="220"/>
         <source>Directory field cannot be empty!</source>
         <translation>Pole wyboru katalogu nie może być puste!</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="303"/>
+        <location filename="../fetcher/interfaces/settings.py" line="305"/>
         <source>Here you can choose which databases should be searched, what releases to search for and how the search should behave.</source>
         <translation>Tutaj można wybrać, które bazy będą przeszukiwane, jakich typów wydawnictw szukać oraz w jaki sposób to robić.</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="305"/>
+        <location filename="../fetcher/interfaces/settings.py" line="307"/>
         <source>Here you can choose in which directory you files lies and which files to ignore while searching (you can use wilcards, like &apos;*&apos; or &apos;?&apos;)</source>
         <translation>Tutaj możesz wybrać w jakim folderze znajdują się Twoje pliki i jakie pliki ignorować przy przeszukiwaniu (dozwolone znaki wieloznaczności, jak &apos;*&apos; lub &apos;?&apos;)</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="307"/>
+        <location filename="../fetcher/interfaces/settings.py" line="309"/>
         <source>Here you can choose what kind of log messages should be displayed in the main window.</source>
         <translation>Tutaj możesz wybrać jakie rodzaje logów będą wyświetlane w głownym oknie.</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="309"/>
+        <location filename="../fetcher/interfaces/settings.py" line="311"/>
         <source>Here you can choose and configure additional plugins.</source>
         <translation>Tutaj możesz wybrać i skonfigurować dodatki.</translation>
     </message>
     <message>
-        <location filename="../fetcher/interfaces/settings.py" line="87"/>
+        <location filename="../fetcher/interfaces/settings.py" line="89"/>
         <source>O&amp;ne-by-one</source>
         <translation>Kolej&amp;no</translation>
     </message>

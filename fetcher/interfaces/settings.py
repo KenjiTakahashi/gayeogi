@@ -17,6 +17,7 @@
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString, QStringList
+from PyQt4.QtCore import QCoreApplication
 import fetcher.plugins
 
 class QHoveringRadioButton(QtGui.QRadioButton):
@@ -44,7 +45,8 @@ class Settings(QtGui.QDialog):
         self.dbList.setColumnCount(2)
         self.dbList.setIndentation(0)
         self.dbList.setHeaderLabels(QStringList([
-            self.trUtf8('Name'), self.trUtf8('Threads')]))
+            QCoreApplication.translate('Setings', 'Name'),
+            QCoreApplication.translate('Settings', 'Threads')]))
         self.dbList.currentItemChanged.connect(self.dbDisplayOptions)
         order = self.__dbsettings.value(u'order', []).toPyObject()
         self.dbOptionsLayout = QtGui.QGridLayout()
