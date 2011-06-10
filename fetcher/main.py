@@ -28,7 +28,6 @@ from fetcher.interfaces.settings import Settings
 import fetcher.plugins
 
 version = u'0.6'
-app = QtGui.QApplication(sys.argv)
 if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()
@@ -153,8 +152,6 @@ class Main(QtGui.QMainWindow):
         self.statistics = None
         if not os.path.exists(dbPath):
             os.mkdir(dbPath)
-        self.metalArchives = None
-        self.discogs = None
         self.db = DB()
         from interfaces.main import Ui_main
         self.ui = Ui_main()
@@ -209,6 +206,8 @@ class Main(QtGui.QMainWindow):
         self.ui.trackFilter.textEdited.connect(self.filter_)
         self.statusBar()
         self.setWindowTitle(u'Fetcher ' + version)
+        self.translators = list()
+        self.loadPluginsTranslators()
         self.loadPlugins()
     def disableButtons(self):
         u"""Disable some buttons one mustn't use during the update.
@@ -227,24 +226,34 @@ class Main(QtGui.QMainWindow):
         u"""Start remote databases update."""
         self.disableButtons()
         self.rt.start()
+    def loadPluginsTranslators(self):
+        reload(fetcher.plugins)
+        app = QtGui.QApplication.instance()
+        for plugin in fetcher.plugins.__all__:
+            class_ = getattr(fetcher.plugins, plugin).Main
+            translator = class_.translator()
+            if translator:
+                self.translators.append(translator)
+                app.installTranslator(translator)
+    def removePluginsTranslators(self):
+        app = QtGui.QApplication.instance()
+        for translator in self.translators:
+            app.removeTranslator(translator)
     def loadPlugins(self):
         reload(fetcher.plugins)
         def depends(plugin):
             for p in fetcher.plugins.__all__:
-                class_ = getattr(getattr(fetcher.plugins, p), u'Main')
+                class_ = getattr(fetcher.plugins, p).Main
                 if plugin in class_.depends and class_.loaded:
                     return True
             return False
         for plugin in fetcher.plugins.__all__:
-            class_ = getattr(getattr(fetcher.plugins, plugin), u'Main')
+            class_ = getattr(fetcher.plugins, plugin).Main
             __settings_ = QSettings(u'fetcher', class_.name)
             option = __settings_.value(u'enabled', 0).toInt()[0]
             if option and not class_.loaded:
                 class__ = class_(self.ui, self.library, self.appendPlugin,
                         self.removePlugin)
-                translator = class__.translator()
-                if translator:
-                    app.installTranslator(translator)
                 class__.load()
                 if hasattr(class__, 'errors'):
                     class__.errors.connect(self.logs)
@@ -356,6 +365,8 @@ class Main(QtGui.QMainWindow):
                     self.__settings.value(u'directory', u'').toString())
             self.ignores = self.__settings.value(u'ignores', []).toPyObject()
             self.fs.actualize(directory, self.ignores)
+            self.removePluginsTranslators()
+            self.loadPluginsTranslators()
             self.loadPlugins()
         dialog = Settings()
         dialog.ok.clicked.connect(__save)
@@ -601,6 +612,7 @@ class Main(QtGui.QMainWindow):
             unload()
 
 def run():
+    app = QtGui.QApplication(sys.argv)
     app.setApplicationName(u'Fetcher')
     locale = QLocale.system().name()
     path = os.path.dirname(os.path.realpath(__file__)) + u'/langs/'

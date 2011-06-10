@@ -17,7 +17,6 @@
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString, QStringList
-from PyQt4.QtCore import QCoreApplication
 import fetcher.plugins
 
 class QHoveringRadioButton(QtGui.QRadioButton):

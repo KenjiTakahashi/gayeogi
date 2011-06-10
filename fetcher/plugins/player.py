@@ -94,39 +94,42 @@ class Main(QtGui.QWidget):
         self.library = library
         self.addWidget = addWidget
         self.removeWidget = removeWidget
-    def translator(self):
+    def translator():
         locale = QLocale().system().name()
         path = dirname(realpath(__file__)) + u'/langs/'
         translator = QTranslator()
         if translator.load(u'player_' + locale, path):
             return translator
+    translator = staticmethod(translator)
     def load(self):
         add = QtGui.QPushButton(u'A')
         add.setFixedWidth(30)
-        add.setStatusTip(self.trUtf8('Add selected item(s) to the playlist.'))
+        add.setStatusTip(QtGui.QApplication.translate(
+            'Player', 'Add selected item(s) to the playlist.'))
         add.clicked.connect(self.addByButton)
         addShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_A), add)
         addShortcut.activated.connect(self.addByButton)
         remove = QtGui.QPushButton(u'R')
         remove.setFixedWidth(30)
-        remove.setStatusTip(
-                self.trUtf8('Remove selected item(s) from the playlist.'))
+        remove.setStatusTip(QtGui.QApplication.translate(
+            'Player', 'Remove selected item(s) from the playlist.'))
         remove.clicked.connect(self.removeByButton)
         removeShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_R), remove)
         removeShortcut.activated.connect(self.removeByButton)
         pIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaSkipBackward)
         previous = QtGui.QPushButton(pIcon, u'')
-        previous.setStatusTip(self.trUtf8('Jump to previous track.'))
+        previous.setStatusTip(QtGui.QApplication.translate(
+            'Player', 'Jump to previous track.'))
         previous.clicked.connect(self.previous)
         previousShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_B), previous)
         previousShortcut.activated.connect(self.previous)
         playIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
         self.playButton = QtGui.QPushButton(playIcon, u'')
-        self.playButton.setStatusTip(
-                self.trUtf8('Begin/Pause/Resume playback.'))
+        self.playButton.setStatusTip(QtGui.QApplication.translate(
+            'Player', 'Begin/Pause/Resume playback.'))
         self.playButton.clicked.connect(self.playByButton)
         self.playButton.playing = False
         playShortcut = QtGui.QShortcut(QtGui.QKeySequence(
@@ -134,20 +137,23 @@ class Main(QtGui.QWidget):
         playShortcut.activated.connect(self.playButton.click)
         stopIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaStop)
         stop = QtGui.QPushButton(stopIcon, u'')
-        stop.setStatusTip(self.trUtf8('Stop playback.'))
+        stop.setStatusTip(QtGui.QApplication.translate(
+            'Player', 'Stop playback.'))
         stop.clicked.connect(self.stop)
         stopShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_S), stop)
         stopShortcut.activated.connect(self.stop)
         nextIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaSkipForward)
         next_ = QtGui.QPushButton(nextIcon, u'')
-        next_.setStatusTip(self.trUtf8('Jump to next track.'))
+        next_.setStatusTip(QtGui.QApplication.translate(
+            'Player', 'Jump to next track.'))
         next_.clicked.connect(self.next_)
         next_Shortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_N), next_)
         next_Shortcut.activated.connect(self.next_)
         volume = Phonon.VolumeSlider()
-        volume.setStatusTip(self.trUtf8('Change volume.'))
+        volume.setStatusTip(QtGui.QApplication.translate(
+            'Player', 'Change volume.'))
         buttonsLayout = QtGui.QHBoxLayout()
         buttonsLayout.setContentsMargins(0, 0, 0, 0)
         buttonsLayout.addWidget(add)
@@ -159,7 +165,8 @@ class Main(QtGui.QWidget):
         buttonsLayout.addWidget(volume)
         buttons = QtGui.QWidget()
         progress = Phonon.SeekSlider()
-        progress.setStatusTip(self.trUtf8('Seek the track.'))
+        progress.setStatusTip(QtGui.QApplication.translate(
+            'Player', 'Seek the track.'))
         buttons.setLayout(buttonsLayout)
         delegate = PlayListItemDelegate()
         self.playlist = Playlist()

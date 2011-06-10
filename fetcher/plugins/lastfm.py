@@ -82,10 +82,14 @@ class Main(object):
         password__ = Main.__settings.value(u'password', u'').toInt()[0] * u'*'
         password.setText(password__)
         formLayout = QtGui.QFormLayout()
-        formLayout.addRow(u'Database:', kind)
-        formLayout.addRow(u'Username:', username)
-        formLayout.addRow(u'Password:', password)
-        msg = QtGui.QLabel(u'Not tested yet')
+        formLayout.addRow(QtGui.QApplication.translate(
+            'Last.FM', 'Database:'), kind)
+        formLayout.addRow(QtGui.QApplication.translate(
+            'Last.FM', 'Username:'), username)
+        formLayout.addRow(QtGui.QApplication.translate(
+            'Last.FM', 'Password:'), password)
+        msg = QtGui.QLabel(QtGui.QApplication.translate(
+            'Last.FM', 'Not tested yet'))
         msg.setAutoFillBackground(True)
         msg.setFrameShape(QtGui.QFrame.Box)
         palette = msg.palette()
@@ -115,7 +119,8 @@ class Main(object):
                                 username = username_,
                                 password_hash = pass_hash
                                 )
-                        update(u'Successful', Qt.green)
+                        update(QtGui.QApplication.translate(
+                            'Last.FM', 'Successful'), Qt.green)
                         Main.__settings.setValue(u'kind', kind_)
                         Main.__settings.setValue(u'username', username_) 
                         Main.__settings.setValue(u'password', len(password_))
@@ -124,8 +129,10 @@ class Main(object):
                         update(unicode(msg_).split(u'.')[0], Qt.red)
                 Thread(target = __connect).start()
             else:
-                update(u'Username and/or password is empty', Qt.yellow)
-        apply_ = QtGui.QPushButton(u'Apply')
+                update(QtGui.QApplication.translate(
+                    'Last.FM', 'Username and/or password is empty'), Qt.yellow)
+        apply_ = QtGui.QPushButton(QtGui.QApplication.translate(
+            'Last.FM', 'Apply'))
         apply_.clicked.connect(store)
         testLayout = QtGui.QHBoxLayout()
         testLayout.addWidget(apply_)
