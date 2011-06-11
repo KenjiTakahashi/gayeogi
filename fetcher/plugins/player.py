@@ -313,6 +313,7 @@ class Main(QtGui.QWidget):
     def addItem(self, item, column = -1):
         if column != 3:
             if column != -1:
+                self.stop()
                 self.playlist.clearActive()
                 self.playlist.clear()
             try:
@@ -348,7 +349,7 @@ class Main(QtGui.QWidget):
                         [unicode(item.text(0))][unicode(item.text(1))][u'path']
                 self.playlist.addItem(self.__createItem((item.text(0),
                     item.text(1), item.album, item.artist, path)))
-            if column != -1:
+            if column != -1 and self.playlist.count():
                 self.playByButton()
     def state(self, state):
         if state == Phonon.ErrorState:
