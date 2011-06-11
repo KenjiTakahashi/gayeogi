@@ -121,13 +121,13 @@ class Bee(QThread):
                                 torem.add((artist, year, album))
                 if added:
                     self.errors.emit(self.name, u'info', artist,
-                            u'Something has been added.')
+                            self.trUtf8('Something has been added.'))
                 if torem:
                     self.errors.emit(self.name, u'info', artist,
-                            u'Something has been removed.')
+                            self.trUtf8('Something has been removed.'))
                 elif not added:
                     self.errors.emit(self.name, u'info', artist,
-                            u'Nothing has been changed.')
+                            self.trUtf8('Nothing has been changed.'))
                 while torem:
                     (artist, year, album) = torem.pop()
                     del self.library[artist][year][album]

@@ -176,7 +176,7 @@ class Filesystem(QThread):
                     self.errors.emit(u'local',
                             u'errors',
                             filepath,
-                            u"You're probably missing some tags")
+                            self.trUtf8("You're probably missing some tags."))
             else:
                 if ext == u'.flac':
                     f = FLAC(filepath)
@@ -202,7 +202,7 @@ class Filesystem(QThread):
                     self.errors.emit(u'local',
                             u'errors',
                             filepath,
-                            u"You're probably missing some tags")
+                            self.trUtf8("You're probably missing some tags."))
         except IOError:
             self.errors.emit(u'local',
                     u'errors',
@@ -224,7 +224,7 @@ class Filesystem(QThread):
         
         Note: Should be called using start() method.
         """
-        self.stepped.emit(u'Working')
+        self.stepped.emit(self.trUtf8('Working'))
         tfiles = deepcopy(self.paths)
         for root, _, filenames in os.walk(self.directory):
             for filename in filenames:

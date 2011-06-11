@@ -439,7 +439,7 @@ class Main(QtGui.QMainWindow):
                     setColor(artist,Qt.green,states[u'analog'])
     def update(self):
         self.computeStats()
-        self.statusBar().showMessage(u'Done')
+        self.statusBar().showMessage(self.trUtf8('Done'))
         self.ui.local.setEnabled(True)
         self.ui.remote.setEnabled(True)
         self.ui.save.setEnabled(True)
