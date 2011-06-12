@@ -75,7 +75,8 @@ def __getalbums(site, releases):
     return result
 
 def __sense(url, releases):
-    """Function injected into Bandsensor
+    """Retrieve releases for specified band id.
+    Injected into Bandsensor.
 
     Arguments:
     url -- ID of the current band
@@ -91,27 +92,6 @@ def __sense(url, releases):
         raise ConnError()
     else:
         return (url, __getalbums(soup, releases))
-
-def __parse1(element, url, releases):
-    """Retrieve updated info on an existing release and return results.
-
-    Arguments:
-    element -- db element containing existing info (it is db[<artist_name>])
-    url -- url pointing at the given artist
-    releases -- types of releases to check for
-
-    Note: It is meant for internal usage only!
-    """
-    try:
-        soup = urllib2.urlopen(
-                u'http://www.metal-archives.com/band/discography/id/' +
-                url + u'/tab/all').read().decode(u'utf-8')
-    except (urllib2.HTTPError, urllib2.URLError):
-        raise ConnError()
-    return {u'choice': url,
-            u'result': __getalbums(soup, releases),
-            u'errors': set()
-            }
 
 def __parse2(json, artist, element, releases):
     """Retrieve info on an new release and return list of results.
@@ -154,8 +134,12 @@ def work(artist, element, urls, releases):
     Note: Should be threaded in real application.
     """
     if urls and u'metalArchives' in urls.keys():
-        result = __parse1(element, urls[u'metalArchives'], releases)
-        result[u'artist'] = artist
+        (url, albums) = __sense(urls[u'metalArchives'], releases)
+        return {u'choice': url,
+                u'result': albums,
+                u'errors': set(),
+                u'artist': artist
+                }
     else:
         artist_ = urllib2.quote(
                 artist.replace(u'&', u'and').replace(u'/', u'').encode(

@@ -48,7 +48,15 @@ class BandBee(Thread):
                 self.tasks.task_done()
 
 class Bandsensor(object):
-    def __init__(self, func, urls, albums, releases = None):
+    def __init__(self, func, urls, albums, releases):
+        """Bandsensor constructor.
+
+        Arguments:
+        func -- function used to retrieve releases
+        urls -- possible bands urls/ids (depends on db)
+        albums -- album names to compare against
+        releases -- types of releases to search for
+        """
         self.sense = func
         self.urls = urls
         self.albums = albums
@@ -56,6 +64,10 @@ class Bandsensor(object):
         self.errors = set()
         self.results = list()
     def run(self):
+        """Start sensor run and return best matched band.
+
+        Note: It is normal function, not a thread!
+        """
         tasks = Queue(5)
         rlock = RLock()
         elock = RLock()

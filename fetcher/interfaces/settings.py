@@ -48,11 +48,11 @@ class Settings(QtGui.QDialog):
         self.dbList.currentItemChanged.connect(self.dbDisplayOptions)
         order = self.__dbsettings.value(u'order', []).toPyObject()
         self.dbOptionsLayout = QtGui.QGridLayout()
-        if not order:
-            from fetcher.db.bees import __names__, __all__
-            order = __names__
-            for (o, m) in zip(order, __all__):
-                self.__dbsettings.setValue(o + u'/module', m)
+        from fetcher.db.bees import __names__, __all__
+        for (o, m) in zip(__names__, __all__):
+            if o not in order:
+                order.append(o)
+            self.__dbsettings.setValue(o + u'/module', m)
         for o in order:
             module = unicode(
                     self.__dbsettings.value(o + u'/module', u'').toString())
