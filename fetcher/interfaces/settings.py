@@ -34,6 +34,7 @@ class QHoveringRadioButton(QtGui.QRadioButton):
 class Settings(QtGui.QDialog):
     __settings = QSettings(u'fetcher', u'Fetcher')
     __dbsettings = QSettings(u'fetcher', u'Databases')
+    __checkStates = dict()
     def __init__(self,parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.tabs = QtGui.QTabWidget()
@@ -72,6 +73,8 @@ class Settings(QtGui.QDialog):
                 spin.setValue(self.__dbsettings.value(
                     o + u'/size', 1).toInt()[0])
                 self.dbList.setItemWidget(item, 1, spin)
+                self.__checkStates[o] = self.__dbsettings.value(o + 
+                        u'/types', {}).toPyObject()
         self.dbList.resizeColumnToContents(0)
         self.dbList.resizeColumnToContents(1)
         dbUp = QtGui.QPushButton(self.trUtf8('&Up'))
@@ -232,14 +235,12 @@ class Settings(QtGui.QDialog):
                 self.__dbsettings.setValue(u'behaviour', 0)
             order = []
             for item in self.dbList.findItems(u'*', Qt.MatchWildcard):
-                text = unicode(item.text(0))
+                text = item.text(0)
                 self.__dbsettings.setValue(
                         text + u'/Enabled', item.checkState(0))
                 order.append(text)
-                maOptions = {}
-                for o in self.dbOptions.findChildren(QtGui.QCheckBox):
-                    maOptions[o.text()] = o.checkState()
-                self.__dbsettings.setValue(text + u'/types', maOptions)
+                self.__dbsettings.setValue(text + u'/types',
+                        self.__checkStates[text])
                 self.__dbsettings.setValue(text + u'/size',
                         self.dbList.itemWidget(item, 1).value())
             self.__dbsettings.setValue(u'order', order)
@@ -258,26 +259,32 @@ class Settings(QtGui.QDialog):
         if current < self.dbList.count():
             self.dbList.insertItem(current, self.dbList.takeItem(current - 1))
             self.dbList.setCurrentRow(current)
+    def changeState(self, state):
+        self.__checkStates[self.dbList.currentItem().text(0)] \
+                [self.sender().text()] = state
     def dbDisplayOptions(self, item, _):
-        text = unicode(item.text(0))
+        text = item.text(0)
         module = unicode(self.__dbsettings.value(
             text + u'/module', u'').toString())
+        for child in self.dbOptions.children()[1:]:
+            self.dbOptionsLayout.removeWidget(child)
+            child.deleteLater()
         try:
             items = __import__(u'fetcher.db.bees.' + module, globals(),
                     locals(), [u'items'], -1).items
         except TypeError:
             self.dbOptions.setVisible(False)
-            for child in self.dbOptions.children()[1:]:
-                self.dbOptionsLayout.removeWidget(child)
-                child.deleteLater()
         else:
-            checkStates = self.__dbsettings.value(
-                    text + u'/types', {}).toPyObject()
+            checkStates = self.__checkStates[text]
             for i, item in enumerate(items):
                 for j, subitem in enumerate(item):
                     widget = QtGui.QCheckBox(subitem)
+                    widget.stateChanged.connect(self.changeState)
                     if checkStates:
-                        widget.setCheckState(checkStates[QString(subitem)])
+                        try:
+                            widget.setCheckState(checkStates[QString(subitem)])
+                        except KeyError:
+                            pass
                     self.dbOptionsLayout.addWidget(widget, i, j)
                     self.dbOptions.setVisible(True)
     def pluginsDisplayOptions(self, text):
