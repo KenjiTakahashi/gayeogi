@@ -106,6 +106,7 @@ class Bee(QThread):
                     self.rlock.release()
                 self.rlock.acquire()
                 torem = set()
+                norem = False
                 for year, a in self.library[artist].iteritems():
                     try:
                         for album in set(a) ^ albums[year]:
@@ -113,16 +114,22 @@ class Bee(QThread):
                             if not self.avai[key][u'digital'] and \
                                     not self.avai[key][u'analog']:
                                 torem.add((artist, year, album))
+                            else:
+                                self.avai[key][u'remote'] = False
+                                norem = True
                     except KeyError:
                         for album in a:
                             key = artist + year + album
                             if not self.avai[key][u'digital'] and \
                                     not self.avai[key][u'analog']:
                                 torem.add((artist, year, album))
+                            else:
+                                self.avai[key][u'remote'] = False
+                                norem = True
                 if added:
                     self.errors.emit(self.name, u'info', artist,
                             self.trUtf8('Something has been added.'))
-                if torem:
+                if torem or norem:
                     self.errors.emit(self.name, u'info', artist,
                             self.trUtf8('Something has been removed.'))
                 elif not added:
