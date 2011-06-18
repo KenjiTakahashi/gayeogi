@@ -34,7 +34,7 @@ class JParse(json.JSONDecoder):
     Note: It is meant for internal usage only!
     """
     def __init__(self, artist):
-        self.artist = artist.lower()
+        self.artist = artist.lower().replace(u' ', u'')
         json.JSONDecoder.__init__(self, object_hook = self.jparse)
     def jparse(self, element):
         """Parse the given JSON element and return list of artists IDs.
@@ -46,7 +46,7 @@ class JParse(json.JSONDecoder):
         for e in element[u'aaData']:
             s = e[0].split(u'>', 2)
             a = s[1][0: -3]
-            if a.lower().startswith(self.artist):
+            if a.lower().replace(u' ', u'').startswith(self.artist):
                 result.append(s[0].rsplit(u'/', 1)[1][:-1])
         return result
 

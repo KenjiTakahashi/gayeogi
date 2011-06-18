@@ -6,8 +6,8 @@ At the moment, these features are considered "working":
 - Library
 - Internet DB checking
 
-  - metal-archives
-  - discogs (see usage notes)
+  - metal-archives.com
+  - musicbrainz.org
 
 - Playback
 
@@ -29,7 +29,7 @@ REQUIRES
 
     pylast >= 0.5.6 (last.fm/libre.fm)
 
-    lxml >= 2.3 (metal-archives.com)
+    lxml >= 2.3 (metal-archives.com, musicbrainz.org)
 NOTES
 *****
 - Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
@@ -57,4 +57,3 @@ USAGE
 NOTES
 -----
 - Keep in mind that first time refresh could take quite some time, but then it should be much faster :).
-- Discogs is a mess, use at your own risk (Note: It seems they're writing new API, maybe i'll re-visit it in some time).

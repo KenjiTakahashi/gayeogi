@@ -73,7 +73,7 @@ class Settings(QtGui.QDialog):
                 spin.setValue(self.__dbsettings.value(
                     o + u'/size', 1).toInt()[0])
                 self.dbList.setItemWidget(item, 1, spin)
-                self.__checkStates[o] = self.__dbsettings.value(o + 
+                self.__checkStates[unicode(o)] = self.__dbsettings.value(o +
                         u'/types', {}).toPyObject()
         self.dbList.resizeColumnToContents(0)
         self.dbList.resizeColumnToContents(1)

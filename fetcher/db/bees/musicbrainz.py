@@ -30,11 +30,12 @@ name = u'musicbrainz.org'
 
 class JParse(json.JSONDecoder):
     def __init__(self, artist):
-        self.artist = artist.lower()
+        self.artist = artist.lower().strip().replace(u' ', u'')
         json.JSONDecoder.__init__(self, object_hook = self.jparse)
     def jparse(self, element):
         try:
-            if element[u'name'].lower().startswith(self.artist):
+            if element[u'name'].lower().replace(u' ',
+                    u'').startswith(self.artist):
                 return element[u'id']
         except KeyError:
             try:
@@ -46,14 +47,30 @@ class JParse(json.JSONDecoder):
                     pass
 
 def reqread(url):
+    u"""Get url and retrieve data.
+    Also setup proper User-Agent, so people won't complain.
+
+    Arguments:
+    url -- url to retrieve from
+    """
     req = urllib2.Request(url)
-    req.add_header(u'User-Agent', u'Fetcher/0.6 +')
+    req.add_header(u'User-Agent',
+            u'Fetcher/0.6 +http://github.com/KenjiTakahashi/Fetcher')
     try:
         return urllib2.urlopen(req).read()
     except (urllib2.HTTPError, urllib2.URLError):
         raise ConnError()
 
 def __getalbums(site):
+    u"""Parse site and return albums.
+
+    Arguments:
+    site -- site XML to parse
+
+    Return value:
+    A tuple in form (<results>, <result_count>), where
+    <results> is a dictionary in form [<album_name>] = <year>
+    """
     def __internal(context, albums, years):
         if years:
             try:
@@ -123,9 +140,9 @@ def work(artist, element, urls, releases):
                 u'artist': artist
                 }
     else:
-        artist_ = urllib2.quote(
-                artist.replace(u'&', u'and').replace(u'/', u'').encode(
-                    u'utf-8')).replace(u'%20%20', u'+')
+        artist_ = urllib2.quote(artist.replace(u'/', u'').encode(
+                    u'utf-8')).replace(u'%20', u'+')
+        print artist_
         try:
             urls_ = reqread(
                     u'http://search.musicbrainz.org/ws/2/artist/?query=artist:'
