@@ -240,7 +240,7 @@ class Settings(QtGui.QDialog):
                         text + u'/Enabled', item.checkState(0))
                 order.append(text)
                 self.__dbsettings.setValue(text + u'/types',
-                        self.__checkStates[text])
+                        self.__checkStates[unicode(text)])
                 self.__dbsettings.setValue(text + u'/size',
                         self.dbList.itemWidget(item, 1).value())
             self.__dbsettings.setValue(u'order', order)
@@ -260,7 +260,7 @@ class Settings(QtGui.QDialog):
             self.dbList.insertItem(current, self.dbList.takeItem(current - 1))
             self.dbList.setCurrentRow(current)
     def changeState(self, state):
-        self.__checkStates[self.dbList.currentItem().text(0)] \
+        self.__checkStates[unicode(self.dbList.currentItem().text(0))] \
                 [self.sender().text()] = state
     def dbDisplayOptions(self, item, _):
         text = item.text(0)
@@ -275,7 +275,7 @@ class Settings(QtGui.QDialog):
         except TypeError:
             self.dbOptions.setVisible(False)
         else:
-            checkStates = self.__checkStates[text]
+            checkStates = self.__checkStates[unicode(text)]
             for i, item in enumerate(items):
                 for j, subitem in enumerate(item):
                     widget = QtGui.QCheckBox(subitem)
