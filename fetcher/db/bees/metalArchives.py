@@ -60,19 +60,19 @@ def __getalbums(site, releases):
     Return value:
     a list of tuples in a form of (<album_name>, <year>)
     """
-    result = list()
     def __internal(context, albums, types, years):
         for i, t in enumerate(types):
             if t.text in releases:
-                result.append((albums[i].text,
+                __internal.result.append((albums[i].text,
                     years[i].text))
         return False
+    __internal.result = list()
     root = etree.HTML(site)
     ns = etree.FunctionNamespace(u'http://fake.fetcher/functions')
     ns.prefix = u'ma'
     ns[u'test'] = __internal
     root.xpath(u'body/table/tbody/tr[ma:test(td[1]/a, td[2], td[3])]')
-    return result
+    return __internal.result
 
 def __sense(url, releases):
     """Retrieve releases for specified band id.

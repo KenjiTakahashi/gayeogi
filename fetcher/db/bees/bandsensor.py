@@ -34,7 +34,7 @@ class BandBee(Thread):
             if(sense == False):
                 break
             try:
-                result = [sense(url, self.releases)]
+                result = sense(url, self.releases)
             except ConnError as e:
                 self.elock.acquire()
                 errors.add(e)
@@ -42,7 +42,7 @@ class BandBee(Thread):
             else:
                 if result:
                     self.rlock.acquire()
-                    results.extend(result)
+                    results.append(result)
                     self.rlock.release()
             finally:
                 self.tasks.task_done()
