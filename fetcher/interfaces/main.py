@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '../../ui/main.ui'
+# Form implementation generated from reading ui file 'ui/main.ui'
 #
-# Created: Sun Feb 13 19:13:31 2011
-#      by: PyQt4 UI code generator 4.8.2
+# Created: Sun Jun 19 22:34:15 2011
+#      by: PyQt4 UI code generator 4.8.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -43,11 +43,9 @@ class Ui_main(object):
         self.artists.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.artists.setIndentation(0)
         self.artists.setItemsExpandable(False)
-        self.artists.setColumnCount(3)
+        self.artists.setColumnCount(1)
         self.artists.setObjectName(_fromUtf8("artists"))
         self.artists.headerItem().setText(0, _fromUtf8("1"))
-        self.artists.headerItem().setText(1, _fromUtf8("2"))
-        self.artists.headerItem().setText(2, _fromUtf8("3"))
         self.verticalLayout_3.addWidget(self.artists)
         self.widget_7 = QtGui.QWidget(self.splitter)
         self.widget_7.setObjectName(_fromUtf8("widget_7"))
@@ -58,18 +56,6 @@ class Ui_main(object):
         self.albumFilter = QtGui.QLineEdit(self.widget_7)
         self.albumFilter.setObjectName(_fromUtf8("albumFilter"))
         self.verticalLayout_4.addWidget(self.albumFilter)
-        self.albums = QtGui.QTreeWidget(self.widget_7)
-        self.albums.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        self.albums.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-        self.albums.setIndentation(0)
-        self.albums.setItemsExpandable(False)
-        self.albums.setColumnCount(4)
-        self.albums.setObjectName(_fromUtf8("albums"))
-        self.albums.headerItem().setText(0, _fromUtf8("1"))
-        self.albums.headerItem().setText(1, _fromUtf8("2"))
-        self.albums.headerItem().setText(2, _fromUtf8("3"))
-        self.albums.headerItem().setText(3, _fromUtf8("4"))
-        self.verticalLayout_4.addWidget(self.albums)
         self.widget_8 = QtGui.QWidget(self.splitter)
         self.widget_8.setObjectName(_fromUtf8("widget_8"))
         self.verticalLayout_5 = QtGui.QVBoxLayout(self.widget_8)
@@ -269,7 +255,6 @@ class Ui_main(object):
         self.artistFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
         self.artists.setSortingEnabled(True)
         self.albumFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
-        self.albums.setSortingEnabled(True)
         self.trackFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
         self.tracks.setSortingEnabled(True)
         self.logs.setSortingEnabled(True)

@@ -52,21 +52,11 @@
              <bool>true</bool>
             </property>
             <property name="columnCount">
-             <number>3</number>
+             <number>1</number>
             </property>
             <column>
              <property name="text">
               <string notr="true">1</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string notr="true">2</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string notr="true">3</string>
              </property>
             </column>
            </widget>
@@ -83,48 +73,6 @@
             <property name="statusTip">
              <string>Pattern: &lt;pair&gt;|&lt;pair&gt;, where &lt;pair&gt;=&lt;column_name&gt;:&lt;searching_phrase&gt;. Case insensitive, regexp allowed.</string>
             </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTreeWidget" name="albums">
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
-            </property>
-            <property name="indentation">
-             <number>0</number>
-            </property>
-            <property name="itemsExpandable">
-             <bool>false</bool>
-            </property>
-            <property name="sortingEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="columnCount">
-             <number>4</number>
-            </property>
-            <column>
-             <property name="text">
-              <string notr="true">1</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string notr="true">2</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string notr="true">3</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string notr="true">4</string>
-             </property>
-            </column>
            </widget>
           </item>
          </layout>

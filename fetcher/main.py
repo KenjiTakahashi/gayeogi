@@ -20,7 +20,7 @@ import os
 import cPickle
 import re
 from PyQt4 import QtGui
-from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator
+from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator, QSize
 from copy import deepcopy
 from fetcher.db.local import Filesystem
 from fetcher.db.distributor import Distributor
@@ -33,7 +33,97 @@ if sys.platform == 'win32':
     service = QDesktopServices()
     dbPath = os.path.join(unicode(service.storageLocation(9)), u'fetcher')
 else: # Most POSIX systems, there may be more elifs in future.
-    dbPath=os.path.expanduser(u'~/.config/fetcher')
+    dbPath = os.path.expanduser(u'~/.config/fetcher')
+
+class ADRButton(QtGui.QPushButton):
+    def __init__(self, a = False, d = False, r = False, parent = None):
+        QtGui.QPushButton.__init__(self, parent)
+        self.hover = False
+        self.a = a
+        self.d = d
+        self.r = r
+        metrics = self.fontMetrics()
+        self.ax = 8
+        self.dx = self.ax + metrics.width(u'a')
+        self.rx = self.dx + metrics.width(u'd')
+        self.setFixedWidth(self.rx + metrics.width(u'r') + 8)
+        self.setFixedHeight(15)
+        self.clicked.connect(self.switch)
+    def switch(self):
+        self.a = not self.a
+        self.hover = False
+        self.update()
+    def paintEvent(self, event):
+        painter = QtGui.QPainter()
+        painter.begin(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        rect = event.rect()
+        painter.setPen(Qt.NoPen)
+        palette = QtGui.QPalette()
+        painter.setBrush(palette.mid())
+        painter.drawRoundedRect(rect, 30, 60, Qt.RelativeSize)
+        painter.setPen(QtGui.QPen())
+        if self.d:
+            painter.drawText(self.dx, 11, u'd')
+        if self.r:
+            painter.drawText(self.rx, 11, u'r')
+        if self.hover:
+            painter.setPen(QtGui.QPen(palette.brightText(), 0))
+        if self.a or self.hover:
+            painter.drawText(self.ax, 11, u'a')
+        painter.end()
+    def enterEvent(self, event):
+        self.hover = True
+    def leaveEvent(self, event):
+        self.hover = False
+
+class ADRItemDelegate(QtGui.QStyledItemDelegate):
+    hover = False
+    def paint(self, painter, option, index):
+        QtGui.QStyledItemDelegate.paint(self, painter, option, index)
+        painter.save()
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setPen(Qt.NoPen)
+        palette = QtGui.QPalette()
+        painter.setBrush(palette.mid())
+        ry = option.rect.y()
+        rx = option.rect.x()
+        painter.drawRoundedRect(rx + 1, ry + 2, 36, 12, 20, 60, Qt.RelativeSize)
+        painter.setPen(QtGui.QPen())
+        metrics = option.fontMetrics
+        x = rx + 8 + metrics.width(u'a')
+        if index.data(234).toBool():
+            painter.drawText(x, ry + 11, u'd')
+        x += metrics.width(u'd')
+        if index.data(345).toBool():
+            painter.drawText(x, ry + 11, u'r')
+        mouseOver = option.state & QtGui.QStyle.State_MouseOver
+        #active = option.state & QtGui.QStyle.State_Active
+        if mouseOver and self.hover:
+            painter.setPen(QtGui.QPen(palette.brightText(), 0))
+        if index.data(123).toBool() or (mouseOver and self.hover):
+            painter.drawText(rx + 8, ry + 11, u'a')
+        painter.restore()
+        painter.drawText(rx + 39, ry + 13, index.data(987).toString())
+    def sizeHint(self, option, index):
+        return QSize(39 + option.fontMetrics.width(
+            index.data(987).toString()), 17)
+
+class ADRTreeWidget(QtGui.QTreeWidget):
+    def __init__(self, parent = None):
+        QtGui.QTreeWidget.__init__(self, parent)
+        self.setMouseTracking(True)
+        self.setIndentation(0)
+        self.delegate = ADRItemDelegate()
+        self.setItemDelegateForColumn(1, self.delegate)
+    def mouseMoveEvent(self, event):
+        if event.x() >= 1 and event.x() <= 36:
+            self.delegate.hover = True
+        else:
+            self.delegate.hover = False
+        self.itemSelectionChanged.emit()
+        self.update()
+        self.repaint()
 
 class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __lt__(self, qtreewidgetitem):
@@ -157,6 +247,15 @@ class Main(QtGui.QMainWindow):
         self.ui = Ui_main()
         widget = QtGui.QWidget()
         self.ui.setupUi(widget)
+        self.ui.artists.setHeaderLabels(QStringList([u'Artist']))
+        self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
+        delegate = ADRItemDelegate()
+        self.ui.artists.setItemDelegateForColumn(0, delegate)
+        self.ui.albums = ADRTreeWidget()
+        self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album']))
+        self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
+        self.ui.verticalLayout_4.addWidget(self.ui.albums)
+        self.ui.tracks.setHeaderLabels(QStringList(['#', u'Title']))
         self.ui.plugins = {}
         self.ui.splitter.restoreState(
                 self.__settings.value(u'splitters').toByteArray())
@@ -181,13 +280,6 @@ class Main(QtGui.QMainWindow):
         self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
         self.rt.errors.connect(self.logs)
-        self.ui.artists.setHeaderLabels(QStringList([
-            u'Artist', u'Digital', u'Analog']))
-        self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
-        self.ui.albums.setHeaderLabels(QStringList([
-            u'Year', u'Album', u'Digital', u'Analog']))
-        self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
-        self.ui.tracks.setHeaderLabels(QStringList(['#', u'Title']))
         self.ui.logs.setHeaderLabels(QStringList([
             self.trUtf8('Module'),
             self.trUtf8('Type'),
@@ -371,6 +463,15 @@ class Main(QtGui.QMainWindow):
         dialog = Settings()
         dialog.ok.clicked.connect(__save)
         dialog.exec_()
+    def save(self):
+        u"""Save database to file."""
+        try:
+            self.db.write(self.library)
+        except AttributeError:
+            self.statusBar().showMessage(self.trUtf8('Nothing to save...'))
+        else:
+            self.statusBar().showMessage(self.trUtf8('Saved'))
+            self.oldLib = deepcopy(self.library)
     def setAnalog(self, item, column):
         if column == 3:
             digital = item.text(2)
@@ -450,24 +551,11 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
         for i, l in enumerate(self.library[1].keys()):
-            item = QtGui.QTreeWidgetItem(QStringList([l,
-                self.statistics[u'detailed'][i][0] and u'YES' or u'NO',
-                self.statistics[u'detailed'][i][1] and u'YES' or u'NO'
-                ]))
-            if self.statistics[u'detailed'][i][0] and \
-                    self.statistics[u'detailed'][i][1]:
-                for j in range(3):
-                    item.setBackground(j, Qt.green)
-                    item.setForeground(j, Qt.black)
-            elif self.statistics[u'detailed'][i][0] or \
-                    self.statistics[u'detailed'][i][1]:
-                for j in range(3):
-                    item.setBackground(j, Qt.yellow)
-                    item.setForeground(j, Qt.black)
-            else:
-                for j in range(3):
-                    item.setBackground(j, Qt.red)
-                    item.setForeground(j, Qt.black)
+            item = QtGui.QTreeWidgetItem()
+            item.setData(0, 123, self.statistics[u'detailed'][l][u'a'])
+            item.setData(0, 234, self.statistics[u'detailed'][l][u'd'])
+            item.setData(0, 345, self.statistics[u'detailed'][l][u'r'])
+            item.setData(0, 987, l)
             self.ui.artists.insertTopLevelItem(i, item)
         self.ui.artists.setSortingEnabled(True)
         self.ui.artists.sortItems(0, 0)
@@ -488,42 +576,21 @@ class Main(QtGui.QMainWindow):
         self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
         self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
         self.ui.albumsRed.setText(self.statistics[u'albums'][2])
-    def save(self):
-        u"""Save database to file."""
-        try:
-            self.db.write(self.library)
-        except AttributeError:
-            self.statusBar().showMessage(self.trUtf8('Nothing to save...'))
-        else:
-            self.statusBar().showMessage(self.trUtf8('Saved'))
-            self.oldLib = deepcopy(self.library)
     def fillAlbums(self):
         items = self.ui.artists.selectedItems()
         self.ui.albums.clear()
         self.ui.albums.setSortingEnabled(False)
         for item in items:
-            artist = unicode(item.text(0))
+            artist = unicode(item.data(0, 987).toString())
             for date, albums in self.library[1][artist].iteritems():
                 for album, data in albums.iteritems():
                     key = self.library[4][artist + date + album]
-                    item_ = QtGui.QTreeWidgetItem(QStringList([
-                        date, album,
-                        key[u'digital'] and u'YES' or u'NO',
-                        key[u'analog'] and u'YES' or u'NO'
-                        ]))
+                    item_ = QtGui.QTreeWidgetItem(QStringList([date]))
                     item_.artist = artist
-                    if key[u'digital'] and key[u'analog']:
-                        for i in range(4):
-                            item_.setBackground(i, Qt.green)
-                            item_.setForeground(i, Qt.black)
-                    elif key[u'digital'] or key[u'analog']:
-                        for i in range(4):
-                            item_.setBackground(i, Qt.yellow)
-                            item_.setForeground(i, Qt.black)
-                    else:
-                        for i in range(4):
-                            item_.setBackground(i, Qt.red)
-                            item_.setForeground(i, Qt.black)
+                    item_.setData(1, 123, key[u'analog'])
+                    item_.setData(1, 234, key[u'digital'])
+                    item_.setData(1, 345, key[u'remote'])
+                    item_.setData(1, 987, album)
                     self.ui.albums.addTopLevelItem(item_)
         self.ui.albums.setSortingEnabled(True)
         self.ui.albums.sortItems(0, 0)
@@ -535,7 +602,7 @@ class Main(QtGui.QMainWindow):
         self.ui.tracks.setSortingEnabled(False)
         for item in items:
             date = unicode(item.text(0))
-            album = unicode(item.text(1))
+            album = unicode(item.data(1, 987).toString())
             for num, titles in self.library[1][item.artist] \
                     [date][album].iteritems():
                 for title in titles.keys():
@@ -552,38 +619,42 @@ class Main(QtGui.QMainWindow):
     def computeStats(self):
         artists = [0, 0, 0]
         albums = [0, 0, 0]
-        detailed = []
+        detailed = dict()
         for a, d in self.library[1].iteritems():
-            artist = 0
+            detailed[a] = dict()
+            aa = 1
+            ad = 1
+            ar = 1
             for y, t in d.iteritems():
                 for aa in t.keys():
                     key = self.library[4][a + y + aa]
-                    if not key[u'digital'] and not key[u'analog']:
-                        albums[2] += 1
-                        artist = 1
-                    elif key[u'digital'] and key[u'analog']:
+                    if key[u'analog']:
                         albums[0] += 1
-                        if not artist:
-                            artist = 4
                     else:
+                        aa = 0
+                    if key[u'digital']:
                         albums[1] += 1
-                        if not artist or artist == 4:
-                            if key[u'digital']:
-                                artist = 2
-                            else:
-                                artist = 3
-            if artist == 4:
+                    else:
+                        ad = 0
+                    if key[u'remote']:
+                        albums[2] += 1
+                    else:
+                        ar = 0
+            if aa:
                 artists[0] += 1
-                detailed.append((1, 1))
-            elif artist == 1:
-                artists[2] += 1
-                detailed.append((0, 0))
+                detailed[a][u'a'] = True
             else:
+                detailed[a][u'a'] = False
+            if ad:
                 artists[1] += 1
-                if artist == 2:
-                    detailed.append((1, 0))
-                else:
-                    detailed.append((0, 1))
+                detailed[a][u'd'] = True
+            else:
+                detailed[a][u'd'] = False
+            if ar:
+                artists[2] += 1
+                detailed[a][u'r'] = True
+            else:
+                detailed[a][u'r'] = False
         self.statistics = {
                 u'artists': (unicode(artists[0]),
                     unicode(artists[1]), unicode(artists[2])),
