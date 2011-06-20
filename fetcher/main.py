@@ -45,6 +45,7 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         self.mx = 0
         self.my = 0
         self.ry = 0
+        self.rry = -1
         self.rx = 0
     def paint(self, painter, option, index):
         QtGui.QStyledItemDelegate.paint(self, painter, option, index)
@@ -71,9 +72,11 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         if self.buttonOver(mouseOver, rx):
             if self.buttoned:
                 if self.my >= ry + 1 and self.my <= ry + 11:
+                    self.rry = ry
                     self.buttonClicked.emit(index)
-            else:
+            elif ry != self.rry:
                 painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
+                self.rry = -1
             painter.drawText(rx + 8, ry + 11, u'a')
         painter.restore()
         painter.drawText(rx + 39, ry + 13, index.data(987).toString())
@@ -113,8 +116,6 @@ class ADRTreeWidget(QtGui.QTreeWidget):
     def mouseReleaseEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
             QtGui.QTreeWidget.mouseReleaseEvent(self, event)
-        else:
-            self.delegate.buttoned2 = True
     def mousePressEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
             QtGui.QTreeWidget.mousePressEvent(self, event)
