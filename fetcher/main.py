@@ -21,6 +21,7 @@ import cPickle
 import re
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator, QSize
+from PyQt4.QtCore import pyqtSignal, QModelIndex
 from copy import deepcopy
 from fetcher.db.local import Filesystem
 from fetcher.db.distributor import Distributor
@@ -35,59 +36,26 @@ if sys.platform == 'win32':
 else: # Most POSIX systems, there may be more elifs in future.
     dbPath = os.path.expanduser(u'~/.config/fetcher')
 
-class ADRButton(QtGui.QPushButton):
-    def __init__(self, a = False, d = False, r = False, parent = None):
-        QtGui.QPushButton.__init__(self, parent)
-        self.hover = False
-        self.a = a
-        self.d = d
-        self.r = r
-        metrics = self.fontMetrics()
-        self.ax = 8
-        self.dx = self.ax + metrics.width(u'a')
-        self.rx = self.dx + metrics.width(u'd')
-        self.setFixedWidth(self.rx + metrics.width(u'r') + 8)
-        self.setFixedHeight(15)
-        self.clicked.connect(self.switch)
-    def switch(self):
-        self.a = not self.a
-        self.hover = False
-        self.update()
-    def paintEvent(self, event):
-        painter = QtGui.QPainter()
-        painter.begin(self)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        rect = event.rect()
-        painter.setPen(Qt.NoPen)
-        palette = QtGui.QPalette()
-        painter.setBrush(palette.mid())
-        painter.drawRoundedRect(rect, 30, 60, Qt.RelativeSize)
-        painter.setPen(QtGui.QPen())
-        if self.d:
-            painter.drawText(self.dx, 11, u'd')
-        if self.r:
-            painter.drawText(self.rx, 11, u'r')
-        if self.hover:
-            painter.setPen(QtGui.QPen(palette.brightText(), 0))
-        if self.a or self.hover:
-            painter.drawText(self.ax, 11, u'a')
-        painter.end()
-    def enterEvent(self, event):
-        self.hover = True
-    def leaveEvent(self, event):
-        self.hover = False
-
 class ADRItemDelegate(QtGui.QStyledItemDelegate):
-    hover = False
+    buttonClicked = pyqtSignal(QModelIndex)
+    def __init__(self, parent = None):
+        QtGui.QStyledItemDelegate.__init__(self, parent)
+        self.palette = QtGui.QPalette()
+        self.buttoned = False
+        self.mx = 0
+        self.my = 0
+        self.ry = 0
+        self.rx = 0
     def paint(self, painter, option, index):
         QtGui.QStyledItemDelegate.paint(self, painter, option, index)
         painter.save()
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setPen(Qt.NoPen)
-        palette = QtGui.QPalette()
-        painter.setBrush(palette.mid())
+        painter.setBrush(self.palette.mid())
         ry = option.rect.y()
         rx = option.rect.x()
+        self.ry = ry
+        self.rx = rx
         painter.drawRoundedRect(rx + 1, ry + 2, 36, 12, 20, 60, Qt.RelativeSize)
         painter.setPen(QtGui.QPen())
         metrics = option.fontMetrics
@@ -97,32 +65,66 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         x += metrics.width(u'd')
         if index.data(345).toBool():
             painter.drawText(x, ry + 11, u'r')
+        if index.data(123).toBool():
+            painter.drawText(rx + 8, ry + 11, u'a')
         mouseOver = option.state & QtGui.QStyle.State_MouseOver
-        #active = option.state & QtGui.QStyle.State_Active
-        if mouseOver and self.hover:
-            painter.setPen(QtGui.QPen(palette.brightText(), 0))
-        if index.data(123).toBool() or (mouseOver and self.hover):
+        if self.buttonOver(mouseOver, rx):
+            if self.buttoned:
+                if self.my >= ry + 1 and self.my <= ry + 11:
+                    self.buttonClicked.emit(index)
+            else:
+                painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
             painter.drawText(rx + 8, ry + 11, u'a')
         painter.restore()
         painter.drawText(rx + 39, ry + 13, index.data(987).toString())
+    def buttonOver(self, mo, x):
+        return self.mx >= x + 1 and self.mx <= x + 36 and mo
     def sizeHint(self, option, index):
         return QSize(39 + option.fontMetrics.width(
             index.data(987).toString()), 17)
 
+class ADRTreeWidgetItem(QtGui.QTreeWidgetItem):
+    def __lt__(self, qtreewidgetitem):
+        column = self.treeWidget().sortColumn()
+        data1 = self.data(column, 987).toString()
+        if data1:
+            return data1 < qtreewidgetitem.data(column, 987).toString()
+        else:
+            return self.text(column) < qtreewidgetitem.text(column)
+
 class ADRTreeWidget(QtGui.QTreeWidget):
+    buttonClicked = pyqtSignal(ADRTreeWidgetItem)
     def __init__(self, parent = None):
         QtGui.QTreeWidget.__init__(self, parent)
         self.setMouseTracking(True)
         self.setIndentation(0)
         self.delegate = ADRItemDelegate()
+        self.delegate.buttonClicked.connect(self.callback)
         self.setItemDelegateForColumn(1, self.delegate)
+    def buttoned(self, mx, rx):
+        return mx >= rx + 1 and mx <= rx + 36
+    def callback(self, index):
+        self.buttonClicked.emit(self.itemFromIndex(index))
     def mouseMoveEvent(self, event):
-        width = self.columnWidth(0)
-        if event.x() >= width + 1 and event.x() <= width + 36:
-            self.delegate.hover = True
-        else:
-            self.delegate.hover = False
+        self.delegate.buttoned = False
+        self.delegate.mx = event.x()
+        self.delegate.my = event.y()
         self.viewport().update()
+    def mouseReleaseEvent(self, event):
+        if not self.buttoned(event.x(), self.delegate.rx):
+            QtGui.QTreeWidget.mouseReleaseEvent(self, event)
+        else:
+            self.delegate.buttoned2 = True
+    def mousePressEvent(self, event):
+        if not self.buttoned(event.x(), self.delegate.rx):
+            QtGui.QTreeWidget.mousePressEvent(self, event)
+        else:
+            self.delegate.buttoned = True
+            self.delegate.my = event.y()
+            self.viewport().update()
+    def mouseDoubleClickEvent(self, event):
+        if not self.buttoned(event.x(), self.delegate.rx):
+            QtGui.QTreeWidget.mouseDoubleClickEvent(self, event)
 
 class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __lt__(self, qtreewidgetitem):
@@ -252,6 +254,7 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.setItemDelegateForColumn(0, delegate)
         self.ui.albums = ADRTreeWidget()
         self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album']))
+        self.ui.albums.buttonClicked.connect(self.setAnalog)
         self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
         self.ui.verticalLayout_4.addWidget(self.ui.albums)
         self.ui.tracks.setHeaderLabels(QStringList(['#', u'Title']))
@@ -284,7 +287,7 @@ class Main(QtGui.QMainWindow):
             self.trUtf8('Type'),
             self.trUtf8('File/Entry'),
             self.trUtf8('Message')]))
-        self.ui.albums.itemActivated.connect(self.setAnalog)
+        #self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.local.clicked.connect(self.local)
         self.ui.remote.clicked.connect(self.remote)
         self.ui.close.clicked.connect(self.close)
@@ -471,72 +474,74 @@ class Main(QtGui.QMainWindow):
         else:
             self.statusBar().showMessage(self.trUtf8('Saved'))
             self.oldLib = deepcopy(self.library)
-    def setAnalog(self, item, column):
-        if column == 3:
-            digital = item.text(2)
-            analog = item.text(3)
-            if analog == u'NO':
-                item.setText(3, u'YES')
-                analog = u'YES'
-            else:
-                item.setText(3, u'NO')
-                analog = u'NO'
-            album = unicode(item.text(1))
-            if analog == u'YES':
-                self.library[item.artist][u'albums'][album][u'analog'] = True
-            else:
-                self.library[item.artist][u'albums'][album][u'analog'] = False
-            self.computeStats()
-            self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
-            self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
-            self.ui.artistsRed.setText(self.statistics[u'artists'][2])
-            self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
-            self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
-            self.ui.albumsRed.setText(self.statistics[u'albums'][2])
-            if digital == u'YES' and analog == u'YES':
-                for i in range(4):
-                    item.setBackground(i, Qt.green)
-            elif digital==u'YES':
-                for i in range(4):
-                    item.setBackground(i, Qt.yellow)
-            elif analog == u'YES':
-                for i in range(4):
-                    item.setBackground(i, Qt.yellow)
-            else:
-                for i in range(4):
-                    item.setBackground(i, Qt.red)
-            artists={}
-            for i in range(self.ui.albums.topLevelItemCount()):
-                item = self.ui.albums.topLevelItem(i)
-                artist = item.artist
-                state = unicode(item.background(0).color().name())
-                if artist in artists:
-                    if state in artists[artist]:
-                        artists[artist][state] += 1
-                    else:
-                        artists[artist][state] = 1
-                    if artists[artist][u'analog'] != u'NO' and item.text(3) == u'NO':
-                        artists[artist][u'analog'] = u'NO'
-                else:
-                    artists[artist] = {state: 1}
-                    if item.text(3) == u'YES':
-                        artists[artist][u'analog'] = u'YES'
-                    else:
-                        artists[artist][u'analog'] = u'NO'
-            def setColor(artist,qcolor,analogState):
-                for item in self.ui.artists.selectedItems():
-                    if item.text(0) == artist:
-                        for i in range(3):
-                            item.setBackground(i, qcolor)
-                        item.setText(2, analogState)
-                        break
-            for artist,states in artists.items():
-                if u'#ff0000' in states:
-                    setColor(artist,Qt.red,states[u'analog'])
-                elif u'#ffff00' in states:
-                    setColor(artist,Qt.yellow,states[u'analog'])
-                else:
-                    setColor(artist,Qt.green,states[u'analog'])
+    def setAnalog(self, item):
+        print item.data(1, 987).toString()
+    #def setAnalog(self, item, column):
+        #if column == 3:
+        #    digital = item.text(2)
+        #    analog = item.text(3)
+        #    if analog == u'NO':
+        #        item.setText(3, u'YES')
+        #        analog = u'YES'
+        #    else:
+        #        item.setText(3, u'NO')
+        #        analog = u'NO'
+        #    album = unicode(item.text(1))
+        #    if analog == u'YES':
+        #        self.library[item.artist][u'albums'][album][u'analog'] = True
+        #    else:
+        #        self.library[item.artist][u'albums'][album][u'analog'] = False
+        #    self.computeStats()
+        #    self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
+        #    self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
+        #    self.ui.artistsRed.setText(self.statistics[u'artists'][2])
+        #    self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
+        #    self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
+        #    self.ui.albumsRed.setText(self.statistics[u'albums'][2])
+        #    if digital == u'YES' and analog == u'YES':
+        #        for i in range(4):
+        #            item.setBackground(i, Qt.green)
+        #    elif digital==u'YES':
+        #        for i in range(4):
+        #            item.setBackground(i, Qt.yellow)
+        #    elif analog == u'YES':
+        #        for i in range(4):
+        #            item.setBackground(i, Qt.yellow)
+        #    else:
+        #        for i in range(4):
+        #            item.setBackground(i, Qt.red)
+        #    artists={}
+        #    for i in range(self.ui.albums.topLevelItemCount()):
+        #        item = self.ui.albums.topLevelItem(i)
+        #        artist = item.artist
+        #        state = unicode(item.background(0).color().name())
+        #        if artist in artists:
+        #            if state in artists[artist]:
+        #                artists[artist][state] += 1
+        #            else:
+        #                artists[artist][state] = 1
+        #            if artists[artist][u'analog'] != u'NO' and item.text(3) == u'NO':
+        #                artists[artist][u'analog'] = u'NO'
+        #        else:
+        #            artists[artist] = {state: 1}
+        #            if item.text(3) == u'YES':
+        #                artists[artist][u'analog'] = u'YES'
+        #            else:
+        #                artists[artist][u'analog'] = u'NO'
+        #    def setColor(artist,qcolor,analogState):
+        #        for item in self.ui.artists.selectedItems():
+        #            if item.text(0) == artist:
+        #                for i in range(3):
+        #                    item.setBackground(i, qcolor)
+        #                item.setText(2, analogState)
+        #                break
+        #    for artist,states in artists.items():
+        #        if u'#ff0000' in states:
+        #            setColor(artist,Qt.red,states[u'analog'])
+        #        elif u'#ffff00' in states:
+        #            setColor(artist,Qt.yellow,states[u'analog'])
+        #        else:
+        #            setColor(artist,Qt.green,states[u'analog'])
     def update(self):
         self.computeStats()
         self.statusBar().showMessage(self.trUtf8('Done'))
@@ -550,7 +555,7 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
         for i, l in enumerate(self.library[1].keys()):
-            item = QtGui.QTreeWidgetItem()
+            item = ADRTreeWidgetItem()
             item.setData(0, 123, self.statistics[u'detailed'][l][u'a'])
             item.setData(0, 234, self.statistics[u'detailed'][l][u'd'])
             item.setData(0, 345, self.statistics[u'detailed'][l][u'r'])
@@ -584,7 +589,7 @@ class Main(QtGui.QMainWindow):
             for date, albums in self.library[1][artist].iteritems():
                 for album, data in albums.iteritems():
                     key = self.library[4][artist + date + album]
-                    item_ = QtGui.QTreeWidgetItem(QStringList([date]))
+                    item_ = ADRTreeWidgetItem(QStringList([date]))
                     item_.artist = artist
                     item_.setData(1, 123, key[u'analog'])
                     item_.setData(1, 234, key[u'digital'])
