@@ -117,13 +117,12 @@ class ADRTreeWidget(QtGui.QTreeWidget):
         self.delegate = ADRItemDelegate()
         self.setItemDelegateForColumn(1, self.delegate)
     def mouseMoveEvent(self, event):
-        if event.x() >= 1 and event.x() <= 36:
+        width = self.columnWidth(0)
+        if event.x() >= width + 1 and event.x() <= width + 36:
             self.delegate.hover = True
         else:
             self.delegate.hover = False
-        self.itemSelectionChanged.emit()
-        self.update()
-        self.repaint()
+        self.viewport().update()
 
 class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __lt__(self, qtreewidgetitem):
