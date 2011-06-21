@@ -154,7 +154,7 @@
     <message>
         <location filename="../fetcher/interfaces/settings.py" line="82"/>
         <source>C&amp;rossed</source>
-        <translation>K&amp;rzyżowy</translation>
+        <translation>Na k&amp;rzyż</translation>
     </message>
     <message>
         <location filename="../fetcher/interfaces/settings.py" line="87"/>
