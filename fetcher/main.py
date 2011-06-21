@@ -90,7 +90,7 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         return self.mx >= x + 1 and self.mx <= x + 36 and mo
     def sizeHint(self, option, index):
         return QSize(39 + option.fontMetrics.width(
-            index.data(987).toString()), option.rect.height())
+            index.data(987).toString()), 17)
 
 class ADRTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __lt__(self, qtreewidgetitem):
@@ -295,7 +295,6 @@ class Main(QtGui.QMainWindow):
             self.trUtf8('Type'),
             self.trUtf8('File/Entry'),
             self.trUtf8('Message')]))
-        #self.ui.albums.itemActivated.connect(self.setAnalog)
         self.ui.local.clicked.connect(self.local)
         self.ui.remote.clicked.connect(self.remote)
         self.ui.close.clicked.connect(self.close)
@@ -483,74 +482,35 @@ class Main(QtGui.QMainWindow):
             self.statusBar().showMessage(self.trUtf8('Saved'))
             self.oldLib = deepcopy(self.library)
     def setAnalog(self, item):
-        item.setData(1, 123, not item.data(1, 123).toBool())
-        print unicode(item.data(1, 987).toString())
-    #def setAnalog(self, item, column):
-        #if column == 3:
-        #    digital = item.text(2)
-        #    analog = item.text(3)
-        #    if analog == u'NO':
-        #        item.setText(3, u'YES')
-        #        analog = u'YES'
-        #    else:
-        #        item.setText(3, u'NO')
-        #        analog = u'NO'
-        #    album = unicode(item.text(1))
-        #    if analog == u'YES':
-        #        self.library[item.artist][u'albums'][album][u'analog'] = True
-        #    else:
-        #        self.library[item.artist][u'albums'][album][u'analog'] = False
-        #    self.computeStats()
-        #    self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
-        #    self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
-        #    self.ui.artistsRed.setText(self.statistics[u'artists'][2])
-        #    self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
-        #    self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
-        #    self.ui.albumsRed.setText(self.statistics[u'albums'][2])
-        #    if digital == u'YES' and analog == u'YES':
-        #        for i in range(4):
-        #            item.setBackground(i, Qt.green)
-        #    elif digital==u'YES':
-        #        for i in range(4):
-        #            item.setBackground(i, Qt.yellow)
-        #    elif analog == u'YES':
-        #        for i in range(4):
-        #            item.setBackground(i, Qt.yellow)
-        #    else:
-        #        for i in range(4):
-        #            item.setBackground(i, Qt.red)
-        #    artists={}
-        #    for i in range(self.ui.albums.topLevelItemCount()):
-        #        item = self.ui.albums.topLevelItem(i)
-        #        artist = item.artist
-        #        state = unicode(item.background(0).color().name())
-        #        if artist in artists:
-        #            if state in artists[artist]:
-        #                artists[artist][state] += 1
-        #            else:
-        #                artists[artist][state] = 1
-        #            if artists[artist][u'analog'] != u'NO' and item.text(3) == u'NO':
-        #                artists[artist][u'analog'] = u'NO'
-        #        else:
-        #            artists[artist] = {state: 1}
-        #            if item.text(3) == u'YES':
-        #                artists[artist][u'analog'] = u'YES'
-        #            else:
-        #                artists[artist][u'analog'] = u'NO'
-        #    def setColor(artist,qcolor,analogState):
-        #        for item in self.ui.artists.selectedItems():
-        #            if item.text(0) == artist:
-        #                for i in range(3):
-        #                    item.setBackground(i, qcolor)
-        #                item.setText(2, analogState)
-        #                break
-        #    for artist,states in artists.items():
-        #        if u'#ff0000' in states:
-        #            setColor(artist,Qt.red,states[u'analog'])
-        #        elif u'#ffff00' in states:
-        #            setColor(artist,Qt.yellow,states[u'analog'])
-        #        else:
-        #            setColor(artist,Qt.green,states[u'analog'])
+        data = not item.data(1, 123).toBool()
+        item.setData(1, 123, data)
+        self.library[4][item.artist + unicode(item.text(0))
+                + unicode(item.data(1, 987).toString())][u'analog'] = data
+        if data:
+            self.statistics[u'albums'][0] += 1
+            switch = True
+            for y, d in self.library[1][item.artist].iteritems():
+                for a in d.keys():
+                    if not self.library[4][item.artist + y + a][u'analog']:
+                        switch = False
+                        break
+                if not switch:
+                    break
+            if switch:
+                self.statistics[u'artists'][0] += 1
+                self.ui.artistsGreen.setText(
+                        unicode(self.statistics[u'artists'][0]))
+                self.statistics[u'detailed'][item.artist][u'a'] = True
+                self.ui.artists.topLevelItem(item.aIndex).setData(0, 123, True)
+        else:
+            self.statistics[u'albums'][0] -= 1
+            if self.ui.artists.topLevelItem(item.aIndex).data(0, 123).toBool():
+                self.statistics[u'artists'][0] -= 1
+                self.ui.artistsGreen.setText(
+                        unicode(self.statistics[u'artists'][0]))
+                self.statistics[u'detailed'][item.artist][u'a'] = False
+                self.ui.artists.topLevelItem(item.aIndex).setData(0, 123, False)
+        self.ui.albumsGreen.setText(unicode(self.statistics[u'albums'][0]))
     def update(self):
         self.computeStats()
         self.statusBar().showMessage(self.trUtf8('Done'))
@@ -585,12 +545,12 @@ class Main(QtGui.QMainWindow):
         #for a in sTracks:
         #    i = self.ui.tracks.findItems(a, Qt.MatchExactly)
         #    i[0].setSelected(True)
-        self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
-        self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
-        self.ui.artistsRed.setText(self.statistics[u'artists'][2])
-        self.ui.albumsGreen.setText(self.statistics[u'albums'][0])
-        self.ui.albumsYellow.setText(self.statistics[u'albums'][1])
-        self.ui.albumsRed.setText(self.statistics[u'albums'][2])
+        self.ui.artistsGreen.setText(unicode(self.statistics[u'artists'][0]))
+        self.ui.artistsYellow.setText(unicode(self.statistics[u'artists'][1]))
+        self.ui.artistsRed.setText(unicode(self.statistics[u'artists'][2]))
+        self.ui.albumsGreen.setText(unicode(self.statistics[u'albums'][0]))
+        self.ui.albumsYellow.setText(unicode(self.statistics[u'albums'][1]))
+        self.ui.albumsRed.setText(unicode(self.statistics[u'albums'][2]))
     def fillAlbums(self):
         items = self.ui.artists.selectedItems()
         self.ui.albums.clear()
@@ -602,6 +562,7 @@ class Main(QtGui.QMainWindow):
                     key = self.library[4][artist + date + album]
                     item_ = ADRTreeWidgetItem(QStringList([date]))
                     item_.artist = artist
+                    item_.aIndex = self.ui.artists.indexOfTopLevelItem(item)
                     item_.setData(1, 123, key[u'analog'])
                     item_.setData(1, 234, key[u'digital'])
                     item_.setData(1, 345, key[u'remote'])
@@ -674,10 +635,8 @@ class Main(QtGui.QMainWindow):
             else:
                 detailed[a][u'r'] = False
         self.statistics = {
-                u'artists': (unicode(artists[0]),
-                    unicode(artists[1]), unicode(artists[2])),
-                u'albums': (unicode(albums[0]),
-                    unicode(albums[1]), unicode(albums[2])),
+                u'artists': artists,
+                u'albums': albums,
                 u'detailed': detailed
                 }
     def closeEvent(self, event):
