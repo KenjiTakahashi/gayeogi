@@ -116,6 +116,7 @@ unsaved changes.
 -Multilanguage support.
 -Polish translation.
 -Selections now survive updates.
+-New "adr-based" look.
 
 ===PLAYER:
 -Trying to play non-digital release no longer throws exception.

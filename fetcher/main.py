@@ -47,6 +47,7 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         self.ry = 0
         self.rry = -1
         self.rx = 0
+        self.ht = 0
     def paint(self, painter, option, index):
         QtGui.QStyledItemDelegate.paint(self, painter, option, index)
         painter.save()
@@ -55,36 +56,41 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         painter.setBrush(self.palette.mid())
         ry = option.rect.y()
         rx = option.rect.x()
+        self.ht = option.rect.height()
         self.ry = ry
         self.rx = rx
-        painter.drawRoundedRect(rx + 1, ry + 2, 36, 12, 20, 60, Qt.RelativeSize)
+        painter.drawRoundedRect(rx + 1, ry + 2, 36,
+                self.ht - 5, 20, 60, Qt.RelativeSize)
         painter.setPen(QtGui.QPen())
         metrics = option.fontMetrics
         x = rx + 8 + metrics.width(u'a')
         if index.data(234).toBool():
-            painter.drawText(x, ry + 11, u'd')
+            painter.drawText(x, ry + self.ht - 6, u'd')
         x += metrics.width(u'd')
         if index.data(345).toBool():
-            painter.drawText(x, ry + 11, u'r')
-        if index.data(123).toBool():
-            painter.drawText(rx + 8, ry + 11, u'a')
+            painter.drawText(x, ry + self.ht - 6, u'r')
         mouseOver = option.state & QtGui.QStyle.State_MouseOver
         if self.buttonOver(mouseOver, rx):
             if self.buttoned:
-                if self.my >= ry + 1 and self.my <= ry + 11:
+                if self.my >= ry + 1 and self.my <= ry + self.ht - 6:
                     self.rry = ry
                     self.buttonClicked.emit(index)
+                    self.buttoned = False
             elif ry != self.rry:
                 painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
                 self.rry = -1
-            painter.drawText(rx + 8, ry + 11, u'a')
+                painter.drawText(rx + 8, ry + self.ht - 6, u'a')
+            elif index.data(123).toBool():
+                painter.drawText(rx + 8, ry + self.ht - 6, u'a')
+        elif index.data(123).toBool():
+            painter.drawText(rx + 8, ry + self.ht - 6, u'a')
         painter.restore()
-        painter.drawText(rx + 39, ry + 13, index.data(987).toString())
+        painter.drawText(rx + 39, ry + self.ht - 4, index.data(987).toString())
     def buttonOver(self, mo, x):
         return self.mx >= x + 1 and self.mx <= x + 36 and mo
     def sizeHint(self, option, index):
         return QSize(39 + option.fontMetrics.width(
-            index.data(987).toString()), 17)
+            index.data(987).toString()), option.rect.height())
 
 class ADRTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __lt__(self, qtreewidgetitem):
@@ -109,20 +115,21 @@ class ADRTreeWidget(QtGui.QTreeWidget):
     def callback(self, index):
         self.buttonClicked.emit(self.itemFromIndex(index))
     def mouseMoveEvent(self, event):
-        self.delegate.buttoned = False
+        if event.y() == 0 or self.delegate.rry + self.delegate.ht < event.y():
+            self.delegate.rry = -1
         self.delegate.mx = event.x()
         self.delegate.my = event.y()
         self.viewport().update()
     def mouseReleaseEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
             QtGui.QTreeWidget.mouseReleaseEvent(self, event)
-    def mousePressEvent(self, event):
-        if not self.buttoned(event.x(), self.delegate.rx):
-            QtGui.QTreeWidget.mousePressEvent(self, event)
         else:
             self.delegate.buttoned = True
             self.delegate.my = event.y()
             self.viewport().update()
+    def mousePressEvent(self, event):
+        if not self.buttoned(event.x(), self.delegate.rx):
+            QtGui.QTreeWidget.mousePressEvent(self, event)
     def mouseDoubleClickEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
             QtGui.QTreeWidget.mouseDoubleClickEvent(self, event)
@@ -476,7 +483,8 @@ class Main(QtGui.QMainWindow):
             self.statusBar().showMessage(self.trUtf8('Saved'))
             self.oldLib = deepcopy(self.library)
     def setAnalog(self, item):
-        print item.data(1, 987).toString()
+        item.setData(1, 123, not item.data(1, 123).toBool())
+        print unicode(item.data(1, 987).toString())
     #def setAnalog(self, item, column):
         #if column == 3:
         #    digital = item.text(2)
@@ -550,8 +558,10 @@ class Main(QtGui.QMainWindow):
         self.ui.remote.setEnabled(True)
         self.ui.save.setEnabled(True)
         self.ui.settings.setEnabled(True)
-        sArtists = [i.text(0) for i in self.ui.artists.selectedItems()]
-        sAlbums = [i.text(0) for i in self.ui.albums.selectedItems()]
+        sArtists = [i.data(0, 987).toString()
+                for i in self.ui.artists.selectedItems()]
+        sAlbums = [i.data(1, 987).toString()
+                for i in self.ui.albums.selectedItems()]
         sTracks = [i.text(0) for i in self.ui.tracks.selectedItems()]
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
@@ -564,17 +574,17 @@ class Main(QtGui.QMainWindow):
             self.ui.artists.insertTopLevelItem(i, item)
         self.ui.artists.setSortingEnabled(True)
         self.ui.artists.sortItems(0, 0)
-        for i in range(3):
-            self.ui.artists.resizeColumnToContents(i)
-        for a in sArtists:
-            i = self.ui.artists.findItems(a, Qt.MatchExactly)
-            i[0].setSelected(True)
-        for a in sAlbums:
-            i = self.ui.albums.findItems(a, Qt.MatchExactly)
-            i[0].setSelected(True)
-        for a in sTracks:
-            i = self.ui.tracks.findItems(a, Qt.MatchExactly)
-            i[0].setSelected(True)
+        #for i in range(3):
+        #    self.ui.artists.resizeColumnToContents(i)
+        #for a in sArtists:
+        #    i = self.ui.artists.findItems(a, Qt.MatchExactly)
+        #    i[0].setSelected(True)
+        #for a in sAlbums:
+        #    i = self.ui.albums.findItems(a, Qt.MatchExactly)
+        #    i[0].setSelected(True)
+        #for a in sTracks:
+        #    i = self.ui.tracks.findItems(a, Qt.MatchExactly)
+        #    i[0].setSelected(True)
         self.ui.artistsGreen.setText(self.statistics[u'artists'][0])
         self.ui.artistsYellow.setText(self.statistics[u'artists'][1])
         self.ui.artistsRed.setText(self.statistics[u'artists'][2])
@@ -635,28 +645,31 @@ class Main(QtGui.QMainWindow):
                     key = self.library[4][a + y + aa]
                     if key[u'analog']:
                         albums[0] += 1
-                    else:
-                        aa = 0
-                    if key[u'digital']:
+                    elif key[u'digital']:
                         albums[1] += 1
-                    else:
-                        ad = 0
-                    if key[u'remote']:
+                    elif key[u'remote']:
                         albums[2] += 1
-                    else:
+                    if not key[u'analog']:
+                        aa = 0
+                    if not key[u'digital']:
+                        ad = 0
+                    if not key[u'remote']:
                         ar = 0
             if aa:
                 artists[0] += 1
+            elif ad:
+                artists[1] += 1
+            elif ar:
+                artists[2] += 1
+            if aa:
                 detailed[a][u'a'] = True
             else:
                 detailed[a][u'a'] = False
             if ad:
-                artists[1] += 1
                 detailed[a][u'd'] = True
             else:
                 detailed[a][u'd'] = False
             if ar:
-                artists[2] += 1
                 detailed[a][u'r'] = True
             else:
                 detailed[a][u'r'] = False
