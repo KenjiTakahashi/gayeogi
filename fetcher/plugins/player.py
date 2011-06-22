@@ -237,16 +237,17 @@ class Main(QtGui.QWidget):
     def updateView(self, time):
         self.__resetCurrent()
         item = self.playlist.activeItem
-        item.setData(670, self.__timeConvert(0))
-        item.setData(671, self.__timeConvert(time))
-        item.setData(672, True)
-        self.playlist.scrollToItem(item)
-        self.trackChanged.emit(
-                item.data(669).toString(),
-                item.data(667).toString(),
-                item.data(668).toString(),
-                item.data(666).toInt()[0]
-                )
+        if item:
+            item.setData(670, self.__timeConvert(0))
+            item.setData(671, self.__timeConvert(time))
+            item.setData(672, True)
+            self.playlist.scrollToItem(item)
+            self.trackChanged.emit(
+                    item.data(669).toString(),
+                    item.data(667).toString(),
+                    item.data(668).toString(),
+                    item.data(666).toInt()[0]
+                    )
     def play(self, item):
         self.mediaobject.stop()
         self.mediaobject.clear()
@@ -311,46 +312,46 @@ class Main(QtGui.QWidget):
                 self.stop()
             self.playlist.takeItem(self.playlist.row(item))
     def addItem(self, item, column = -1):
-        if column != 3:
-            if column != -1:
-                self.stop()
-                self.playlist.clearActive()
-                self.playlist.clear()
+        if column != -1:
+            self.stop()
+            self.playlist.clearActive()
+            self.playlist.clear()
+        try:
+            item.album
+        except AttributeError:
             try:
-                item.album
+                item.artist
             except AttributeError:
-                try:
-                    item.artist
-                except AttributeError:
-                    items = []
-                    for i in range(self.parent.albums.topLevelItemCount()):
-                        item_ = self.parent.albums.topLevelItem(i)
-                        year = unicode(item_.text(0))
-                        album = unicode(item_.text(1))
-                        items_ = [self.__createItem((tracknumber, title, album,
-                            item.text(0), d[u'path'])) for tracknumber, tracks
-                            in self.library[1][item_.artist][year]\
-                                    [album].iteritems() for title, d in 
-                                    tracks.iteritems()]
-                        items_.sort(self.__compare)
-                        items.extend(items_)
-                    for i in items:
-                        self.playlist.addItem(i)
-                else:
-                    for i in range(self.parent.tracks.topLevelItemCount()):
-                        item_ = self.parent.tracks.topLevelItem(i)
-                        path = self.library[1][item_.artist][item_.year]\
-                                [item_.album][unicode(item_.text(0))]\
-                                [unicode(item_.text(1))][u'path']
-                        self.playlist.addItem(self.__createItem((item_.text(0),
-                            item_.text(1), item_.album, item_.artist, path)))
+                items = []
+                for i in range(self.parent.albums.topLevelItemCount()):
+                    item_ = self.parent.albums.topLevelItem(i)
+                    year = unicode(item_.text(0))
+                    album = unicode(item_.data(1, 987).toString())
+                    items_ = [self.__createItem((tracknumber, title, album,
+                        item.data(0, 987).toString(), d[u'path']))
+                        for tracknumber, tracks
+                        in self.library[1][item_.artist][year]\
+                                [album].iteritems() for title, d in 
+                                tracks.iteritems()]
+                    items_.sort(self.__compare)
+                    items.extend(items_)
+                for i in items:
+                    self.playlist.addItem(i)
             else:
-                path = self.library[1][item.artist][item.year][item.album]\
-                        [unicode(item.text(0))][unicode(item.text(1))][u'path']
-                self.playlist.addItem(self.__createItem((item.text(0),
-                    item.text(1), item.album, item.artist, path)))
-            if column != -1 and self.playlist.count():
-                self.playByButton()
+                for i in range(self.parent.tracks.topLevelItemCount()):
+                    item_ = self.parent.tracks.topLevelItem(i)
+                    path = self.library[1][item_.artist][item_.year]\
+                            [item_.album][unicode(item_.text(0))]\
+                            [unicode(item_.text(1))][u'path']
+                    self.playlist.addItem(self.__createItem((item_.text(0),
+                        item_.text(1), item_.album, item_.artist, path)))
+        else:
+            path = self.library[1][item.artist][item.year][item.album]\
+                    [unicode(item.text(0))][unicode(item.text(1))][u'path']
+            self.playlist.addItem(self.__createItem((item.text(0),
+                item.text(1), item.album, item.artist, path)))
+        if column != -1 and self.playlist.count():
+            self.playByButton()
     def state(self, state):
         if state == Phonon.ErrorState:
             def getErrorMessage():
