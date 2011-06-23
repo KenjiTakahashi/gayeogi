@@ -85,12 +85,19 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         elif index.data(123).toBool():
             painter.drawText(rx + 8, ry + self.ht - 6, u'a')
         painter.restore()
-        painter.drawText(rx + 39, ry + self.ht - 4, index.data(987).toString())
+        pSize = self.ht / 2 + option.font.pointSize() / 2
+        if pSize % 2 == 0:
+            pSize += 1
+        painter.save()
+        if option.state & QtGui.QStyle.State_Selected:
+            painter.setPen(QtGui.QPen(self.palette.highlightedText()))
+        painter.drawText(rx + 39, ry + pSize, index.data(987).toString())
+        painter.restore()
     def buttonOver(self, mo, x):
         return self.mx >= x + 1 and self.mx <= x + 36 and mo
     def sizeHint(self, option, index):
         return QSize(39 + option.fontMetrics.width(
-            index.data(987).toString()), 17)
+            index.data(987).toString()), option.fontMetrics.height() + 2)
 
 class ADRTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __lt__(self, qtreewidgetitem):

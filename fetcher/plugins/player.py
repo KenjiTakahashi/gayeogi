@@ -31,6 +31,8 @@ class PlayListItemDelegate(QtGui.QStyledItemDelegate):
         if index.data(672).toBool():
             font.setBold(True)
             painter.setFont(font)
+        if option.state & QtGui.QStyle.State_Selected:
+            painter.setPen(QtGui.QPen(option.palette.highlightedText()))
         start.setLeft(start.left() + 5)
         start.setTop(start.top() + 20)
         QtGui.QStyledItemDelegate.paint(self, painter, option, index)
@@ -47,11 +49,10 @@ class PlayListItemDelegate(QtGui.QStyledItemDelegate):
         if data670 != u'':
             painter.drawText(start, Qt.AlignRight | Qt.AlignVCenter,
                     index.data(670).toString() + u'/' + index.data(671).toString())
-        font.setPointSize(10)
-        font.setBold(False)
+        font.setPointSize(size)
         painter.restore()
     def sizeHint(self, option, index):
-        return QSize(0, 18 + option.font.pointSize() * 2)
+        return QSize(0, 3 + option.fontMetrics.height() * 2)
 
 class Playlist(QtGui.QListWidget):
     dropped = pyqtSignal(QtGui.QTreeWidgetItem)
@@ -413,6 +414,8 @@ class Main(QtGui.QWidget):
                     return u'An non-critical error has occurred.'
                 elif error == Phonon.FatalError:
                     return u'An fatal error has occurred.'
+                else:
+                    return u'Completely unknown error.'
             self.errors.emit(
                     u'Player',
                     u'errors',
