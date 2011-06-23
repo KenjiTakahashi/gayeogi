@@ -50,6 +50,8 @@ class Settings(QtGui.QDialog):
         order = self.__dbsettings.value(u'order', []).toPyObject()
         self.dbOptionsLayout = QtGui.QGridLayout()
         from fetcher.db.bees import __names__, __all__
+        if order == None:
+            order = []
         for (o, m) in zip(__names__, __all__):
             if o not in order:
                 order.append(o)
