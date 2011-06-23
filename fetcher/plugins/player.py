@@ -1,5 +1,5 @@
 # This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
-# Karol "Kenji Takahashi" Wozniak (C) 2010
+# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSize, Qt, QModelIndex, QLocale, QTranslator
-from PyQt4.QtCore import pyqtSignal, QSettings, QString
+from PyQt4.QtCore import pyqtSignal, QSettings, QString, QPointF
 from copy import deepcopy
 from os.path import dirname, realpath
 
@@ -81,6 +81,74 @@ class Playlist(QtGui.QListWidget):
             event.setDropAction(Qt.MoveAction)
             QtGui.QListWidget.dropEvent(self, event)
 
+class PlayerPushButton(QtGui.QPushButton):
+    def __init__(self, parent = None):
+        QtGui.QPushButton.__init__(self, parent)
+        self.path = QtGui.QPainterPath()
+        self.path.setFillRule(Qt.WindingFill)
+        self.setFixedWidth(30)
+        self.setFixedHeight(30)
+    def paintEvent(self, event):
+        QtGui.QPushButton.paintEvent(self, event)
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QtGui.QPalette().mid())
+        painter.drawPath(self.path)
+
+class AddPushButton(PlayerPushButton):
+    def __init__(self, parent = None):
+        PlayerPushButton.__init__(self, parent)
+        self.path.addRoundedRect(7, 12, 16, 6, 20, 60, Qt.RelativeSize)
+        self.path.addRoundedRect(12, 7, 6, 16, 60, 20, Qt.RelativeSize)
+
+class RemovePushButton(PlayerPushButton):
+    def __init__(self, parent = None):
+        PlayerPushButton.__init__(self, parent)
+        self.path.addRoundedRect(7, 12, 16, 6, 20, 60, Qt.RelativeSize)
+
+class PlayPausePushButton(PlayerPushButton):
+    def __init__(self, parent = None):
+        PlayerPushButton.__init__(self, parent)
+        self.playPath = QtGui.QPainterPath()
+        self.playPath.addPolygon(QtGui.QPolygonF(
+            [QPointF(7, 7), QPointF(7, 23), QPointF(23, 15)]))
+        self.pausePath = QtGui.QPainterPath()
+        self.pausePath.addRoundedRect(7, 7, 6, 16, 60, 20, Qt.RelativeSize)
+        self.pausePath.addRoundedRect(17, 7, 6, 16, 60, 20, Qt.RelativeSize)
+        self.path = self.playPath
+    def setPlaying(self, state):
+        if state:
+            self.path = self.pausePath
+        else:
+            self.path = self.playPath
+        self.update()
+    def isPlaying(self):
+        return self.path != self.playPath
+
+class StopPushButton(PlayerPushButton):
+    def __init__(self, parent = None):
+        PlayerPushButton.__init__(self, parent)
+        self.path.addRoundedRect(7, 7, 16, 16, 60, 60, Qt.RelativeSize)
+
+class PreviousPushButton(PlayerPushButton):
+    def __init__(self, parent = None):
+        PlayerPushButton.__init__(self, parent)
+        self.path.addRoundedRect(7, 7, 6, 16, 60, 20, Qt.RelativeSize)
+        self.path.addPolygon(QtGui.QPolygonF(
+            [QPointF(13, 15), QPointF(18, 7), QPointF(18, 23)]))
+        self.path.addPolygon(QtGui.QPolygonF(
+            [QPointF(18, 15), QPointF(23, 7), QPointF(23, 23)]))
+
+class NextPushButton(PlayerPushButton):
+    def __init__(self, parent = None):
+        PlayerPushButton.__init__(self, parent)
+        self.path.addPolygon(QtGui.QPolygonF(
+            [QPointF(7, 7), QPointF(7, 23), QPointF(12, 15)]))
+        self.path.addPolygon(QtGui.QPolygonF(
+            [QPointF(12, 7), QPointF(12, 23), QPointF(17, 15)]))
+        self.path.addRoundedRect(17, 7, 6, 16, 60, 20, Qt.RelativeSize)
+
 class Main(QtGui.QWidget):
     name = u'Player'
     loaded = False
@@ -102,49 +170,42 @@ class Main(QtGui.QWidget):
             return translator
     translator = staticmethod(translator)
     def load(self):
-        add = QtGui.QPushButton(u'A')
-        add.setFixedWidth(30)
+        add = AddPushButton()
         add.setStatusTip(QtGui.QApplication.translate(
             'Player', 'Add selected item(s) to the playlist.'))
         add.clicked.connect(self.addByButton)
         addShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_A), add)
         addShortcut.activated.connect(self.addByButton)
-        remove = QtGui.QPushButton(u'R')
-        remove.setFixedWidth(30)
+        remove = RemovePushButton()
         remove.setStatusTip(QtGui.QApplication.translate(
             'Player', 'Remove selected item(s) from the playlist.'))
         remove.clicked.connect(self.removeByButton)
         removeShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_R), remove)
         removeShortcut.activated.connect(self.removeByButton)
-        pIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaSkipBackward)
-        previous = QtGui.QPushButton(pIcon, u'')
+        previous = PreviousPushButton()
         previous.setStatusTip(QtGui.QApplication.translate(
             'Player', 'Jump to previous track.'))
         previous.clicked.connect(self.previous)
         previousShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_B), previous)
         previousShortcut.activated.connect(self.previous)
-        playIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
-        self.playButton = QtGui.QPushButton(playIcon, u'')
+        self.playButton = PlayPausePushButton()
         self.playButton.setStatusTip(QtGui.QApplication.translate(
             'Player', 'Begin/Pause/Resume playback.'))
         self.playButton.clicked.connect(self.playByButton)
-        self.playButton.playing = False
         playShortcut = QtGui.QShortcut(QtGui.QKeySequence(
             Qt.CTRL + Qt.SHIFT + Qt.Key_P), self.playButton)
         playShortcut.activated.connect(self.playButton.click)
-        stopIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaStop)
-        stop = QtGui.QPushButton(stopIcon, u'')
+        stop = StopPushButton()
         stop.setStatusTip(QtGui.QApplication.translate(
             'Player', 'Stop playback.'))
         stop.clicked.connect(self.stop)
         stopShortcut = QtGui.QShortcut(
                 QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_S), stop)
         stopShortcut.activated.connect(self.stop)
-        nextIcon = self.style().standardIcon(QtGui.QStyle.SP_MediaSkipForward)
-        next_ = QtGui.QPushButton(nextIcon, u'')
+        next_ = NextPushButton()
         next_.setStatusTip(QtGui.QApplication.translate(
             'Player', 'Jump to next track.'))
         next_.clicked.connect(self.next_)
@@ -254,15 +315,11 @@ class Main(QtGui.QWidget):
         self.playlist.setActiveItem(item)
         self.mediaobject.enqueue(Phonon.MediaSource(item.path))
         self.mediaobject.play()
-        icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
-        self.playButton.setIcon(icon)
-        self.playButton.playing = True
+        self.playButton.setPlaying(True)
     def stop(self):
         self.playlist.moveItems()
         self.__resetCurrent()
-        icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
-        self.playButton.setIcon(icon)
-        self.playButton.playing = False
+        self.playButton.setPlaying(False)
         self.mediaobject.stop()
     def previous(self):
         index = self.playlist.activeRow - 1
@@ -286,15 +343,11 @@ class Main(QtGui.QWidget):
             self.play(self.playlist.item(0))
         else:
             button = self.sender()
-            if not button.playing:
-                icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPause)
-                button.setIcon(icon)
-                button.playing = True
+            if not button.isPlaying():
+                button.setPlaying(True)
                 self.mediaobject.play()
             else:
-                icon = self.style().standardIcon(QtGui.QStyle.SP_MediaPlay)
-                button.setIcon(icon)
-                button.playing = False
+                button.setPlaying(False)
                 self.mediaobject.pause()
     def addByButton(self):
         def addItems(items):
