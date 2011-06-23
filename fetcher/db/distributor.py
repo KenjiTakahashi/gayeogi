@@ -114,7 +114,7 @@ class Bee(QThread):
                             if not self.avai[key][u'digital'] and \
                                     not self.avai[key][u'analog']:
                                 torem.add((artist, year, album))
-                            else:
+                            elif self.avai[key][u'remote']:
                                 self.avai[key][u'remote'] = False
                                 norem = True
                     except KeyError:
@@ -123,7 +123,7 @@ class Bee(QThread):
                             if not self.avai[key][u'digital'] and \
                                     not self.avai[key][u'analog']:
                                 torem.add((artist, year, album))
-                            else:
+                            elif self.avai[key][u'remote']:
                                 self.avai[key][u'remote'] = False
                                 norem = True
                 if added:
