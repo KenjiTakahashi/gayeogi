@@ -90,9 +90,12 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         pSize = self.ht / 2 + option.font.pointSize() / 2
         if pSize % 2 == 0:
             pSize += 1
+        pSize -= 1
         painter.save()
-        if option.state & QtGui.QStyle.State_Selected:
+        if option.state & QtGui.QStyle.State_HasFocus:
             painter.setPen(QtGui.QPen(self.palette.highlightedText(), 0))
+        elif option.state & QtGui.QStyle.State_Selected:
+            painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
         painter.drawText(rx + 39, ry + pSize, index.data(987).toString())
         painter.restore()
         index.model().setData(index, text, Qt.DisplayRole)
@@ -528,10 +531,8 @@ class Main(QtGui.QMainWindow):
         self.ui.remote.setEnabled(True)
         self.ui.save.setEnabled(True)
         self.ui.settings.setEnabled(True)
-        sArtists = [i.data(0, 987).toString()
-                for i in self.ui.artists.selectedItems()]
-        sAlbums = [i.data(1, 987).toString()
-                for i in self.ui.albums.selectedItems()]
+        sArtists = [i.text(0) for i in self.ui.artists.selectedItems()]
+        sAlbums = [i.text(1) for i in self.ui.albums.selectedItems()]
         sTracks = [i.text(0) for i in self.ui.tracks.selectedItems()]
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
@@ -548,13 +549,16 @@ class Main(QtGui.QMainWindow):
             self.ui.artists.resizeColumnToContents(i)
         for a in sArtists:
             i = self.ui.artists.findItems(a, Qt.MatchExactly)
-            i[0].setSelected(True)
+            if i:
+                i[0].setSelected(True)
         for a in sAlbums:
             i = self.ui.albums.findItems(a, Qt.MatchExactly)
-            i[0].setSelected(True)
+            if i:
+                i[0].setSelected(True)
         for a in sTracks:
             i = self.ui.tracks.findItems(a, Qt.MatchExactly)
-            i[0].setSelected(True)
+            if i:
+                i[0].setSelected(True)
         self.ui.artistsGreen.setText(unicode(self.statistics[u'artists'][0]))
         self.ui.artistsYellow.setText(unicode(self.statistics[u'artists'][1]))
         self.ui.artistsRed.setText(unicode(self.statistics[u'artists'][2]))
