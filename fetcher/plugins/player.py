@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
@@ -13,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
@@ -331,7 +331,7 @@ class Main(QtGui.QWidget):
         if index < self.playlist.count():
             self.play(self.playlist.item(index))
     def tick(self, interval):
-        if interval:
+        if interval and self.playlist.activeItem:
             self.playlist.activeItem.setData(670, self.__timeConvert(interval))
     def nextTrack(self):
         index = self.playlist.activeRow

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
@@ -13,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 import sys
 import os
@@ -92,7 +92,7 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
             pSize += 1
         painter.save()
         if option.state & QtGui.QStyle.State_Selected:
-            painter.setPen(QtGui.QPen(self.palette.highlightedText()))
+            painter.setPen(QtGui.QPen(self.palette.highlightedText(), 0))
         painter.drawText(rx + 39, ry + pSize, index.data(987).toString())
         painter.restore()
         index.model().setData(index, text, Qt.DisplayRole)
@@ -612,8 +612,8 @@ class Main(QtGui.QMainWindow):
             ad = 1
             ar = 1
             for y, t in d.iteritems():
-                for aa in t.keys():
-                    key = self.library[4][a + y + aa]
+                for al in t.keys():
+                    key = self.library[4][a + y + al]
                     if key[u'analog']:
                         albums[0] += 1
                     elif key[u'digital']:
