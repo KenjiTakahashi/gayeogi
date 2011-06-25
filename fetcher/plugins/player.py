@@ -18,41 +18,43 @@
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSize, Qt, QModelIndex, QLocale, QTranslator
-from PyQt4.QtCore import pyqtSignal, QSettings, QString, QPointF
-from copy import deepcopy
+from PyQt4.QtCore import pyqtSignal, QSettings, QString, QPointF, QRect
 from os.path import dirname, realpath
 
 class PlayListItemDelegate(QtGui.QStyledItemDelegate):
     def paint(self, painter, option, index):
-        start = deepcopy(option.rect)
-        size = option.font.pointSize()
+        QtGui.QStyledItemDelegate.paint(self, painter, option, index)
         painter.save()
+        rx = option.rect.x()
+        ry = option.rect.y()
+        wt = option.rect.width()
+        ht = option.rect.height()
+        size = option.font.pointSize()
         font = option.font
         if index.data(672).toBool():
             font.setBold(True)
             painter.setFont(font)
         if option.state & QtGui.QStyle.State_Selected:
-            painter.setPen(QtGui.QPen(option.palette.highlightedText()))
-        start.setLeft(start.left() + 5)
-        start.setTop(start.top() + 20)
-        QtGui.QStyledItemDelegate.paint(self, painter, option, index)
-        painter.drawText(start, Qt.AlignLeft, index.data(668).toString() + u' (' +
-                index.data(669).toString() + u')')
-        start.setY(start.y() - (size + 6))
-        painter.drawText(start, Qt.AlignLeft, index.data(666).toString() + u'. ' +
-                index.data(667).toString())
-        start = deepcopy(option.rect)
-        start.setRight(start.right() - 5)
+            if option.state & QtGui.QStyle.State_HasFocus:
+                painter.setPen(QtGui.QPen(option.palette.highlightedText(), 0))
+            else:
+                painter.setPen(QtGui.QPen(option.palette.brightText(), 0))
+        painter.drawText(QRect(rx + 5, ry + 5, wt, ht), Qt.AlignLeft,
+                index.data(666).toString() + u'. '
+                + index.data(667).toString() + u'\n'
+                + index.data(668).toString() + u' ('
+                + index.data(669).toString() + u')')
         font.setPointSize(16)
         painter.setFont(font)
         data670 = index.data(670).toString()
         if data670 != u'':
-            painter.drawText(start, Qt.AlignRight | Qt.AlignVCenter,
-                    index.data(670).toString() + u'/' + index.data(671).toString())
+            painter.drawText(QRect(rx, ry, wt, ht),
+                    Qt.AlignRight | Qt.AlignVCenter,
+                    data670 + u'/' + index.data(671).toString())
         font.setPointSize(size)
         painter.restore()
     def sizeHint(self, option, index):
-        return QSize(0, 3 + option.fontMetrics.height() * 2)
+        return QSize(0, 12 + option.fontMetrics.height() * 2)
 
 class Playlist(QtGui.QListWidget):
     dropped = pyqtSignal(QtGui.QTreeWidgetItem)

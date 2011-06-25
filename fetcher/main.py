@@ -92,10 +92,11 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
             pSize += 1
         pSize -= 1
         painter.save()
-        if option.state & QtGui.QStyle.State_HasFocus:
-            painter.setPen(QtGui.QPen(self.palette.highlightedText(), 0))
-        elif option.state & QtGui.QStyle.State_Selected:
-            painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
+        if option.state & QtGui.QStyle.State_Selected:
+            if option.state & QtGui.QStyle.State_HasFocus:
+                painter.setPen(QtGui.QPen(self.palette.highlightedText(), 0))
+            else:
+                painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
         painter.drawText(rx + 39, ry + pSize, index.data(987).toString())
         painter.restore()
         index.model().setData(index, text, Qt.DisplayRole)
