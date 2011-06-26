@@ -48,7 +48,7 @@ class PlayListItemDelegate(QtGui.QStyledItemDelegate):
         painter.setFont(font)
         data670 = index.data(670).toString()
         if data670 != u'':
-            painter.drawText(QRect(rx, ry, wt, ht),
+            painter.drawText(QRect(rx, ry, wt - 5, ht),
                     Qt.AlignRight | Qt.AlignVCenter,
                     data670 + u'/' + index.data(671).toString())
         font.setPointSize(size)

@@ -110,8 +110,9 @@ class ADRTreeWidget(QtGui.QTreeWidget):
     buttonClicked = pyqtSignal(QtGui.QTreeWidgetItem)
     def __init__(self, parent = None):
         QtGui.QTreeWidget.__init__(self, parent)
-        self.setMouseTracking(True)
         self.setIndentation(0)
+        self.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
+        self.setMouseTracking(True)
         self.delegate = ADRItemDelegate()
         self.delegate.buttonClicked.connect(self.callback)
         self.setItemDelegateForColumn(1, self.delegate)
