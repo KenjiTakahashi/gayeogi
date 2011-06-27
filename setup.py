@@ -18,24 +18,24 @@
 from setuptools import setup
 
 setup(
-        name = u'Fetcher',
+        name = u'gayeogi',
         version = u'0.6',
         description = u'A fully-featured music management suite.',
         author = u'Karol "Kenji Takahashi" Woźniak',
         author_email = u'wozniakk@gmail.com',
         license = u'GPL3',
-        url = u'http://github.com/KenjiTakahashi/fetcher',
+        url = u'http://github.com/KenjiTakahashi/gayeogi',
         packages = [
-            'fetcher',
-            'fetcher.interfaces',
-            'fetcher.db',
-            'fetcher.db.bees',
-            'fetcher.plugins'
+            'gayeogi',
+            'gayeogi.interfaces',
+            'gayeogi.db',
+            'gayeogi.db.bees',
+            'gayeogi.plugins'
             ],
         package_data = {
             '': ['langs/*.qm']
             },
-        scripts = [u'scripts/fetcher'],
+        scripts = [u'scripts/gayeogi'],
         install_requires = [
             u'mutagen'
             ],

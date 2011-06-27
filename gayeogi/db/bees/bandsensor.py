@@ -1,4 +1,4 @@
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 from threading import Thread, RLock
 from Queue import Queue
-from fetcher.db.bees.beeexceptions import ConnError
+from gayeogi.db.bees.beeexceptions import ConnError
 
 class BandBee(Thread):
     def __init__(self, tasks, releases, rlock, elock):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/Fetcher/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
@@ -23,18 +23,18 @@ from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator, QSize
 from PyQt4.QtCore import pyqtSignal, QModelIndex
 from copy import deepcopy
-from fetcher.db.local import Filesystem
-from fetcher.db.distributor import Distributor
-from fetcher.interfaces.settings import Settings
-import fetcher.plugins
+from gayeogi.db.local import Filesystem
+from gayeogi.db.distributor import Distributor
+from gayeogi.interfaces.settings import Settings
+import gayeogi.plugins
 
 version = u'0.6'
 if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()
-    dbPath = os.path.join(unicode(service.storageLocation(9)), u'fetcher')
+    dbPath = os.path.join(unicode(service.storageLocation(9)), u'gayeogi')
 else: # Most POSIX systems, there may be more elifs in future.
-    dbPath = os.path.expanduser(u'~/.config/fetcher')
+    dbPath = os.path.expanduser(u'~/.config/gayeogi')
 
 class ADRItemDelegate(QtGui.QStyledItemDelegate):
     buttonClicked = pyqtSignal(QModelIndex)
@@ -250,7 +250,7 @@ class DB(object):
         return (version, main, path, urls, avai)
 
 class Main(QtGui.QMainWindow):
-    __settings = QSettings(u'fetcher', u'Fetcher')
+    __settings = QSettings(u'gayeogi', u'gayeogi')
     oldLib = None
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -312,7 +312,7 @@ class Main(QtGui.QMainWindow):
         self.ui.albumFilter.textEdited.connect(self.filter_)
         self.ui.trackFilter.textEdited.connect(self.filter_)
         self.statusBar()
-        self.setWindowTitle(u'Fetcher ' + version)
+        self.setWindowTitle(u'gayeogi ' + version)
         self.translators = list()
         self.loadPluginsTranslators()
         self.loadPlugins()
@@ -334,10 +334,10 @@ class Main(QtGui.QMainWindow):
         self.disableButtons()
         self.rt.start()
     def loadPluginsTranslators(self):
-        reload(fetcher.plugins)
+        reload(gayeogi.plugins)
         app = QtGui.QApplication.instance()
-        for plugin in fetcher.plugins.__all__:
-            class_ = getattr(fetcher.plugins, plugin).Main
+        for plugin in gayeogi.plugins.__all__:
+            class_ = getattr(gayeogi.plugins, plugin).Main
             translator = class_.translator()
             if translator:
                 self.translators.append(translator)
@@ -347,16 +347,16 @@ class Main(QtGui.QMainWindow):
         for translator in self.translators:
             app.removeTranslator(translator)
     def loadPlugins(self):
-        reload(fetcher.plugins)
+        reload(gayeogi.plugins)
         def depends(plugin):
-            for p in fetcher.plugins.__all__:
-                class_ = getattr(fetcher.plugins, p).Main
+            for p in gayeogi.plugins.__all__:
+                class_ = getattr(gayeogi.plugins, p).Main
                 if plugin in class_.depends and class_.loaded:
                     return True
             return False
-        for plugin in fetcher.plugins.__all__:
-            class_ = getattr(fetcher.plugins, plugin).Main
-            __settings_ = QSettings(u'fetcher', class_.name)
+        for plugin in gayeogi.plugins.__all__:
+            class_ = getattr(gayeogi.plugins, plugin).Main
+            __settings_ = QSettings(u'gayeogi', class_.name)
             option = __settings_.value(u'enabled', 0).toInt()[0]
             if option and not class_.loaded:
                 class__ = class_(self.ui, self.library, self.appendPlugin,
@@ -668,7 +668,7 @@ class Main(QtGui.QMainWindow):
 
 def run():
     app = QtGui.QApplication(sys.argv)
-    app.setApplicationName(u'Fetcher')
+    app.setApplicationName(u'gayeogi')
     locale = QLocale.system().name()
     path = os.path.dirname(os.path.realpath(__file__)) + u'/langs/'
     translator = QTranslator()

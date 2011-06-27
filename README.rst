@@ -1,4 +1,4 @@
-Fetcher is aimed to be fully-featured music management suite, including library collecting, new and missing releases checking, playing, scrobbling, tagging, converting and so on,
+gayeogi is aimed to be fully-featured music management suite, including library collecting, new and missing releases checking, playing, scrobbling, tagging, converting and so on,
 but keep in mind that it's still in beta stage, so some features may be still missing or not fully working.
 
 At the moment, these features are considered "working":
@@ -40,7 +40,7 @@ ARCHLINUX
 *********
 ::
 
-    yaourt -S fetcher (or any other AUR wrapper)
+    yaourt -S gayeogi (or any other AUR wrapper)
 
 GENERAL
 *******

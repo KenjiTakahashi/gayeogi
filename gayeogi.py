@@ -1,5 +1,7 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 # This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
-# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
+# Karol "Kenji Takahashi" Wozniak (C) 2010
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,24 +15,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
-from pkgutil import iter_modules
-from os.path import realpath, dirname
-
-__names__ = list()
-__all__ = list()
-for _, name, _ in iter_modules([dirname(realpath(__file__))]):
-    try:
-        tmp = __import__(u'fetcher.db.bees.' + name, globals(),
-                locals(), [u'name'], -1)
-    except ImportError:
-        pass
-    else:
-        try:
-            tmp.name
-        except AttributeError:
-            pass
-        else:
-            __names__.append(tmp.name)
-            __all__.append(name)
+import gayeogi
+gayeogi.run()

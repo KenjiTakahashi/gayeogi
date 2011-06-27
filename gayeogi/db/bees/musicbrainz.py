@@ -1,4 +1,4 @@
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,8 +18,8 @@
 import urllib2
 import json
 from lxml import etree
-from fetcher.db.bees.bandsensor import Bandsensor
-from fetcher.db.bees.beeexceptions import ConnError, NoBandError
+from gayeogi.db.bees.bandsensor import Bandsensor
+from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
 
 items = [[u'Album', u'Single', u'EP'],
         [u'Compilation', u'Soundtrack', u'Spokenword'],
@@ -55,7 +55,7 @@ def reqread(url):
     """
     req = urllib2.Request(url)
     req.add_header(u'User-Agent',
-            u'Fetcher/0.6 +http://github.com/KenjiTakahashi/Fetcher')
+            u'gayeogi/0.6 +http://github.com/KenjiTakahashi/gayeogi')
     try:
         return urllib2.urlopen(req).read()
     except (urllib2.HTTPError, urllib2.URLError):
@@ -86,7 +86,7 @@ def __getalbums(site):
                 __internal.result[albums[0]] = u'0'
         return False
     __internal.result = dict()
-    ns = etree.FunctionNamespace(u'http://fake.fetcher/functions')
+    ns = etree.FunctionNamespace(u'http://fake.gayeogi/functions')
     ns.prefix = u'mb'
     ns[u'test'] = __internal
     root = etree.XML(site)

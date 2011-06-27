@@ -1,4 +1,4 @@
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010
 #
 # This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ class Main(object):
     __sec = u'1e4a65fba65e59cfb76adcc5af2fc3e3'
     __net = None
     __opt = {u'Last.FM': u'LastFMNetwork', u'Libre.FM': u'LibreFMNetwork'}
-    __settings = QSettings(u'fetcher', u'Last.FM')
+    __settings = QSettings(u'gayeogi', u'Last.FM')
     __sem = True
     def __init__(self, parent, ___, _, __):
         username = unicode(Main.__settings.value(u'username', u'').toString())

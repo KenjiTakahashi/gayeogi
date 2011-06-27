@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
@@ -158,7 +158,7 @@ class Main(QtGui.QWidget):
     depends = []
     trackChanged = pyqtSignal(QString, QString, QString, int)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
-    __settings = QSettings('fetcher', 'Player')
+    __settings = QSettings('gayeogi', 'Player')
     def __init__(self, parent, library, addWidget, removeWidget):
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
@@ -292,7 +292,7 @@ class Main(QtGui.QWidget):
         self.removeWidget(u'horizontalLayout_2', self, 2)
         Main.loaded = False
     def QConfiguration():
-        __settings = QSettings(u'fetcher', u'Player')
+        __settings = QSettings(u'gayeogi', u'Player')
         widget = QtGui.QWidget()
         widget.enabled = __settings.value(u'enabled', 0).toInt()[0]
         widget.setSetting = lambda x, y : __settings.setValue(x, y)

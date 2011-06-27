@@ -1,4 +1,4 @@
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString, QStringList
-import fetcher.plugins
+import gayeogi.plugins
 
 class QHoveringRadioButton(QtGui.QRadioButton):
     hovered = pyqtSignal(unicode)
@@ -32,8 +32,8 @@ class QHoveringRadioButton(QtGui.QRadioButton):
         self.unhovered.emit(self.tab)
 
 class Settings(QtGui.QDialog):
-    __settings = QSettings(u'fetcher', u'Fetcher')
-    __dbsettings = QSettings(u'fetcher', u'Databases')
+    __settings = QSettings(u'gayeogi', u'gayeogi')
+    __dbsettings = QSettings(u'gayeogi', u'Databases')
     __checkStates = dict()
     def __init__(self,parent=None):
         QtGui.QDialog.__init__(self, parent)
@@ -49,7 +49,7 @@ class Settings(QtGui.QDialog):
         self.dbList.currentItemChanged.connect(self.dbDisplayOptions)
         order = self.__dbsettings.value(u'order', []).toPyObject()
         self.dbOptionsLayout = QtGui.QGridLayout()
-        from fetcher.db.bees import __names__, __all__
+        from gayeogi.db.bees import __names__, __all__
         if order == None:
             order = []
         for (o, m) in zip(__names__, __all__):
@@ -60,7 +60,7 @@ class Settings(QtGui.QDialog):
             module = unicode(
                     self.__dbsettings.value(o + u'/module', u'').toString())
             try:
-                __import__(u'fetcher.db.bees.' + module)
+                __import__(u'gayeogi.db.bees.' + module)
             except ImportError:
                 pass
             else:
@@ -173,8 +173,8 @@ class Settings(QtGui.QDialog):
         self.pluginsLayout.addWidget(self.pluginsList)
         self.__plugins = {}
         self.__depends = {}
-        for plugin in fetcher.plugins.__all__:
-            ref = getattr(fetcher.plugins, plugin).Main
+        for plugin in gayeogi.plugins.__all__:
+            ref = getattr(gayeogi.plugins, plugin).Main
             item = QtGui.QListWidgetItem(ref.name)
             item.depends = ref.depends
             ref2 = ref.QConfiguration()
@@ -272,7 +272,7 @@ class Settings(QtGui.QDialog):
             self.dbOptionsLayout.removeWidget(child)
             child.deleteLater()
         try:
-            items = __import__(u'fetcher.db.bees.' + module, globals(),
+            items = __import__(u'gayeogi.db.bees.' + module, globals(),
                     locals(), [u'items'], -1).items
         except TypeError:
             self.dbOptions.setVisible(False)

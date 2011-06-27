@@ -1,4 +1,4 @@
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,19 +15,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # -*- coding: utf-8 -*-
 
-class Error(Exception):
-    """General Error class."""
-    def __init__(self, message):
-        self.message = message
-    def __str__(self):
-        return repr(self.message)
+from pkgutil import iter_modules
+from os.path import realpath, dirname
 
-class NoBandError(Error):
-    """Raised in case specified band has not been found in the database."""
-    def __init__(self):
-        self.message = u'No such band has been found.'
-
-class ConnError(Error):
-    """Raised in case an connection error appeared."""
-    def __init__(self):
-        self.message = u'An unknown error occurred (no internet?).'
+__names__ = list()
+__all__ = list()
+for _, name, _ in iter_modules([dirname(realpath(__file__))]):
+    try:
+        tmp = __import__(u'gayeogi.db.bees.' + name, globals(),
+                locals(), [u'name'], -1)
+    except ImportError:
+        pass
+    else:
+        try:
+            tmp.name
+        except AttributeError:
+            pass
+        else:
+            __names__.append(tmp.name)
+            __all__.append(name)

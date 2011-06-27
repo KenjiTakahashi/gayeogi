@@ -1,4 +1,4 @@
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 from threading import RLock
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings, pyqtSignal
-from fetcher.db.bees.beeexceptions import ConnError, NoBandError
+from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
 
 class Bee(QThread):
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
@@ -155,7 +155,7 @@ class Bee(QThread):
                 self.tasks.task_done()
 
 class Distributor(QThread):
-    __settings = QSettings(u'fetcher', u'Databases')
+    __settings = QSettings(u'gayeogi', u'Databases')
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
@@ -176,10 +176,10 @@ class Distributor(QThread):
         processed = dict()
         for (name, threads, types) in bases:
             try:
-                db = __import__(u'fetcher.db.bees.' + name, globals(),
+                db = __import__(u'gayeogi.db.bees.' + name, globals(),
                         locals(), [u'work', u'name'], -1)
             except ImportError: # it should not ever happen
-                self.errors.emit(db.name, u'errors', u'fetcher.db.bees.' + name,
+                self.errors.emit(db.name, u'errors', u'gayeogi.db.bees.' + name,
                         u'No such module has been found!!!')
             else:
                 tasks = Queue(threads)

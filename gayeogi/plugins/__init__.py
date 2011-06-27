@@ -1,4 +1,4 @@
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010
 #
 # This program is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@ from os.path import realpath, dirname
 __tmp__ = []
 for _, name, _ in iter_modules([dirname(realpath(__file__))]):
     try:
-        __import__(u'fetcher.plugins.' + name)
+        __import__(u'gayeogi.plugins.' + name)
     except:
         pass
     else:
@@ -30,7 +30,7 @@ for _, name, _ in iter_modules([dirname(realpath(__file__))]):
 __all__ = []
 while __tmp__:
     tmp = __tmp__.pop(0)
-    e = __import__(u'fetcher.plugins.' + tmp, globals(),
+    e = __import__(u'gayeogi.plugins.' + tmp, globals(),
             locals(), [u'Main'], -1)
     error = False
     for d in e.Main.depends:

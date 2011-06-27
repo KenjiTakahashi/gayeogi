@@ -1,5 +1,4 @@
-#!/usr/bin/env python2
-# This is a part of Fetcher @ http://github.com/KenjiTakahashi/Fetcher/
+# This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,7 +13,3 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
-
-import fetcher
-fetcher.run()
