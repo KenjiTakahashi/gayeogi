@@ -49,8 +49,6 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         self.rx = 0
         self.ht = 0
     def paint(self, painter, option, index):
-        text = index.data(Qt.DisplayRole)
-        index.model().setData(index, None, Qt.DisplayRole)
         QtGui.QStyledItemDelegate.paint(self, painter, option, index)
         painter.save()
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -99,15 +97,23 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
                 painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
         painter.drawText(rx + 39, ry + pSize, index.data(987).toString())
         painter.restore()
-        index.model().setData(index, text, Qt.DisplayRole)
     def buttonOver(self, mo, x):
         return self.mx >= x + 1 and self.mx <= x + 36 and mo
     def sizeHint(self, option, index):
         return QSize(39 + option.fontMetrics.width(
             index.data(987).toString()), option.fontMetrics.height() + 2)
 
+class ADRTreeWidgetItem(QtGui.QTreeWidgetItem):
+    def __lt__(self, qtreewidgetitem):
+        column = self.treeWidget().sortColumn()
+        data1 = self.data(column, 987).toString()
+        if data1:
+            return data1 < qtreewidgetitem.data(column, 987).toString()
+        else:
+            return self.text(column) < qtreewidgetitem.text(column)
+
 class ADRTreeWidget(QtGui.QTreeWidget):
-    buttonClicked = pyqtSignal(QtGui.QTreeWidgetItem)
+    buttonClicked = pyqtSignal(ADRTreeWidgetItem)
     def __init__(self, parent = None):
         QtGui.QTreeWidget.__init__(self, parent)
         self.setIndentation(0)
@@ -530,7 +536,7 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
         for i, l in enumerate(self.library[1].keys()):
-            item = QtGui.QTreeWidgetItem(QStringList([l]))
+            item = ADRTreeWidgetItem()
             item.setData(0, 123, self.statistics[u'detailed'][l][u'a'])
             item.setData(0, 234, self.statistics[u'detailed'][l][u'd'])
             item.setData(0, 345, self.statistics[u'detailed'][l][u'r'])
@@ -567,7 +573,7 @@ class Main(QtGui.QMainWindow):
             for date, albums in self.library[1][artist].iteritems():
                 for album, data in albums.iteritems():
                     key = self.library[4][artist + date + album]
-                    item_ = QtGui.QTreeWidgetItem(QStringList([date, album]))
+                    item_ = ADRTreeWidgetItem()
                     item_.artist = artist
                     item_.aIndex = self.ui.artists.indexOfTopLevelItem(item)
                     item_.setData(1, 123, key[u'analog'])

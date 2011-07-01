@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2010
+# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, QLocale, QTranslator
@@ -69,7 +69,10 @@ class Main(object):
         Main.loaded = True
     def unload(self):
         Main.__sem = False
-        self.parent.plugins[u'player'].trackChanged.disconnect()
+        try:
+            self.parent.plugins[u'player'].trackChanged.disconnect()
+        except AttributeError:
+            pass
         Main.loaded = False
     def QConfiguration():
         kind = QtGui.QComboBox()

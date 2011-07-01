@@ -117,7 +117,10 @@ unsaved changes.
 -Polish translation.
 -Selections now survive updates.
 -New "adr-based" look.
+-Name change.
 
 ===PLAYER:
+
 -Trying to play non-digital release no longer throws exception.
 -Added status tips.
+-New buttons look.
