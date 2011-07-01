@@ -1,4 +1,4 @@
-gayeogi is aimed to be fully-featured music management suite, including library collecting, new and missing releases checking, playing, scrobbling, tagging, converting and so on,
+gayeogi is aimed to be fully-featured music management suite, including library collecting, new and missing releases checking, playing, scrobbling, tagging, and so on,
 but keep in mind that it's still in beta stage, so some features may be still missing or not fully working.
 
 At the moment, these features are considered "working":
@@ -27,13 +27,19 @@ REQUIRES
 
     phonon >= 4.4 (player)
 
-    pylast >= 0.5.6 (last.fm/libre.fm)
+    pylast >= 0.5.6 (last.fm, libre.fm)
 
     lxml >= 2.3 (metal-archives.com, musicbrainz.org)
 NOTES
 *****
 - Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
 - Versions specified here are "known to work", but it may be possible that and older one will fit too.
+- Due to the name change during update to 0.6 you'll have to execute following commands if you want to keep your db and settings:::
+
+    mkdir ~/.config/gayeogi
+    cp ~/.config/fetcher/* ~/.config/gayeogi/
+    mv ~/.config/gayeogi/Fetcher.conf ~/.config/gayeogi/gayeogi.conf
+
 LINUX
 -----
 ARCHLINUX
