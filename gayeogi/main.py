@@ -49,10 +49,7 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         self.rx = 0
         self.ht = 0
     def paint(self, painter, option, index):
-        print "LOL"
-        index2 = index
-        index2.model().setData(index2, None, Qt.DisplayRole)
-        QtGui.QStyledItemDelegate.paint(self, painter, option, index2)
+        QtGui.QStyledItemDelegate.paint(self, painter, option, QModelIndex())
         painter.save()
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setPen(Qt.NoPen)
@@ -408,21 +405,42 @@ class Main(QtGui.QMainWindow):
     def filter_(self, text):
         columns = []
         arguments = []
+        adr = [u'a', u'd', u'r', u'not a', u'not d', u'not r']
+        num_adr = dict()
+        __num_adr = {
+                u'a': 123,
+                u'd': 234,
+                u'r': 345
+                }
         for a in (unicode(text)).split(u'|'):
             temp = a.split(u':')
+            if len(temp) == 1 and temp[0] in adr:
+                temp2 = temp[0].split(u' ')
+                if len(temp2) == 2:
+                    num_adr[temp2[1]] = False
+                else:
+                    num_adr[temp2[0]] = True
+                continue
             if len(temp) != 2 or temp[1] == u'':
                 break
             columns.append(temp[0].lower())
             arguments.append(temp[1].lower())
-        if len(columns) != 0 and len(columns) == len(arguments):
+        if (len(columns) != 0 and len(columns) == len(arguments)) or num_adr:
             tree = self.sender().parent().children()[2]
             header = tree.header().model()
             num_columns = [i for i in range(tree.columnCount())
                     if (unicode(header.headerData(i,
                         Qt.Horizontal).toString())).lower() in columns]
+            adr_column = -1
+            if num_adr:
+                item = tree.topLevelItem(0)
+                for i in range(item.columnCount()):
+                    if item.data(i, 987).toString():
+                        adr_column = i
+                        break
             for i in range(tree.topLevelItemCount()):
                 item = tree.topLevelItem(i)
-                hidden = []
+                hidden = list()
                 for j, c in enumerate(num_columns):
                     try:
                         if item not in hidden:
@@ -434,6 +452,13 @@ class Main(QtGui.QMainWindow):
                                 item.setHidden(False)
                     except:
                         pass
+                if adr_column != -1 and item not in hidden:
+                    for adr, v in num_adr.iteritems():
+                        if item.data(adr_column, __num_adr[adr]).toBool() == v:
+                            item.setHidden(False)
+                        else:
+                            item.setHidden(True)
+                            hidden.append(item)
         else:
             tree = self.sender().parent().children()[2]
             for i in range(tree.topLevelItemCount()):
