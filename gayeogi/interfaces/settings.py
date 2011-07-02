@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2010
+# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString, QStringList
@@ -94,8 +94,8 @@ class Settings(QtGui.QDialog):
                 self.trUtf8('O&ne-by-one'))
         oneByOne.hovered.connect(self.info.setText)
         oneByOne.unhovered.connect(self.globalMessage)
-        behaviour = self.__settings.value(u'behaviour', 0).toInt()[0]
-        if behaviour == 0:
+        behaviour = self.__dbsettings.value(u'behaviour', 0).toBool()
+        if not behaviour:
             oneByOne.setChecked(True)
         else:
             self.crossed.setChecked(True)
@@ -231,10 +231,7 @@ class Settings(QtGui.QDialog):
                     self.logsList.item(0).checkState())
             self.__settings.setValue(u'logs/info',
                     self.logsList.item(1).checkState())
-            if self.crossed.isChecked():
-                self.__dbsettings.setValue(u'behaviour', 1)
-            else:
-                self.__dbsettings.setValue(u'behaviour', 0)
+            self.__dbsettings.setValue(u'behaviour', self.crossed.isChecked())
             order = []
             for item in self.dbList.findItems(u'*', Qt.MatchWildcard):
                 text = item.text(0)
@@ -252,15 +249,29 @@ class Settings(QtGui.QDialog):
                         item.checkState())
             self.close()
     def dbUp(self):
-        current = self.dbList.currentRow() - 1
-        if current >= 0:
-            self.dbList.insertItem(current, self.dbList.takeItem(current + 1))
-            self.dbList.setCurrentRow(current)
+        current = self.dbList.currentItem()
+        oldindex = self.dbList.indexOfTopLevelItem(current)
+        newindex = oldindex - 1
+        if newindex >= 0:
+            spin = QtGui.QSpinBox()
+            spin.setRange(1, 20)
+            spin.setValue(self.dbList.itemWidget(current, 1).value())
+            self.dbList.insertTopLevelItem(newindex,
+                    self.dbList.takeTopLevelItem(oldindex))
+            self.dbList.setItemWidget(current, 1, spin)
+            self.dbList.setCurrentItem(current)
     def dbDown(self):
-        current = self.dbList.currentRow() + 1
-        if current < self.dbList.count():
-            self.dbList.insertItem(current, self.dbList.takeItem(current - 1))
-            self.dbList.setCurrentRow(current)
+        current = self.dbList.currentItem()
+        oldindex = self.dbList.indexOfTopLevelItem(current)
+        newindex = oldindex + 1
+        if newindex < self.dbList.topLevelItemCount():
+            spin = QtGui.QSpinBox()
+            spin.setRange(1, 20)
+            spin.setValue(self.dbList.itemWidget(current, 1).value())
+            self.dbList.insertTopLevelItem(newindex,
+                    self.dbList.takeTopLevelItem(oldindex))
+            self.dbList.setItemWidget(current, 1, spin)
+            self.dbList.setCurrentItem(current)
     def changeState(self, state):
         self.__checkStates[unicode(self.dbList.currentItem().text(0))] \
                 [self.sender().text()] = state
