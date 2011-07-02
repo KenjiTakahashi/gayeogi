@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
@@ -13,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 import urllib2
 import json
@@ -72,18 +72,20 @@ def __getalbums(site):
     <results> is a dictionary in form [<album_name>] = <year>
     """
     def __internal(context, albums, years):
+        albums = albums[0].text
+        years = years[0].text
         if years:
             try:
-                if __internal.result[albums[0]] == u'0' \
-                        or __internal.result[albums[0]] > years[0]:
-                    __internal.result[albums[0]] = years[0]
+                if __internal.result[albums] == u'0' \
+                        or __internal.result[albums] > years:
+                    __internal.result[albums] = years
             except KeyError:
-                __internal.result[albums[0]] = years[0]
+                __internal.result[albums] = years
         else:
             try:
-                __internal.result[albums[0]]
+                __internal.result[albums]
             except KeyError:
-                __internal.result[albums[0]] = u'0'
+                __internal.result[albums] = u'0'
         return False
     __internal.result = dict()
     ns = etree.FunctionNamespace(u'http://fake.gayeogi/functions')
@@ -91,7 +93,7 @@ def __getalbums(site):
     ns[u'test'] = __internal
     root = etree.XML(site)
     root.xpath(
-            u'n:release-list/n:release[mb:test(n:title/text(), n:date/text())]',
+            u'n:release-list/n:release[mb:test(n:title, n:date)]',
             namespaces = {u'n': u'http://musicbrainz.org/ns/mmd-2.0#'})
     count = root.xpath(u'n:release-list/@count',
             namespaces = {u'n': u'http://musicbrainz.org/ns/mmd-2.0#'})
@@ -142,7 +144,6 @@ def work(artist, element, urls, releases):
     else:
         artist_ = urllib2.quote(artist.replace(u'/', u'').encode(
                     u'utf-8')).replace(u'%20', u'+')
-        print artist_
         try:
             urls_ = reqread(
                     u'http://search.musicbrainz.org/ws/2/artist/?query=artist:'

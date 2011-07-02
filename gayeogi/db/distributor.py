@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
@@ -13,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 from threading import RLock
 from Queue import Queue
@@ -172,7 +172,7 @@ class Distributor(QThread):
                             u'/types').toPyObject().iteritems() if e])
                 for x in self.__settings.value(u'order').toPyObject()
                 if self.__settings.value(x + u'/Enabled').toBool()]
-        behaviour = self.__settings.value(u'behaviour').toInt()[0]
+        behaviour = self.__settings.value(u'behaviour').toBool()
         processed = dict()
         for (name, threads, types) in bases:
             try:
@@ -196,6 +196,8 @@ class Distributor(QThread):
                             processed[entry[0]]
                         except KeyError:
                             tasks.put((db.work, entry, types))
+                    else:
+                        tasks.put((db.work, entry, types))
                     self.stepped.emit(entry[0])
                 tasks.join()
                 for _ in range(threads):
