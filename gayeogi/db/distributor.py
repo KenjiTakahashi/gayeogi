@@ -112,57 +112,50 @@ class Bee(QThread):
                             partial[album] = {}
                             added = True
                     try:
-                        partial = self.avai[artist + year + album]
+                        self.avai[artist + year + album][u'remote'] = True
                     except KeyError:
                         self.avai[artist + year + album] = {
                                 u'digital': False,
                                 u'analog': False,
                                 u'remote': True
                                 }
-                    else:
-                        partial[u'remote'] = True
                     try:
-                        partial = self.urls[artist]
+                        self.urls[artist][self.name] = result[u'choice']
                     except KeyError:
                         self.urls[artist] = {self.name: result[u'choice']}
-                        self.processed[artist] = True
-                    else:
-                        partial[self.name] = result[u'choice']
-                        self.processed[artist] = True
+                    self.processed[artist] = True
                     self.rlock.release()
                 self.rlock.acquire()
-                torem = set()
-                norem = False
+                def __internal(artist, year, album):
+                    key = artist + year + album
+                    if not self.avai[key][u'digital'] and \
+                            not self.avai[key][u'analog'] and \
+                            self.urls[artist].keys() == [self.name]:
+                        __internal.torem.add((artist, year, album))
+                    elif self.avai[key][u'remote'] and \
+                            not len(self.urls[artist]):
+                        self.avai[key][u'remote'] = False
+                        __internal.norem = True
+                __internal.torem = set()
+                __internal.norem = False
                 for year, a in self.library[artist].iteritems():
                     try:
                         for album in set(a) ^ albums[year]:
-                            key = artist + year + album
-                            if not self.avai[key][u'digital'] and \
-                                    not self.avai[key][u'analog']:
-                                torem.add((artist, year, album))
-                            elif self.avai[key][u'remote']:
-                                self.avai[key][u'remote'] = False
-                                norem = True
+                            __internal(artist, year, album)
                     except KeyError:
                         for album in a:
-                            key = artist + year + album
-                            if not self.avai[key][u'digital'] and \
-                                    not self.avai[key][u'analog']:
-                                torem.add((artist, year, album))
-                            elif self.avai[key][u'remote']:
-                                self.avai[key][u'remote'] = False
-                                norem = True
+                            __internal(artist, year, album)
                 if added:
                     self.errors.emit(self.name, u'info', artist,
                             self.trUtf8('Something has been added.'))
-                if torem or norem:
+                if __internal.torem or __internal.norem:
                     self.errors.emit(self.name, u'info', artist,
                             self.trUtf8('Something has been removed.'))
                 elif not added:
                     self.errors.emit(self.name, u'info', artist,
                             self.trUtf8('Nothing has been changed.'))
-                while torem:
-                    (artist, year, album) = torem.pop()
+                while __internal.torem:
+                    (artist, year, album) = __internal.torem.pop()
                     del self.library[artist][year][album]
                     del self.avai[artist + year + album]
                     if not self.library[artist][year]:
@@ -252,4 +245,4 @@ class Distributor(QThread):
                     tasks.put((False, (False, False), False))
                 for t in threa:
                     t.wait()
-            self.updated.emit()
+        self.updated.emit()
