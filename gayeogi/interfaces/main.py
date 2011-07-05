@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ui/main.ui'
 #
-# Created: Thu Jun 23 22:12:05 2011
+# Created: Tue Jul  5 14:03:02 2011
 #      by: PyQt4 UI code generator 4.8.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -265,10 +265,10 @@ class Ui_main(object):
         QtCore.QMetaObject.connectSlotsByName(main)
 
     def retranslateUi(self, main):
-        self.artistFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
+        self.artistFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair> is <column_name>:<searching_phrase> or (not) (a or d or r). Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
         self.artists.setSortingEnabled(True)
-        self.albumFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
-        self.trackFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair>=<column_name>:<searching_phrase>. Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
+        self.albumFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair> is <column_name>:<searching_phrase> or (not) (a or d or r). Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
+        self.trackFilter.setStatusTip(QtGui.QApplication.translate("main", "Pattern: <pair>|<pair>, where <pair> is <column_name>:<searching_phrase> or (not) (a or d or r). Case insensitive, regexp allowed.", None, QtGui.QApplication.UnicodeUTF8))
         self.tracks.setSortingEnabled(True)
         self.logs.setSortingEnabled(True)
         self.clearLogs.setStatusTip(QtGui.QApplication.translate("main", "Clear logs table", None, QtGui.QApplication.UnicodeUTF8))

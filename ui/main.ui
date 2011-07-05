@@ -30,7 +30,7 @@
           <item>
            <widget class="QLineEdit" name="artistFilter">
             <property name="statusTip">
-             <string>Pattern: &lt;pair&gt;|&lt;pair&gt;, where &lt;pair&gt;=&lt;column_name&gt;:&lt;searching_phrase&gt;. Case insensitive, regexp allowed.</string>
+             <string>Pattern: &lt;pair&gt;|&lt;pair&gt;, where &lt;pair&gt; is &lt;column_name&gt;:&lt;searching_phrase&gt; or (not) (a or d or r). Case insensitive, regexp allowed.</string>
             </property>
            </widget>
           </item>
@@ -71,7 +71,7 @@
           <item>
            <widget class="QLineEdit" name="albumFilter">
             <property name="statusTip">
-             <string>Pattern: &lt;pair&gt;|&lt;pair&gt;, where &lt;pair&gt;=&lt;column_name&gt;:&lt;searching_phrase&gt;. Case insensitive, regexp allowed.</string>
+             <string>Pattern: &lt;pair&gt;|&lt;pair&gt;, where &lt;pair&gt; is &lt;column_name&gt;:&lt;searching_phrase&gt; or (not) (a or d or r). Case insensitive, regexp allowed.</string>
             </property>
            </widget>
           </item>
@@ -85,7 +85,7 @@
           <item>
            <widget class="QLineEdit" name="trackFilter">
             <property name="statusTip">
-             <string>Pattern: &lt;pair&gt;|&lt;pair&gt;, where &lt;pair&gt;=&lt;column_name&gt;:&lt;searching_phrase&gt;. Case insensitive, regexp allowed.</string>
+             <string>Pattern: &lt;pair&gt;|&lt;pair&gt;, where &lt;pair&gt; is &lt;column_name&gt;:&lt;searching_phrase&gt; or (not) (a or d or r). Case insensitive, regexp allowed.</string>
             </property>
            </widget>
           </item>

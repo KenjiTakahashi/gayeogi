@@ -21,8 +21,29 @@ from PyQt4.QtCore import QThread, QSettings, pyqtSignal
 from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
 
 class Bee(QThread):
+    u"""Worker thread used by Distributor.
+
+    Signals:
+    errors -- emitted when an error occurs:
+        unicode -- database name
+        unicode -- error type
+        unicode -- release name
+        unicode -- error message
+    """
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, tasks, library, urls, avai, name, rlock, processed):
+        u"""Worker thread constructor.
+
+        Arguments:
+        tasks -- initial tasks queue (it will get tasks from here)
+        library -- main library part (library[1])
+        urls -- urls library part (library[3])
+        avai -- available library part (library[4])
+        name -- used database name
+        rlock -- RLock object used to provide thread-safety (should be the same
+        for all instances of Bee!)
+        processed -- processed artists storage (used in ~behaviour mode)
+        """
         QThread.__init__(self)
         self.tasks = tasks
         self.library = library
@@ -33,6 +54,11 @@ class Bee(QThread):
         self.processed = processed
         self.start()
     def run(self):
+        u"""Start worker thread, fetch given artist release and append them
+        to the library.
+
+        Note: Use start() method to run it in a separate thread.
+        """
         while True:
             work, (artist, element), types = self.tasks.get()
             if not work:
@@ -155,16 +181,38 @@ class Bee(QThread):
                 self.tasks.task_done()
 
 class Distributor(QThread):
+    u"""Main db object to fetch all releases and append them to the library.
+
+    Signals:
+    updated -- emitted at the end (should be 'finished', but comp. reasons)
+    stepped -- emitted after every release:
+        unicode -- release name
+    errors -- emitted when an error occurs:
+        unicode -- database name
+        unicode -- error type
+        unicode -- release name
+        unicode -- error message
+    """
     __settings = QSettings(u'gayeogi', u'Databases')
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, library):
+        u"""Distributor constructor.
+
+        Arguments:
+        library -- reference to the library structure
+        """
         QThread.__init__(self)
         self.library = library[1]
         self.urls = library[3]
         self.avai = library[4]
     def run(self):
+        u"""Start Distributor and fetch releases for enabled dbs.
+        It also reads appropriate settings from Databases.conf file.
+
+        Note: Use start() method to run in separate thread.
+        """
         bases = [(unicode(self.__settings.value(x + u'/module').toString()),
                     self.__settings.value(x + u'/size').toInt()[0],
                     [unicode(t) for t, e in
