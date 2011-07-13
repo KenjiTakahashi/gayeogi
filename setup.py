@@ -18,13 +18,13 @@
 from setuptools import setup
 
 setup(
-        name = u'gayeogi',
-        version = u'0.6',
-        description = u'A fully-featured music management suite.',
-        author = u'Karol "Kenji Takahashi" Woźniak',
-        author_email = u'wozniakk@gmail.com',
-        license = u'GPL3',
-        url = u'http://github.com/KenjiTakahashi/gayeogi',
+        name = 'gayeogi',
+        version = '0.6',
+        description = 'A fully-featured music management suite.',
+        author = 'Karol "Kenji Takahashi" Woźniak',
+        author_email = 'wozniakk@gmail.com',
+        license = 'GPL3',
+        url = 'http://github.com/KenjiTakahashi/gayeogi',
         packages = [
             'gayeogi',
             'gayeogi.interfaces',
@@ -35,16 +35,16 @@ setup(
         package_data = {
             '': ['langs/*.qm']
             },
-        scripts = [u'scripts/gayeogi'],
+        scripts = ['scripts/gayeogi'],
         install_requires = [
-            u'mutagen'
+            'mutagen'
             ],
         extras_require = {
-            u'Last.FM': [u'pylast'],
-            u'metal-archives.com': [u'lxml'],
-            u'musicbrainz.org': [u'lxml']
+            'Last.FM': ['pylast'],
+            'metal-archives.com': ['lxml'],
+            'musicbrainz.org': ['lxml']
             },
-        classifiers = [f.strip() for f in u"""
+        classifiers = [f.strip() for f in """
         Development Status :: 4 - Beta
         Environment :: Win32 (MS Windows)
         Environment :: X11 Applications :: Qt
