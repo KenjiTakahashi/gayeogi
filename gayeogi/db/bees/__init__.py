@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
@@ -13,14 +14,18 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 from pkgutil import iter_modules
-from os.path import realpath, dirname
+from os.path import dirname
+from sys import platform
 
 __names__ = list()
 __all__ = list()
-for _, name, _ in iter_modules([dirname(realpath(__file__))]):
+if platform == 'win32':
+    dir_ = 'bees'
+else:
+    dir_ = dirname(__file__)
+for _, name, _ in iter_modules([dir_]):
     try:
         tmp = __import__(u'gayeogi.db.bees.' + name, globals(),
                 locals(), [u'name'], -1)
