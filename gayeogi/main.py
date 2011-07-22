@@ -29,12 +29,15 @@ from gayeogi.interfaces.settings import Settings
 import gayeogi.plugins
 
 version = u'0.6'
+locale = QLocale.system().name()
 if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()
     dbPath = os.path.join(unicode(service.storageLocation(9)), u'gayeogi')
+    lnPath = u''
 else: # Most POSIX systems, there may be more elifs in future.
     dbPath = os.path.expanduser(u'~/.config/gayeogi')
+    lnPath = os.path.dirname(__file__)
 
 class ADRItemDelegate(QtGui.QStyledItemDelegate):
     buttonClicked = pyqtSignal(QModelIndex)
@@ -334,9 +337,9 @@ class Main(QtGui.QMainWindow):
         reload(gayeogi.plugins)
         app = QtGui.QApplication.instance()
         for plugin in gayeogi.plugins.__all__:
-            class_ = getattr(gayeogi.plugins, plugin).Main
-            translator = class_.translator()
-            if translator:
+            translator = QTranslator()
+            if translator.load(plugin + u'_' + locale,
+                    os.path.join(lnPath, u'plugins', u'langs')):
                 self.translators.append(translator)
                 app.installTranslator(translator)
     def removePluginsTranslators(self):
@@ -344,7 +347,6 @@ class Main(QtGui.QMainWindow):
         for translator in self.translators:
             app.removeTranslator(translator)
     def loadPlugins(self):
-        reload(gayeogi.plugins)
         def depends(plugin):
             for p in gayeogi.plugins.__all__:
                 class_ = getattr(gayeogi.plugins, p).Main
@@ -694,10 +696,8 @@ class Main(QtGui.QMainWindow):
 def run():
     app = QtGui.QApplication(sys.argv)
     app.setApplicationName(u'gayeogi')
-    locale = QLocale.system().name()
-    path = os.path.dirname(os.path.realpath(__file__)) + u'/langs/'
     translator = QTranslator()
-    if translator.load(u'main_' + locale, path):
+    if translator.load(u'main_' + locale, os.path.join(lnPath, u'langs')):
         app.installTranslator(translator)
     main = Main()
     main.show()

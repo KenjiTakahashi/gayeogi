@@ -16,11 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, Qt, QLocale, QTranslator
+from PyQt4.QtCore import QSettings, Qt
 import pylast
 from threading import Thread
 from time import time, sleep
-from os.path import dirname, realpath
 
 class Main(object):
     name = u'Last.FM'
@@ -57,13 +56,6 @@ class Main(object):
                     t.join()
             Thread(target = __connect).start()
             parent.plugins[u'player'].trackChanged.connect(self.scrobble)
-    def translator():
-        locale = QLocale().system().name()
-        path = dirname(realpath(__file__)) + u'/langs/'
-        translator = QTranslator()
-        if translator.load(u'lastfm_' + locale, path):
-            return translator
-    translator = staticmethod(translator)
     def load(self):
         Main.__sem = True
         Main.loaded = True

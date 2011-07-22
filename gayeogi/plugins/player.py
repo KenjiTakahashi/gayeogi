@@ -17,9 +17,8 @@
 
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSize, Qt, QModelIndex, QLocale, QTranslator
+from PyQt4.QtCore import QSize, Qt, QModelIndex
 from PyQt4.QtCore import pyqtSignal, QSettings, QString, QPointF, QRect
-from os.path import dirname, realpath
 
 class PlayListItemDelegate(QtGui.QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -165,13 +164,6 @@ class Main(QtGui.QWidget):
         self.library = library
         self.addWidget = addWidget
         self.removeWidget = removeWidget
-    def translator():
-        locale = QLocale().system().name()
-        path = dirname(realpath(__file__)) + u'/langs/'
-        translator = QTranslator()
-        if translator.load(u'player_' + locale, path):
-            return translator
-    translator = staticmethod(translator)
     def load(self):
         add = AddPushButton()
         add.setStatusTip(QtGui.QApplication.translate(
