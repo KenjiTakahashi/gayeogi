@@ -449,6 +449,7 @@ class Main(QtGui.QMainWindow):
                             if not re.search(arguments[j],
                                     (unicode(item.text(c)).lower())):
                                 item.setHidden(True)
+                                item.setSelected(False)
                                 hidden.append(item)
                             else:
                                 item.setHidden(False)
@@ -460,6 +461,7 @@ class Main(QtGui.QMainWindow):
                             item.setHidden(False)
                         else:
                             item.setHidden(True)
+                            item.setSelected(False)
                             hidden.append(item)
         else:
             tree = self.sender().parent().children()[2]

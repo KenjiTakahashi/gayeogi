@@ -129,3 +129,4 @@ unsaved changes.
 
 ===MAIN;
 -Filters now survive updates, too.
+-Hidden item are automatically deselected.
