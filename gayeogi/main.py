@@ -567,14 +567,17 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.sortItems(0, 0)
         for i in range(3):
             self.ui.artists.resizeColumnToContents(i)
+        self.ui.artistFilter.textEdited.emit(self.ui.artistFilter.text())
         for a in sArtists:
             i = self.ui.artists.findItems(a, Qt.MatchExactly)
             if i:
                 i[0].setSelected(True)
+        self.ui.albumFilter.textEdited.emit(self.ui.albumFilter.text())
         for a in sAlbums:
-            i = self.ui.albums.findItems(a, Qt.MatchExactly)
+            i = self.ui.albums.findItems(a, Qt.MatchExactly, 1)
             if i:
                 i[0].setSelected(True)
+        self.ui.trackFilter.textEdited.emit(self.ui.trackFilter.text())
         for a in sTracks:
             i = self.ui.tracks.findItems(a, Qt.MatchExactly)
             if i:

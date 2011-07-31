@@ -124,3 +124,8 @@ unsaved changes.
 -Trying to play non-digital release no longer throws exception.
 -Added status tips.
 -New buttons look.
+
+==0.6.1:
+
+===MAIN;
+-Filters now survive updates, too.
