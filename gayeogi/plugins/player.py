@@ -55,23 +55,31 @@ class PlayListItemDelegate(QtGui.QStyledItemDelegate):
     def sizeHint(self, option, index):
         return QSize(0, 12 + option.fontMetrics.height() * 2)
 
-class Playlist(QtGui.QListWidget):
+class Playlist(QtGui.QListWidget, object):
     dropped = pyqtSignal(QtGui.QTreeWidgetItem)
-    previouslyActiveItem = None
-    activeItem = -1
-    activeRow = None
-    def setActiveItem(self, item):
-        self.previouslyActiveItem = self.activeItem
-        self.activeItem = item
+    @property
+    def activeItem(self):
+        return self.__activeItem
+    @activeItem.setter
+    def activeItem(self, item):
+        try:
+            self.__activeItem.setData(670, None)
+        except AttributeError:
+            pass
+        else:
+            self.__activeItem.setData(671, None)
+            self.__activeItem.setData(672, False)
+        finally:
+            self.__activeItem = item
         if item:
-            self.activeRow = self.row(item)
-    def moveItems(self):
-        self.previouslyActiveItem = self.activeItem
-        self.activeItem = None
-    def clearActive(self):
-        self.activeItem = None
-        self.activeRow = -1
-        self.previouslyActiveItem = None
+            self.__activeItem.setData(672, True)
+            self.__activeRow = self.row(item)
+    @property
+    def activeRow(self):
+        return self.__activeRow
+    @activeRow.setter
+    def activeRow(self, value):
+        self.__activeRow += 1
     def dropEvent(self, event):
         source = event.source()
         model = QtGui.QStandardItemModel()
@@ -258,7 +266,8 @@ class Main(QtGui.QWidget):
         self.mediaobject.setTickInterval(200)
         self.mediaobject.tick.connect(self.tick)
         self.mediaobject.aboutToFinish.connect(self.nextTrack)
-        self.mediaobject.totalTimeChanged.connect(self.updateView)
+        self.mediaobject.currentSourceChanged.connect(self.updateView)
+        self.mediaobject.totalTimeChanged.connect(self.updateTotalTime)
         self.mediaobject.finished.connect(self.stop)
         self.mediaobject.stateChanged.connect(self.state)
         self.audiooutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
@@ -290,30 +299,34 @@ class Main(QtGui.QWidget):
         widget.setSetting = lambda x, y : __settings.setValue(x, y)
         return widget
     QConfiguration = staticmethod(QConfiguration)
-    def updateView(self, time):
-        self.__resetCurrent()
-        item = self.playlist.activeItem
+    def updateView(self, _):
+        item = self.playlist.item(self.playlist.activeRow)
+        self.playlist.activeItem = item
+        item.setData(670, self.__timeConvert(0))
+        self.playlist.scrollToItem(item)
+        self.trackChanged.emit(
+                item.data(669).toString(),
+                item.data(667).toString(),
+                item.data(668).toString(),
+                item.data(666).toInt()[0]
+                )
+    def updateTotalTime(self, time):
+        if time != -1:
+            self.playlist.activeItem.setData(671, self.__timeConvert(time))
+    def nextTrack(self):
+        self.playlist.activeRow = 1
+        item = self.playlist.item(self.playlist.activeRow)
         if item:
-            item.setData(670, self.__timeConvert(0))
-            item.setData(671, self.__timeConvert(time))
-            item.setData(672, True)
-            self.playlist.scrollToItem(item)
-            self.trackChanged.emit(
-                    item.data(669).toString(),
-                    item.data(667).toString(),
-                    item.data(668).toString(),
-                    item.data(666).toInt()[0]
-                    )
+            self.mediaobject.enqueue(Phonon.MediaSource(item.path))
     def play(self, item):
+        self.playlist.activeItem = item
         self.mediaobject.stop()
         self.mediaobject.clear()
-        self.playlist.setActiveItem(item)
         self.mediaobject.enqueue(Phonon.MediaSource(item.path))
         self.mediaobject.play()
         self.playButton.setPlaying(True)
     def stop(self):
-        self.playlist.moveItems()
-        self.__resetCurrent()
+        self.playlist.activeItem = None
         self.playButton.setPlaying(False)
         self.mediaobject.stop()
     def previous(self):
@@ -327,12 +340,6 @@ class Main(QtGui.QWidget):
     def tick(self, interval):
         if interval and self.playlist.activeItem:
             self.playlist.activeItem.setData(670, self.__timeConvert(interval))
-    def nextTrack(self):
-        index = self.playlist.activeRow
-        item = self.playlist.item(index + 1)
-        if item:
-            self.playlist.setActiveItem(item)
-            self.mediaobject.enqueue(Phonon.MediaSource(item.path))
     def playByButton(self):
         if not self.playlist.activeItem:
             self.play(self.playlist.item(0))
@@ -437,9 +444,3 @@ class Main(QtGui.QWidget):
         time /= 1000
         return addZero(time / 3600 % 60) + u":" + addZero(time / 60 % 60)\
                 + u":" + addZero(time % 60)
-    def __resetCurrent(self):
-        item = self.playlist.previouslyActiveItem
-        if item and item != -1:
-            item.setData(670, None)
-            item.setData(671, None)
-            item.setData(672, False)
