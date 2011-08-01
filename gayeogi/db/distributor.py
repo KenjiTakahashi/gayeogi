@@ -31,7 +31,8 @@ class Bee(QThread):
         unicode -- error message
     """
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
-    def __init__(self, tasks, library, urls, avai, name, rlock, processed):
+    def __init__(self, tasks, library, urls, avai,
+            modified, name, rlock, processed):
         u"""Worker thread constructor.
 
         Arguments:
@@ -49,6 +50,7 @@ class Bee(QThread):
         self.library = library
         self.urls = urls
         self.avai = avai
+        self.modified = modified
         self.name = name
         self.rlock = rlock
         self.processed = processed
@@ -148,9 +150,11 @@ class Bee(QThread):
                 if added:
                     self.errors.emit(self.name, u'info', artist,
                             self.trUtf8('Something has been added.'))
+                    self.modified[0] = True
                 if __internal.torem or __internal.norem:
                     self.errors.emit(self.name, u'info', artist,
                             self.trUtf8('Something has been removed.'))
+                    self.modified[0] = True
                 elif not added:
                     self.errors.emit(self.name, u'info', artist,
                             self.trUtf8('Nothing has been changed.'))
@@ -200,6 +204,7 @@ class Distributor(QThread):
         self.library = library[1]
         self.urls = library[3]
         self.avai = library[4]
+        self.modified = library[5]
     def run(self):
         u"""Start Distributor and fetch releases for enabled dbs.
         It also reads appropriate settings from Databases.conf file.
@@ -227,8 +232,8 @@ class Distributor(QThread):
                 threa = list()
                 rlock = RLock()
                 for _ in range(threads):
-                    t = Bee(tasks, self.library,
-                        self.urls, self.avai, db.name, rlock, processed)
+                    t = Bee(tasks, self.library, self.urls,
+                            self.avai, self.modified, db.name, rlock, processed)
                     t.errors.connect(self.errors)
                     threa.append(t)
                 for entry in self.library.iteritems():

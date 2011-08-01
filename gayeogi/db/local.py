@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
@@ -13,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 import os
 from copy import deepcopy
@@ -37,6 +37,7 @@ class Filesystem(QThread):
         self.library = library[1]
         self.paths = library[2]
         self.avai = library[4]
+        self.modified = library[5]
         self.ignores = [v for (v, _) in ignores]
         self.toremove = set()
     def append(self, path, existing = False):
@@ -234,15 +235,19 @@ class Filesystem(QThread):
                         modified = self.paths[path][u'modified']
                     except KeyError:
                         self.append(path)
+                        self.modified[0] = True
                     else:
                         if os.stat(path).st_mtime != modified:
                             self.append(path, True)
+                            self.modified[0] = True
                         try:
                             del tfiles[path]
                         except KeyError:
                             pass
                 elif path in self.paths.keys():
                     self.toremove.add(self.remove(path))
+        if tfiles:
+            self.modified[0] = True
         for tf in tfiles:
             self.toremove.add(self.remove(tf))
         for tr in self.toremove:

@@ -129,4 +129,8 @@ unsaved changes.
 
 ===MAIN;
 -Filters now survive updates, too.
--Hidden item are automatically deselected.
+-Hidden items are automatically deselected.
+-No longer deepcopying the library (results in much faster start).
+
+===PLAYER:
+-Better timings and newer (unreleased yet) versions of Phonon proper support.

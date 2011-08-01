@@ -22,13 +22,12 @@ import re
 from PyQt4 import QtGui
 from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator, QSize
 from PyQt4.QtCore import pyqtSignal, QModelIndex
-from copy import deepcopy
 from gayeogi.db.local import Filesystem
 from gayeogi.db.distributor import Distributor
 from gayeogi.interfaces.settings import Settings
 import gayeogi.plugins
 
-version = u'0.6'
+version = u'0.6.1'
 locale = QLocale.system().name()
 if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices
@@ -183,9 +182,13 @@ class DB(object):
         try:
             result[2]
         except IndexError:
-            return self.convert2(result[0])
+            result2 = self.convert2(result[0]) + ([False],)
+            return result2
         else:
-            return result
+            if len(result) == 5:
+                return result + ([False],)
+            else:
+                return result
     def convert(self, data):
         def checkRemote(digital, analog):
             if not digital and not analog:
@@ -251,7 +254,6 @@ class DB(object):
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'gayeogi', u'gayeogi')
-    oldLib = None
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         self.statistics = None
@@ -285,7 +287,6 @@ class Main(QtGui.QMainWindow):
             dialog.exec_()
         else:
             self.library = self.db.read()
-            self.oldLib = deepcopy(self.library)
             self.update()
         directory = unicode(self.__settings.value(u'directory').toPyObject())
         self.fs = Filesystem(directory, self.library, self.ignores)
@@ -510,12 +511,12 @@ class Main(QtGui.QMainWindow):
     def save(self):
         u"""Save database to file."""
         try:
+            self.library[5][0] = False
             self.db.write(self.library)
         except AttributeError:
             self.statusBar().showMessage(self.trUtf8('Nothing to save...'))
         else:
             self.statusBar().showMessage(self.trUtf8('Saved'))
-            self.oldLib = deepcopy(self.library)
     def setAnalog(self, item):
         data = not item.data(1, 123).toBool()
         item.setData(1, 123, data)
@@ -683,7 +684,7 @@ class Main(QtGui.QMainWindow):
             for plugin in self.ui.plugins.values():
                 plugin.unload()
             self.__settings.setValue(u'splitters', self.ui.splitter.saveState())
-        if self.oldLib != self.library:
+        if self.library[5][0]:
             def save():
                 self.save()
             def reject():
