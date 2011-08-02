@@ -108,8 +108,8 @@ class Bee(QThread):
                             added = True
                     self.avai.setdefault(artist + year + album,
                             {u'digital': False, u'analog': False,
-                                u'remote': [self.name]}
-                            )[u'remote'].append(self.name)
+                                u'remote': set([self.name])}
+                            )[u'remote'].add(self.name)
                     self.urls.setdefault(artist,
                             {self.name: result[u'choice']}
                             )[self.name] = result[u'choice']
@@ -123,7 +123,7 @@ class Bee(QThread):
                             self.urls[artist].keys() == [self.name]:
                         __internal.torem.add((artist, year, album))
                     else:
-                        self.avai[key][u'remote'].remove(self.name)
+                        self.avai[key][u'remote'].discard(self.name)
                         __internal.norem = True
                 __internal.torem = set()
                 __internal.norem = False

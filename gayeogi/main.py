@@ -264,7 +264,7 @@ class DB(object):
                     for uu in u.keys():
                         avai[key][u'remote'].add(uu)
             else:
-                avai[key][u'remote'] = []
+                avai[key][u'remote'] = set()
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'gayeogi', u'gayeogi')

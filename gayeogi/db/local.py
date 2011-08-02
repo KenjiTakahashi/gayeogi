@@ -105,7 +105,7 @@ class Filesystem(QThread):
                 self.avai[key] = {
                         u'digital': True,
                         u'analog': False,
-                        u'remote': []
+                        u'remote': set()
                         }
     def remove(self, path):
         u"""Remove specified item from the library.
