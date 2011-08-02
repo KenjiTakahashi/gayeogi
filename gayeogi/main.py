@@ -182,11 +182,11 @@ class DB(object):
         try:
             result[2]
         except IndexError:
-            result2 = self.convert2(result[0]) + ([False],)
-            return result2
+            return self.convert2(result[0])
         else:
-            if len(result) == 5:
-                return result + ([False],)
+            if result[0] == u'0.6':
+                self.convert3(result[3], result[4])
+                return (version,) + result[1:] + ([False],)
             else:
                 return result
     def convert(self, data):
@@ -250,7 +250,21 @@ class DB(object):
                         u'title': track,
                         u'modified': deepest[u'modified']
                     }
-        return (version, main, path, urls, avai)
+        return (version, main, path, urls, avai, [False])
+    def convert3(self, urls, avai):
+        for key in avai.keys():
+            if avai[key][u'remote']:
+                avai[key][u'remote'] = set()
+                artist = re.findall(u'\d*\D+', key)[0]
+                try:
+                    u = urls[artist]
+                except KeyError:
+                    pass
+                else:
+                    for uu in u.keys():
+                        avai[key][u'remote'].add(uu)
+            else:
+                avai[key][u'remote'] = []
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'gayeogi', u'gayeogi')
@@ -605,7 +619,7 @@ class Main(QtGui.QMainWindow):
                     item_.aIndex = self.ui.artists.indexOfTopLevelItem(item)
                     item_.setData(1, 123, key[u'analog'])
                     item_.setData(1, 234, key[u'digital'])
-                    item_.setData(1, 345, key[u'remote'])
+                    item_.setData(1, 345, key[u'remote'] and True or False)
                     item_.setData(1, 987, album)
                     self.ui.albums.addTopLevelItem(item_)
         self.ui.albums.setSortingEnabled(True)

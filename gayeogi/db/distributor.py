@@ -56,7 +56,7 @@ class Bee(QThread):
         self.processed = processed
         self.start()
     def run(self):
-        u"""Start worker thread, fetch given artist release and append them
+        u"""Start worker thread, fetch given artist releases and append them
         to the library.
 
         Note: Use start() method to run it in a separate thread.
@@ -67,25 +67,21 @@ class Bee(QThread):
                 break
             try:
                 try:
-                    val = self.urls[artist]
+                    result = work(artist, element, self.urls[artist], types)
                 except KeyError:
                     result = work(artist, element, {}, types)
-                else:
-                    result = work(artist, element, val, types)
             except NoBandError as e:
                 self.rlock.acquire()
                 try:
-                    self.urls[artist][self.name]
-                except KeyError:
-                    pass
-                else:
                     del self.urls[artist][self.name]
-                try:
-                    self.processed[artist]
                 except KeyError:
                     pass
                 else:
+                    self.modified[0] = True
+                try:
                     del self.processed[artist]
+                except KeyError:
+                    pass
                 self.rlock.release()
                 self.errors.emit(self.name, u'errors', artist, e.message)
             except ConnError as e:
@@ -96,10 +92,7 @@ class Bee(QThread):
                 albums = dict()
                 added = False
                 for (album, year) in result[u'result']:
-                    try:
-                        albums[year].add(album)
-                    except KeyError:
-                        albums[year] = set([album])
+                    albums.setdefault(year, set([album])).add(album)
                     self.rlock.acquire()
                     partial = self.library[artist]
                     try:
@@ -113,18 +106,13 @@ class Bee(QThread):
                         except KeyError:
                             partial[album] = {}
                             added = True
-                    try:
-                        self.avai[artist + year + album][u'remote'] = True
-                    except KeyError:
-                        self.avai[artist + year + album] = {
-                                u'digital': False,
-                                u'analog': False,
-                                u'remote': True
-                                }
-                    try:
-                        self.urls[artist][self.name] = result[u'choice']
-                    except KeyError:
-                        self.urls[artist] = {self.name: result[u'choice']}
+                    self.avai.setdefault(artist + year + album,
+                            {u'digital': False, u'analog': False,
+                                u'remote': [self.name]}
+                            )[u'remote'].append(self.name)
+                    self.urls.setdefault(artist,
+                            {self.name: result[u'choice']}
+                            )[self.name] = result[u'choice']
                     self.processed[artist] = True
                     self.rlock.release()
                 self.rlock.acquire()
@@ -134,9 +122,8 @@ class Bee(QThread):
                             not self.avai[key][u'analog'] and \
                             self.urls[artist].keys() == [self.name]:
                         __internal.torem.add((artist, year, album))
-                    elif self.avai[key][u'remote'] and \
-                            not len(self.urls[artist]):
-                        self.avai[key][u'remote'] = False
+                    else:
+                        self.avai[key][u'remote'].remove(self.name)
                         __internal.norem = True
                 __internal.torem = set()
                 __internal.norem = False
