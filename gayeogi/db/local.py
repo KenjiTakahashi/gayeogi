@@ -149,7 +149,7 @@ class Filesystem(QThread):
         root -- folder to check against
         """
         for ignore in self.ignores:
-            if fnmatch(root, u'*/' + ignore + u'/*'):
+            if fnmatch(root, u'*' + ignore + u'*'):
                 return True
         return False
     def tagsread(self, filepath):

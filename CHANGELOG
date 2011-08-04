@@ -134,3 +134,6 @@ unsaved changes.
 
 ===PLAYER:
 -Better timings and newer (unreleased yet) versions of Phonon proper support.
+
+===DATABASES:
+-Fixed ignores sometimes not properly ignored.
