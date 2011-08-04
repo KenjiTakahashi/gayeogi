@@ -21,3 +21,9 @@ Feature: Managing local files
         When I rename file "clockwork_test.mp3" to "sweet_hommie.mp3"
         And I scan the directory for files again
         Then they should be updated in the database
+
+    Scenario: Change file tags without changing it's name
+        # Given I have existing database from previous scenarios
+        When I change tags for file "second_test.flac"
+        And I scan the directory for files again
+        Then they should be updated in the database
