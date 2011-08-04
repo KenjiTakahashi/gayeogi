@@ -85,17 +85,7 @@ class Filesystem(QThread):
                         except KeyError:
                             partial[tags[u'tracknumber']] = item
                         else:
-                            item = item[tags[u'title']]
-                            try:
-                                partial = partial[tags[u'tracknumber']]
-                            except KeyError:
-                                partial[tags[u'tracknumber']] = item
-                            else:
-                                item = item[tags[u'title']]
-                                try:
-                                    partial = partial[tags[u'title']]
-                                except KeyError:
-                                    partial[tags[u'title']] = item
+                            partial[tags[u'title']] = item[tags[u'title']]
             self.paths[path] = tags
             self.paths[path][u'modified'] = os.stat(path).st_mtime
             key = tags[u'artist'] + tags[u'date'] + tags[u'album']
@@ -120,26 +110,27 @@ class Filesystem(QThread):
         path_ = self.paths[path]
         item = self.library[path_[u'artist']][path_[u'date']] \
                 [path_[u'album']][path_[u'tracknumber']]
-        del item[path_[u'title']]
-        if not item:
-            item = self.library[path_[u'artist']][path_[u'date']] \
-                    [path_[u'album']]
-            del item[path_[u'tracknumber']]
-            key = path_[u'artist'] + path_[u'date'] + path_[u'album']
+        if item[path_[u'title']][u'path'] == path:
+            del item[path_[u'title']]
             if not item:
-                result = path_[u'artist']
-                if not self.avai[key][u'analog'] and \
-                        not self.avai[key][u'remote']:
-                    item = self.library[path_[u'artist']][path_[u'date']]
-                    del item[path_[u'album']]
-                    del self.avai[key]
-                    if not item:
-                        item = self.library[path_[u'artist']]
-                        del item[path_[u'date']]
+                item = self.library[path_[u'artist']][path_[u'date']] \
+                        [path_[u'album']]
+                del item[path_[u'tracknumber']]
+                key = path_[u'artist'] + path_[u'date'] + path_[u'album']
+                if not item:
+                    result = path_[u'artist']
+                    if not self.avai[key][u'analog'] and \
+                            not self.avai[key][u'remote']:
+                        item = self.library[path_[u'artist']][path_[u'date']]
+                        del item[path_[u'album']]
+                        del self.avai[key]
                         if not item:
-                            del self.library[path_[u'artist']]
-                else:
-                    self.avai[key][u'digital'] = False
+                            item = self.library[path_[u'artist']]
+                            del item[path_[u'date']]
+                            if not item:
+                                del self.library[path_[u'artist']]
+                    else:
+                        self.avai[key][u'digital'] = False
         del self.paths[path]
         return result
     def ignored(self, root):

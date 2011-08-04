@@ -137,3 +137,4 @@ unsaved changes.
 
 ===DATABASES:
 -Fixed ignores sometimes not properly ignored.
+-Fixed renamed files (with no tags changes) handling.

@@ -292,7 +292,7 @@ class Main(QtGui.QMainWindow):
         self.ui.splitter.restoreState(
                 self.__settings.value(u'splitters').toByteArray())
         self.setCentralWidget(widget)
-        self.library = (version, {}, {}, {}, {})
+        self.library = (version, {}, {}, {}, {}, [False])
         self.ignores = self.__settings.value(u'ignores').toPyObject()
         if not self.ignores:
             self.ignores = []
