@@ -3,7 +3,6 @@ from gayeogi.main import version
 from gayeogi.db import local
 import os
 import shutil
-from copy import deepcopy
 
 @before.all
 def init():
@@ -13,11 +12,13 @@ def init():
 
 @after.all
 def deinit(total):
+    shutil.move(os.path.join(world.basedir, u'temp', u'sweet_hommie.mp3'),
+            world.directory)
     for (old, new) in world.renames:
         os.rename(old, new)
     for ex in world.exchanges:
         os.remove(ex)
-    os.remove(os.path.join(world.basedir, u'data/second_test.flac'))
+    os.remove(os.path.join(world.directory, u'second_test.flac'))
 
 def __add_to_expected(newone):
     world.expected[1].update(newone[0])
@@ -76,6 +77,7 @@ def scan_the_directory(step):
 
 @step('they should get added to the database')
 @step('they should be updated in the database')
+@step('it should be removed from the database')
 def should_get_added(step):
     assert world.database == world.expected
 
@@ -172,3 +174,11 @@ def change_tags_for_file(step, tag, filename):
     shutil.copy2(oldnewpath, oldpath)
     world.exchanges.add(newpath)
     world.expected[2][oldpath][u'modified'] = os.stat(oldpath).st_mtime
+
+@step('I remove file "(.*)"')
+def remove_file(step, filename):
+    oldpath = os.path.join(world.directory, filename)
+    shutil.move(oldpath, os.path.join(world.basedir, u'temp'))
+    del world.expected[1][u'Anthony Burgess']
+    del world.expected[2][oldpath]
+    del world.expected[4][u'Anthony Burgess1962A Clockwork Orange']

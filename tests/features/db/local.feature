@@ -36,4 +36,11 @@ Feature: Managing local files
             | tracknumber |
             | title       |
 
+    Scenario: Remove a file # (*2)
+        # Given I have existing database from previous scenarios
+        When I remove file "sweet_hommie.mp3"
+        And I scan the directory for files again
+        Then it should be removed from the database
+
 # *1: It is actualy handled by exchanging two previously prepared files
+# *2: It actualy is moved away to temp dir, so we can restore it at the end
