@@ -22,8 +22,18 @@ Feature: Managing local files
         And I scan the directory for files again
         Then they should be updated in the database
 
-    Scenario: Change file tags without changing it's name
+    Scenario: Change file tag without changing it's name # (*1)
         # Given I have existing database from previous scenarios
-        When I change tags for file "second_test.flac"
+        When I change <tag> tag for file "second_test.flac"
         And I scan the directory for files again
         Then they should be updated in the database
+
+        Examples:
+            | tag         |
+            | artist      |
+            | date        |
+            | album       |
+            | tracknumber |
+            | title       |
+
+# *1: It is actualy handled by exchanging two previously prepared files

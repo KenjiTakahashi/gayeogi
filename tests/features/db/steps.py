@@ -3,61 +3,21 @@ from gayeogi.main import version
 from gayeogi.db import local
 import os
 import shutil
+from copy import deepcopy
 
 @before.all
 def init():
     world.basedir = os.path.dirname(__file__)
     world.renames = list()
+    world.exchanges = set()
 
 @after.all
 def deinit(total):
-    os.remove(os.path.join(world.basedir, u'data/second_test.flac'))
     for (old, new) in world.renames:
         os.rename(old, new)
-
-#@after.each_step
-#def each(step):
-#    try:
-#        print "db1"
-#        for key1, value1 in world.database[1].iteritems():
-#            print key1
-#            for key2, value2 in value1.iteritems():
-#                print key2
-#                for key3, value3 in value2.iteritems():
-#                    print key3, value3
-#        print "db2"
-#        for key1, value1 in world.database[2].iteritems():
-#            print key1
-#            for key2, value2 in value1.iteritems():
-#                print key2, value2
-#        print "db4"
-#        for key1, value1 in world.database[4].iteritems():
-#            print key1
-#            for key2, value2 in value1.iteritems():
-#                print key2, value2
-#    except AttributeError:
-#        pass
-#    try:
-#        print "expected"
-#        print "db1"
-#        for key1, value1 in world.expected[1].iteritems():
-#            print key1
-#            for key2, value2 in value1.iteritems():
-#                print key2
-#                for key3, value3 in value2.iteritems():
-#                    print key3, value3
-#        print "db2"
-#        for key1, value1 in world.expected[2].iteritems():
-#            print key1
-#            for key2, value2 in value1.iteritems():
-#                print key2, value2
-#        print "db4"
-#        for key1, value1 in world.expected[4].iteritems():
-#            print key1
-#            for key2, value2 in value1.iteritems():
-#                print key2, value2
-#    except AttributeError:
-#        pass
+    for ex in world.exchanges:
+        os.remove(ex)
+    os.remove(os.path.join(world.basedir, u'data/second_test.flac'))
 
 def __add_to_expected(newone):
     world.expected[1].update(newone[0])
@@ -121,7 +81,7 @@ def should_get_added(step):
 
 @step('I add some more files to the directory')
 def add_some_more_files(step):
-    shutil.copy(os.path.join(world.basedir, u'temp/second_test.flac'),
+    shutil.copy2(os.path.join(world.basedir, u'temp/second_test.flac'),
             os.path.join(world.basedir, u'data'))
     second_test = os.path.join(world.directory, u'second_test.flac')
     __add_to_expected((
@@ -164,3 +124,51 @@ def rename_file(step, oldname, newname):
     del world.expected[2][oldpath]
     world.expected[1][u'Anthony Burgess'][u'1962'][u'A Clockwork Orange']\
             [u'01'][u'Sweet Hommie'][u'path'] = newpath
+
+@step('I change (.*) tag for file "(.*)"')
+def change_tags_for_file(step, tag, filename):
+    oldpath = os.path.join(world.directory, filename)
+    if tag == 'artist':
+        world.expected[1][u'Changed'] = world.expected[1][u'Second']
+        del world.expected[1][u'Second']
+        world.expected[2][oldpath][u'artist'] = u'Changed'
+        world.expected[4][u'Changed0000Test'] =\
+                world.expected[4][u'Second0000Test']
+        del world.expected[4][u'Second0000Test']
+    elif tag == 'date':
+        world.expected[1][u'Changed'][u'1111'] =\
+                world.expected[1][u'Changed'][u'0000']
+        del world.expected[1][u'Changed'][u'0000']
+        world.expected[2][oldpath][u'date'] = u'1111'
+        world.expected[4][u'Changed1111Test'] =\
+                world.expected[4][u'Changed0000Test']
+        del world.expected[4][u'Changed0000Test']
+    elif tag == 'album':
+        world.expected[1][u'Changed'][u'1111'][u'Changed'] =\
+                world.expected[1][u'Changed'][u'1111'][u'Test']
+        del world.expected[1][u'Changed'][u'1111'][u'Test']
+        world.expected[2][oldpath][u'album'] = u'Changed'
+        world.expected[4][u'Changed1111Changed'] =\
+                world.expected[4][u'Changed1111Test']
+        del world.expected[4][u'Changed1111Test']
+    elif tag == 'tracknumber':
+        world.expected[1][u'Changed'][u'1111'][u'Changed'][u'777'] =\
+                world.expected[1][u'Changed'][u'1111'][u'Changed'][u'666']
+        del world.expected[1][u'Changed'][u'1111'][u'Changed'][u'666']
+        world.expected[2][oldpath][u'tracknumber'] = u'777'
+    elif tag == 'title':
+        world.expected[1][u'Changed'][u'1111'][u'Changed'][u'777'][u'Ch'] =\
+                world.expected[1][u'Changed']\
+                [u'1111'][u'Changed'][u'777'][u'ST']
+        del world.expected[1][u'Changed'][u'1111'][u'Changed'][u'777'][u'ST']
+        world.expected[2][oldpath][u'title'] = u'Ch'
+    else:
+        assert False
+    newpath = os.path.join(world.basedir,
+            u'temp', tag + u'_change_test_.flac')
+    oldnewpath = os.path.join(world.basedir,
+            u'temp', tag + u'_change_test.flac')
+    shutil.copy2(oldpath, newpath)
+    shutil.copy2(oldnewpath, oldpath)
+    world.exchanges.add(newpath)
+    world.expected[2][oldpath][u'modified'] = os.stat(oldpath).st_mtime
