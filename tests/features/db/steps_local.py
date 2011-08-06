@@ -54,7 +54,7 @@ def have_some_files(step, directory):
         },
         {},
         {u'Anthony Burgess1962A Clockwork Orange': {
-                u'remote': set([]),
+                u'remote': set(),
                 u'digital': True,
                 u'analog': False
             },
@@ -109,7 +109,7 @@ def add_some_more_files(step):
             },
         },
         {u'Second0000Test': {
-                u'remote': set([]),
+                u'remote': set(),
                 u'digital': True,
                 u'analog': False
             },
@@ -127,7 +127,7 @@ def rename_file(step, oldname, newname):
     world.expected[1][u'Anthony Burgess'][u'1962'][u'A Clockwork Orange']\
             [u'01'][u'Sweet Hommie'][u'path'] = newpath
 
-@step('I change (.*) tag for file "(.*)"')
+@step('I change (artist|date|album|tracknumber|title) tag for file "(.*)"')
 def change_tags_for_file(step, tag, filename):
     oldpath = os.path.join(world.directory, filename)
     if tag == 'artist':
@@ -164,8 +164,6 @@ def change_tags_for_file(step, tag, filename):
                 [u'1111'][u'Changed'][u'777'][u'ST']
         del world.expected[1][u'Changed'][u'1111'][u'Changed'][u'777'][u'ST']
         world.expected[2][oldpath][u'title'] = u'Ch'
-    else:
-        assert False
     newpath = os.path.join(world.basedir,
             u'temp', tag + u'_change_test_.flac')
     oldnewpath = os.path.join(world.basedir,

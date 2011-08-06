@@ -61,11 +61,12 @@ def reqread(url):
     except (urllib2.HTTPError, urllib2.URLError):
         raise ConnError()
 
-def __getalbums(site):
+def __getalbums(site, existing):
     u"""Parse site and return albums.
 
     Arguments:
     site -- site XML to parse
+    existing -- results already received from previous offset
 
     Return value:
     A tuple in form (<results>, <result_count>), where
@@ -73,21 +74,18 @@ def __getalbums(site):
     """
     def __internal(context, albums, years):
         albums = albums[0].text
-        years = years[0].text
-        if years:
-            try:
-                if __internal.result[albums] == u'0' \
-                        or __internal.result[albums] > years:
-                    __internal.result[albums] = years
-            except KeyError:
+        try:
+            years = years[0].text
+        except IndexError:
+            years = u'0'
+        try:
+            if __internal.result[albums] == u'0' \
+                    or __internal.result[albums] > years:
                 __internal.result[albums] = years
-        else:
-            try:
-                __internal.result[albums]
-            except KeyError:
-                __internal.result[albums] = u'0'
+        except KeyError:
+            __internal.result[albums] = years
         return False
-    __internal.result = dict()
+    __internal.result = existing
     ns = etree.FunctionNamespace(u'http://fake.gayeogi/functions')
     ns.prefix = u'mb'
     ns[u'test'] = __internal
@@ -112,14 +110,15 @@ def __sense(url, releases):
     result = dict()
     offset = 0
     count = 100
+    partial = dict()
     while count > 0:
         soup = reqread(
                 u'http://www.musicbrainz.org/ws/2/release?artist=' + url
                 + u'&type=' + u'|'.join(releases).lower() + u'&offset='
                 + unicode(offset) + u'&limit=100')
-        (partial, n) = __getalbums(soup)
+        (partial, n) = __getalbums(soup, partial)
         result.update(partial)
-        count = n - count
+        count = n - count - offset
         offset += 100
     return (url, list(result.iteritems()))
 

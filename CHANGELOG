@@ -138,3 +138,5 @@ unsaved changes.
 ===DATABASES:
 -Fixed ignores sometimes not properly ignored.
 -Fixed renamed files (with no tags changes) handling.
+-musicbrainz.org: Fixed sometimes occuring 'endless loop'.
+-musicbrainz.org: Fixed getting wrong year when there are >100 releases.
