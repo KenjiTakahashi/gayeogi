@@ -3,15 +3,15 @@ Feature: Synchronizing database with internet knowledge
     As a lazy man
     I want to sync my local db with internet ones
 
-    #Scenario: Get in sync using one-by-one mode
-    #    Given I have an existing database with some entries
-    #    When I start an internet update for "metal-archives.com" or "musicbrainz.org"
-    #    Then I should get releases from either of them (but never both)
+    Scenario: Get in sync using one-by-one mode
+        Given I have an existing database with some entries
+        When I start an internet update for "metal-archives.com" or "musicbrainz.org"
+        Then I should get releases from either of them (but never both)
 
-    #Scenario: Get in sync using crossed mode
-    #    Given I have an existing database with some entries
-    #    When I start an internet update for "metal-archives.com" and "musicbrainz.org"
-    #    Then I should get releases from both of them (possibly)
+    Scenario: Get in sync using crossed mode
+        Given I have an existing database with some entries
+        When I start an internet update for "metal-archives.com" and "musicbrainz.org"
+        Then I should get releases from both of them (possibly)
 
     # Scenarios below are not really testing a daily usage, but I need to have
     # it tested somehow anyway and real remote dbs can change in time making

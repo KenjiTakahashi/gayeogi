@@ -50,6 +50,21 @@ class JParse(json.JSONDecoder):
                 result.append(s[0].rsplit(u'/', 1)[1][:-1])
         return result
 
+def reqread(url):
+    u"""Get url and retrieve data.
+    Also setup proper User-Agent, so people won't complain.
+
+    Arguments:
+    url -- url to retrieve from
+    """
+    req = urllib2.Request(url)
+    req.add_header(u'User-Agent',
+            u'gayeogi/0.6 +http://github.com/KenjiTakahashi/gayeogi')
+    try:
+        return urllib2.urlopen(req).read()
+    except (urllib2.HTTPError, urllib2.URLError):
+        raise ConnError()
+
 def __getalbums(site, releases):
     """Parse discography website and return list of albums and years.
 
@@ -85,9 +100,8 @@ def __sense(url, releases):
     Note: It is meant for internal usage only!
     """
     try:
-        soup = urllib2.urlopen(
-                u'http://www.metal-archives.com/band/discography/id/' +
-                url + u'/tab/all').read().decode(u'utf-8')
+        soup = reqread(u'http://www.metal-archives.com/band/discography/id/' +
+                url + u'/tab/all').decode(u'utf-8')
     except (urllib2.HTTPError, urllib2.URLError):
         raise ConnError()
     else:
@@ -145,11 +159,11 @@ def work(artist, element, urls, releases):
                 artist.replace(u'&', u'and').replace(u'/', u'').encode(
                     u'utf-8')).replace(u'%20', u'+')
         try:
-            json = urllib2.urlopen(
+            json = reqread(
                     u'http://www.metal-archives.com/search/ajax-band-search/?field=name&query=' +
                     artist_ +
                     '&sEcho=1&iColumns=3&sColumns=&iDisplayStart=0&iDisplayLength=100&sNames=%2C%2C'
-                    ).read()
+                    )
         except (urllib2.HTTPError, urllib2.URLError):
             raise ConnError()
         else:
