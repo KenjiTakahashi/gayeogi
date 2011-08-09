@@ -369,7 +369,7 @@ class Main(QtGui.QWidget):
     def addItem(self, item, column = -1):
         if column != -1:
             self.stop()
-            self.playlist.clearActive()
+            self.playlist.activeItem = None
             self.playlist.clear()
         try:
             item.album
