@@ -120,7 +120,7 @@ class Bee(QThread):
                     key = artist + year + album
                     if not self.avai[key][u'digital'] and \
                             not self.avai[key][u'analog'] and \
-                            self.urls[artist].keys() == [self.name]:
+                            self.avai[key][u'remote'] == set([self.name]):
                         __internal.torem.add((artist, year, album))
                     else:
                         self.avai[key][u'remote'].discard(self.name)

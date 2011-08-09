@@ -25,6 +25,8 @@ REQUIRES
 
     distribute >= 0.6.14 (setup)
 
+    lettuce >= 0.1.31 (test-suite)
+
     phonon >= 4.4 (player)
 
     pylast >= 0.5.6 (last.fm, libre.fm)
@@ -34,7 +36,7 @@ NOTES
 *****
 - Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
 - Versions specified here are "known to work", but it may be possible that and older one will fit too.
-- Due to the name change during update to 0.6 you'll have to execute following commands if you want to keep your db and settings:::
+- Due to the name change during update to 0.6 you'll have to execute following commands if you want to keep your db and settings: ::
 
     mkdir ~/.config/gayeogi
     cp ~/.config/fetcher/* ~/.config/gayeogi/

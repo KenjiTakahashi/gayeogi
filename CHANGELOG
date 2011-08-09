@@ -140,3 +140,4 @@ unsaved changes.
 -Fixed renamed files (with no tags changes) handling.
 -musicbrainz.org: Fixed sometimes occuring 'endless loop'.
 -musicbrainz.org: Fixed getting wrong year when there are >100 releases.
+-Fixed releases sometimes stayed in db even if they didn't exist anywhere.
