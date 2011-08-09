@@ -19,7 +19,7 @@ from setuptools import setup
 
 setup(
         name = 'gayeogi',
-        version = '0.6',
+        version = '0.6.1',
         description = 'A fully-featured music management suite.',
         author = 'Karol "Kenji Takahashi" Woźniak',
         author_email = 'wozniakk@gmail.com',

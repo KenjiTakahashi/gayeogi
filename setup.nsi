@@ -17,7 +17,7 @@
 !include "Sections.nsh"
 
 Name "gayeogi"
-OutFile "gayeogi-0.6-x86.exe"
+OutFile "gayeogi-0.6.1-x86.exe"
 
 InstallDir "$PROGRAMFILES\gayeogi"
 
