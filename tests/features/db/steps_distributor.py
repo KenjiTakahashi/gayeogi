@@ -1,6 +1,7 @@
 from lettuce import step, world
 from gayeogi.main import version
 from gayeogi.db.distributor import Distributor, Bee
+from gayeogi.db.bees.beeexceptions import NoBandError
 from PyQt4.QtCore import QSettings
 from os import path
 from sys import modules
@@ -250,20 +251,35 @@ def remote2removeexp():
     del world.expected[1][u'Iron Maiden'][u'2010']
     del world.expected[1][u'Metallica'][u'2010']
     del world.expected[1][u'Pink Floyd'][u'2010']
+def remote2removecomp(artist, element, urls, types):
+    raise NoBandError()
+def remote2removecompexp():
+    del world.expected[4][u'Iron Maiden2110Album3']
+    del world.expected[4][u'Metallica2110Album3']
+    del world.expected[4][u'Pink Floyd2110Album3']
+    del world.expected[3][u'Iron Maiden'][u'remote2']
+    del world.expected[3][u'Metallica'][u'remote2']
+    del world.expected[3][u'Pink Floyd'][u'remote2']
+    del world.expected[1][u'Iron Maiden'][u'2110']
+    del world.expected[1][u'Metallica'][u'2110']
+    del world.expected[1][u'Pink Floyd'][u'2110']
 
-@step('I (add|remove) some remote informations from "(.*)"')
-def some_remote_informations(step, option, base):
+@step('I (add|remove) (some|all) remote informations from "(.*)"')
+def some_remote_informations(step, option, option2, base):
+    if option2 == 'some':
+        real_base = getattr(modules[__name__], base + option)
+        getattr(modules[__name__], base + option + "exp")()
+    elif option2 == 'all':
+        real_base = remote2removecomp
+        remote2removecompexp()
     tasks = Queue(1)
     bee = Bee(tasks, world.database[1], world.database[3], world.database[4],
             world.database[5], base, RLock(), dict())
-    real_base = getattr(modules[__name__], base + option)
     for entry in world.database[1].iteritems():
         tasks.put((real_base, entry, []))
     tasks.put((False, (False, False), False))
-    getattr(modules[__name__], base + option + "exp")()
     bee.wait()
 
 @step('The local database should get updated appropriately')
 def local_database_should_get_updated(step):
-    assert world.database == world.expected\
-    , "\n" + repr(world.database[1]) + "\n" + repr(world.expected[1])
+    assert world.database == world.expected

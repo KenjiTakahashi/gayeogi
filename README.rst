@@ -25,11 +25,11 @@ REQUIRES
 
     distribute >= 0.6.14 (setup)
 
-    lettuce >= 0.1.31 (test-suite)
+    lettuce >= 0.1.31 (test suite)
 
     phonon >= 4.4 (player)
 
-    pylast >= 0.5.6 (last.fm, libre.fm)
+    pylast >= 0.5.6 (last.fm, libre.fm scrobbling)
 
     lxml >= 2.3 (metal-archives.com, musicbrainz.org)
 NOTES

@@ -65,6 +65,8 @@ class Bee(QThread):
             work, (artist, element), types = self.tasks.get()
             if not work:
                 break
+            added = False
+            albums = dict()
             try:
                 try:
                     result = work(artist, element, self.urls[artist], types)
@@ -89,8 +91,6 @@ class Bee(QThread):
             else:
                 for error in result[u'errors']:
                     self.errors.emit(self.name, u'errors', artist, error)
-                albums = dict()
-                added = False
                 for (album, year) in result[u'result']:
                     albums.setdefault(year, set([album])).add(album)
                     self.rlock.acquire()
@@ -115,6 +115,7 @@ class Bee(QThread):
                             )[self.name] = result[u'choice']
                     self.processed[artist] = True
                     self.rlock.release()
+            finally:
                 self.rlock.acquire()
                 def __internal(artist, year, album):
                     key = artist + year + album
@@ -161,7 +162,6 @@ class Bee(QThread):
                         else:
                             del self.processed[artist]
                 self.rlock.release()
-            finally:
                 self.tasks.task_done()
 
 class Distributor(QThread):
