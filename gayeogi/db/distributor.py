@@ -124,8 +124,12 @@ class Bee(QThread):
                             self.avai[key][u'remote'] == set([self.name]):
                         __internal.torem.add((artist, year, album))
                     else:
-                        self.avai[key][u'remote'].discard(self.name)
-                        __internal.norem = True
+                        try:
+                            self.avai[key][u'remote'].remove(self.name)
+                        except KeyError:
+                            pass
+                        else:
+                            __internal.norem = True
                 __internal.torem = set()
                 __internal.norem = False
                 for year, a in self.library[artist].iteritems():

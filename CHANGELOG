@@ -142,3 +142,8 @@ unsaved changes.
 -musicbrainz.org: Fixed getting wrong year when there are >100 releases.
 -Fixed releases sometimes stayed in db even if they didn't exist anywhere.
 -metal-archives.com: Added proper User-Agent.
+
+==0.6.2:
+
+===DATABASES:
+-Fixed: 'Something has been removed' sometimes appeared when it shouldn't do so.
