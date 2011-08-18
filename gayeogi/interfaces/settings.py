@@ -20,22 +20,57 @@ from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString, QStringList
 import gayeogi.plugins
 
 class QHoveringRadioButton(QtGui.QRadioButton):
+    """RadioButton with active hovering support.
+
+    Signals:
+        hovered (unicode): emitted on hover on ('message' attribute)
+        unhovered (int): emitted on hover off (supplied 'tab' attribute)
+
+    """
     hovered = pyqtSignal(unicode)
     unhovered = pyqtSignal(int)
     def __init__(self, tab, message = u'', parent = None):
+        """Constructs new QHoveringRadioButton instance.
+
+        Args:
+            tab (int): tab number
+
+        Kwargs:
+            message (unicode): message to be displayed
+            parent (QWidget): widget's parent
+
+        """
         QtGui.QRadioButton.__init__(self, parent)
         self.message = message
         self.tab = tab
     def enterEvent(self, _):
+        """Emits 'hovered' signal."""
         self.hovered.emit(self.message)
     def leaveEvent(self, _):
+        """Emits 'unhovered' signal."""
         self.unhovered.emit(self.tab)
 
 class DatabasesTab(QtGui.QWidget):
-    """Databases management widget."""
+    """Databases management widget.
+    
+    Signals:
+        hovered (unicode): emitted when behaviour is hovered (globalMessage text)
+        unhovered (int): emitted when behaviour is unhovered (globalMessage number)
+
+    """
     hovered = pyqtSignal(unicode)
     unhovered = pyqtSignal(int)
     def __init__(self, order, settings, parent = None):
+        """Constructs new DatabasesTab instance.
+
+        Args:
+            order (list): in which order databases are searched
+            settings (QSettings): reference to DB settings
+
+        Kwargs:
+            parent(QWidget): widget's parent
+
+        """
         QtGui.QWidget.__init__(self, parent)
         self.settings = settings
         self.dbs = QtGui.QTreeWidget()
@@ -112,6 +147,13 @@ class DatabasesTab(QtGui.QWidget):
         layout.addWidget(self.options)
         self.setLayout(layout)
     def displayOptions(self, item, _):
+        """Displays options available for selected database.
+
+        Args:
+            item (QListWidgetItem): selected item
+            _: whatever
+
+        """
         text = item.text(0)
         module = unicode(self.settings.value(
             text + u'/module', u'').toString())
@@ -137,6 +179,7 @@ class DatabasesTab(QtGui.QWidget):
                     self.optionsL.addWidget(widget, i, j)
                     self.options.setVisible(True)
     def up(self):
+        """Shuffles selected database up."""
         current = self.dbs.currentItem()
         oldindex = self.dbs.indexOfTopLevelItem(current)
         newindex = oldindex - 1
@@ -149,6 +192,7 @@ class DatabasesTab(QtGui.QWidget):
             self.dbs.setItemWidget(current, 1, spin)
             self.dbs.setCurrentItem(current)
     def down(self):
+        """Shuffles selected database down."""
         current = self.dbs.currentItem()
         oldindex = self.dbs.indexOfTopLevelItem(current)
         newindex = oldindex + 1
@@ -161,9 +205,30 @@ class DatabasesTab(QtGui.QWidget):
             self.dbs.setItemWidget(current, 1, spin)
             self.dbs.setCurrentItem(current)
     def changeState(self, state):
-        self.__checkStates[unicode(self.dbs.currentItem().text(0))] \
+        """Changes current database's specific option state.
+
+        Args:
+            state: new state
+
+        """
+        self.__checkStates[unicode(self.dbs.currentItem().text(0))]\
                 [self.sender().text()] = state
     def values(self):
+        """Gets appropriate values (for saving).
+
+        Returns:
+            tuple. Looks like this (indices)::
+
+                0 -- behaviour state
+                1 -- main result::
+                    0 -- database name
+                    1 -- values::
+                        0 -- check state
+                        1 -- options states
+                        2 -- threads number
+                2 -- databases order
+
+        """
         result = list()
         order = list()
         for i in range(self.dbs.count()):
@@ -178,9 +243,28 @@ class DatabasesTab(QtGui.QWidget):
         return (self.crossed.isChecked(), result, order)
 
 class QValueWidget(QtGui.QWidget):
+    """Widget used for adding values.
+
+    Consists of QLineEdit and 2/3 QPushButtons.
+
+    Signals:
+        added (unicode, unicode): emitted when 'Add' button is clicked (widget's name, text to be added)
+        removed (unicode): emitted when 'Remove' button is clicked (widget's name)
+
+    """
     added = pyqtSignal(unicode, unicode)
     removed = pyqtSignal(unicode)
     def __init__(self, name, browse = False, parent = None):
+        """Constructs new QValueWidget instance.
+
+        Args:
+            name (unicode): widget's name
+
+        Kwargs:
+            browse (bool): whether to draw 'Browse' button
+            parent (QWidget): widget's parent
+
+        """
         QtGui.QWidget.__init__(self, parent)
         self.name = name
         self.box = QtGui.QLineEdit()
@@ -198,18 +282,32 @@ class QValueWidget(QtGui.QWidget):
         layout.addWidget(remove)
         self.setLayout(layout)
     def add(self):
+        """If text is not empty, emits added signal and clears the box."""
         text = self.box.text()
         if text != '':
             self.added.emit(self.name, text)
             self.box.clear()
     def remove(self):
+        """Emits remove signal."""
         self.removed.emit(self.name)
     def select(self):
+        """Opens 'Browse' dialog and passed it's result to the box."""
         dialog = QtGui.QFileDialog()
         self.box.setText(dialog.getExistingDirectory())
 
 class LocalTab(QtGui.QWidget):
+    """Local options management widget."""
     def __init__(self, directories, ignores, parent = None):
+        """Constructs new LocalTab instance.
+
+        Args:
+            directories (list): directories already present in settings
+            ignores (list): patterns to ignores
+
+        Kwargs:
+            parent (QWidget): widget's parent
+
+        """
         QtGui.QWidget.__init__(self, parent)
         self.directories = QtGui.QListWidget()
         self.directories.setSelectionMode(QtGui.QListWidget.ExtendedSelection)
@@ -240,6 +338,13 @@ class LocalTab(QtGui.QWidget):
         layout.addWidget(value)
         self.setLayout(layout)
     def add(self, name, text):
+        """Adds new entry to directories/ignores list.
+
+        Args:
+            name (unicode): sender's name ('directories'/'ignores')
+            text (unicode): text to add
+
+        """
         item = QtGui.QListWidgetItem(self.fsName.text())
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
         item.setCheckState(2)
@@ -248,6 +353,12 @@ class LocalTab(QtGui.QWidget):
         else:
             self.ignores.addItem(item)
     def remove(self, name):
+        """Removes selected entries from directories/ignores list.
+
+        Args:
+            name (unicode): sender's name ('directories'/'ignores')
+
+        """
         if name == 'directories':
             widget = self.directories
         else:
@@ -255,17 +366,38 @@ class LocalTab(QtGui.QWidget):
         for item in widget.selectedItems():
             item.deleteLater()
     def isEmpty(self):
-        return bool(self.directories.count())
+        """Checks whether there are some directories present.
+
+        Returns:
+            bool -- True if there are no directories specified, False otherwise
+
+        """
+        return not bool(self.directories.count())
     def values(self):
+        """Gets appropriate values (for saving).
+        
+        Returns:
+            tuple. It looks like (indices)::
+                0 (list) -- directories names
+                1 (list) -- ignores patterns
+
+        """
         return (
             [unicode(self.directories.item(i).text())
             for i in range(self.directories.count())],
             [unicode(self.ignores.item(i).text())
-            for i in range(self.directories.count())]
+            for i in range(self.ignores.count())]
         )
 
 class PluginsTab(QtGui.QWidget):
+    """Plugins management widget."""
     def __init__(self, parent = None):
+        """Contructs new PluginsTab instance.
+
+        Kwargs:
+            parent (QWidget): widget's parent
+
+        """
         QtGui.QWidget.__init__(self, parent)
         self.plugins = QtGui.QListWidget()
         self.plugins.currentTextChanged.connect(self.displayOptions)
@@ -289,12 +421,27 @@ class PluginsTab(QtGui.QWidget):
                 self.__depends.setdefault(d, [ref.name]).append(ref.name)
         self.setLayout(self.layout)
     def displayOptions(self, text):
+        """Displays selected plugin's options.
+        
+        Args:
+            text (unicode): plugin's name
+        
+        """
         for k, v in self.__plugins.iteritems():
             if unicode(text) == k:
                 v.show()
             else:
                 v.hide()
     def checkDependencies(self, item):
+        """Checks whether selected plugin's dependencies are available.
+
+        If they are, they are automatically selected.
+        If an dependant is being deselected, it's parent(s) will be deselecte as well.
+
+        Args:
+            item (QListWidgetItem): selected item
+
+        """
         if item.checkState() != 0:
             for d in item.depends:
                 for i in self.plugins.findItems(d, Qt.MatchFixedString):
@@ -307,16 +454,35 @@ class PluginsTab(QtGui.QWidget):
             except KeyError:
                 pass
     def save(self):
+        """Save plugins options.
+
+        It doesn't return anything, instead it relies on specific plugin's
+        internal saving methods.
+        """
         for i in range(self.plugins.count()):
             item = self.plugins.item(i)
             self.__plugins[unicode(item.text())].setSetting(
                 u'enabled', item.checkState())
 
 class Settings(QtGui.QDialog):
-    """Main settings dialog window."""
+    """Main settings dialog window.
+    
+    Attributes:
+        __settings (QSettings): reference to the main settings
+        __dbsettings (QSettings): reference to the DB settings
+        
+    """
     __settings = QSettings(u'gayeogi', u'gayeogi')
     __dbsettings = QSettings(u'gayeogi', u'Databases')
-    def __init__(self,parent=None):
+    def __init__(self, parent = None):
+        """Constructs new Settings instance.
+
+        It also contructs 'Logs' tab for now. (Will be moved sometime)
+
+        Kwargs:
+            parent (QWidget): widget's parent
+
+        """
         QtGui.QDialog.__init__(self, parent)
         self.info = QtGui.QLabel()
         self.info.setWordWrap(True)
@@ -368,6 +534,7 @@ class Settings(QtGui.QDialog):
         layout.addLayout(buttonsLayout)
         self.setLayout(layout)
     def save(self):
+        """Saves settings to file."""
         if self.directories.isEmpty():
             dialog = QtGui.QMessageBox()
             dialog.setText(self.trUtf8('There should be at least one directory supplied!'))
@@ -390,6 +557,12 @@ class Settings(QtGui.QDialog):
             self.plugins.save()
             self.close()
     def globalMessage(self, i):
+        """Displays global help message.
+
+        Args:
+            i (int): current tab number
+
+        """
         if i == 0:
             self.info.setText(self.trUtf8('Here you can choose which databases should be searched, what releases to search for and how the search should behave.'))
         elif i == 1:
