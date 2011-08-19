@@ -508,7 +508,7 @@ class Settings(QtGui.QDialog):
         self.dbs.unhovered.connect(self.globalMessage)
         self.tabs.addTab(self.dbs, self.trUtf8('&Databases'))
         # Local
-        directory = self.__settings.value(u'directory', '').toPyObject()
+        directory = self.__settings.value(u'directory', []).toPyObject()
         directory = type(directory) == list and directory or [(directory, 2)]
         self.directories = LocalTab(directory,
                 self.__settings.value('ignores', []).toPyObject())

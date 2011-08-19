@@ -5,7 +5,7 @@ Feature: Managing local files
 
     Scenario: Add files to database
         Given I have some files in "data" directory
-        And ignore "System Volume Information" directory
+        And I ignore "System Volume Information" directory
         And I have an empty database
         When I scan the directory for files
         Then they should get added to the database
@@ -41,6 +41,26 @@ Feature: Managing local files
         When I remove file "sweet_hommie.mp3"
         And I scan the directory for files again
         Then it should be removed from the database
+
+    Scenario: Add another separate directory to the database
+        Given I have some files in "data2" directory, too
+        When I scan the directory for files
+        Then they should get added to the database
+
+    Scenario: Remove first directory
+        When I remove the "data" directory
+        And I scan the directory for files again
+        Then it should be removed from the database
+
+    Scenario: Disable remaining directory
+        When I disable the "data2" directory
+        And I scan the directory for files again
+        Then it should be removed from the database
+
+    Scenario: Enable directory again
+        When I enable the "data2" directory again
+        And I scan the directory for files agan
+        Then they should get added to the database
 
 # *1: It is actualy handled by exchanging two previously prepared files
 # *2: It actualy is moved away to temp dir, so we can restore it at the end

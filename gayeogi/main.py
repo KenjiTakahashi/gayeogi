@@ -302,7 +302,8 @@ class Main(QtGui.QMainWindow):
         else:
             self.library = self.db.read()
             self.update()
-        directory = unicode(self.__settings.value(u'directory').toPyObject())
+        directory = self.__settings.value(u'directory', []).toPyObject()
+        directory = type(directory) == list and directory or [(directory, 2)]
         self.fs = Filesystem(directory, self.library, self.ignores)
         self.fs.stepped.connect(self.statusBar().showMessage)
         self.fs.updated.connect(self.update)

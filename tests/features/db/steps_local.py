@@ -9,66 +9,80 @@ def init():
     world.basedir = os.path.dirname(__file__)
     world.renames = list()
     world.exchanges = set()
+    world.directory = list()
+    world.ignores = list()
+    world.expected = (version, {}, {}, {}, {}, [True])
+    world.data = {
+        'data': (
+            0, u'clockwork_test.mp3',
+            (
+                u'Anthony Burgess', u'1962', u'A Clockwork Orange',
+                u'01', u'Sweet Hommie'
+            )
+        ),
+        'data2': (
+            1, u'second_dir_test.m4a',
+            (
+                u'An Artist', u'1692', u'Second Dir',
+                u'1', u'Discovery'
+            )
+        ),
+    }
 
 @after.all
 def deinit(total):
     shutil.move(os.path.join(world.basedir, u'temp', u'sweet_hommie.mp3'),
-            world.directory)
+            world.directory[0][0])
     for (old, new) in world.renames:
         os.rename(old, new)
     for ex in world.exchanges:
         os.remove(ex)
-    os.remove(os.path.join(world.directory, u'second_test.flac'))
+    os.remove(os.path.join(world.directory[0][0], u'second_test.flac'))
 
-def __add_to_expected(newone):
-    world.expected[1].update(newone[0])
-    world.expected[2].update(newone[1])
-    world.expected[4].update(newone[2])
+def __add_to_expected(arg):
+    (one, two) = arg
+    partial = world.expected[1].setdefault(one[0], {})
+    partial = partial.setdefault(one[1], {})
+    partial = partial.setdefault(one[2], {})
+    partial = partial.setdefault(one[3], {})
+    partial = partial.setdefault(one[4], {})
+    partial[u'path'] = one[5]
+    partial = world.expected[2].setdefault(two[0], {})
+    partial[u'artist'] = one[0]
+    partial[u'date'] = one[1]
+    partial[u'album'] = one[2]
+    partial[u'tracknumber'] = one[3]
+    partial[u'title'] = one[4]
+    partial[u'modified'] = two[1]
+    partial = world.expected[4].setdefault(one[0] + one[1] + one[2], {})
+    partial[u'remote'] = set()
+    partial[u'digital'] = True
+    partial[u'analog'] = False
 
 @step('I have some files in "(.*)" directory')
 def have_some_files(step, directory):
-    world.directory = os.path.join(world.basedir, directory)
-    world.ignores = list()
-    clockwork_test = os.path.join(world.directory, u'clockwork_test.mp3')
-    world.expected = (version,
-        {u'Anthony Burgess': {
-            u'1962': {
-                u'A Clockwork Orange': {
-                    u'01': {
-                        u'Sweet Hommie': {
-                            u'path': clockwork_test
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        {os.path.join(world.directory, u'clockwork_test.mp3'): {
-                u'artist': u'Anthony Burgess',
-                u'album': u'A Clockwork Orange',
-                u'title': u'Sweet Hommie',
-                u'date': u'1962',
-                u'tracknumber': u'01',
-                u'modified': os.stat(clockwork_test).st_mtime
-            },
-        },
-        {},
-        {u'Anthony Burgess1962A Clockwork Orange': {
-                u'remote': set(),
-                u'digital': True,
-                u'analog': False
-            },
-        },
-        [True])
+    world.directory.append((os.path.join(world.basedir, directory), 2))
+    (world.index, test, data) = world.data[directory]
+    clockwork_test = os.path.join(world.directory[world.index][0], test)
+    __add_to_expected((
+        data + (clockwork_test,),
+        (
+            os.path.join(world.directory[world.index][0], test),
+            os.stat(clockwork_test).st_mtime
+        )
+    ))
 
-@step('ignore "(.*)" directory')
+@step('I ignore "(.*)" directory')
 def ignore_directory(step, ignore):
     world.ignores.append((ignore, False))
 
 @step('I have an empty database')
 def have_an_empty_database(step):
     world.database = (version, {}, {}, {}, {}, [False])
-    world.db = local.Filesystem(world.directory, world.database, world.ignores)
+    world.db = local.Filesystem(
+        world.directory,
+        world.database, world.ignores
+    )
 
 @step('I scan the directory for files')
 def scan_the_directory(step):
@@ -80,45 +94,29 @@ def scan_the_directory(step):
 @step('it should be removed from the database')
 def should_get_added(step):
     assert world.database == world.expected
+    #assert False, "\n" + repr(world.database) + "\n" + repr(world.expected)
+    #assert world.database == world.expected, "\n" + repr(world.database) + "\n" + repr(world.expected)
 
 @step('I add some more files to the directory')
 def add_some_more_files(step):
     shutil.copy2(os.path.join(world.basedir, u'temp/second_test.flac'),
             os.path.join(world.basedir, u'data'))
-    second_test = os.path.join(world.directory, u'second_test.flac')
+    second_test = os.path.join(world.directory[world.index][0], u'second_test.flac')
     __add_to_expected((
-        {u'Second': {
-            u'0000': {
-                u'Test': {
-                    u'666': {
-                        u'ST': {
-                            u'path': second_test
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        {os.path.join(world.directory, u'second_test.flac'): {
-                u'artist': u'Second',
-                u'album': u'Test',
-                u'title': u'ST',
-                u'date': u'0000',
-                u'tracknumber': u'666',
-                u'modified': os.stat(second_test).st_mtime
-            },
-        },
-        {u'Second0000Test': {
-                u'remote': set(),
-                u'digital': True,
-                u'analog': False
-            },
-        }))
+        (
+            u'Second', u'0000', u'Test',
+            u'666', u'ST', second_test
+        ),
+        (
+            os.path.join(world.directory[world.index][0], u'second_test.flac'),
+            os.stat(second_test).st_mtime
+        )
+    ))
 
 @step('I rename file "(.*)" to "(.*)"')
 def rename_file(step, oldname, newname):
-    oldpath = os.path.join(world.directory, oldname)
-    newpath = os.path.join(world.directory, newname)
+    oldpath = os.path.join(world.directory[world.index][0], oldname)
+    newpath = os.path.join(world.directory[world.index][0], newname)
     os.rename(oldpath, newpath)
     world.renames.append((newpath, oldpath))
     world.expected[2][newpath] = world.expected[2][oldpath]
@@ -129,7 +127,7 @@ def rename_file(step, oldname, newname):
 
 @step('I change (artist|date|album|tracknumber|title) tag for file "(.*)"')
 def change_tags_for_file(step, tag, filename):
-    oldpath = os.path.join(world.directory, filename)
+    oldpath = os.path.join(world.directory[world.index][0], filename)
     if tag == 'artist':
         world.expected[1][u'Changed'] = world.expected[1][u'Second']
         del world.expected[1][u'Second']
@@ -175,8 +173,33 @@ def change_tags_for_file(step, tag, filename):
 
 @step('I remove file "(.*)"')
 def remove_file(step, filename):
-    oldpath = os.path.join(world.directory, filename)
+    oldpath = os.path.join(world.directory[world.index][0], filename)
     shutil.move(oldpath, os.path.join(world.basedir, u'temp'))
     del world.expected[1][u'Anthony Burgess']
     del world.expected[2][oldpath]
     del world.expected[4][u'Anthony Burgess1962A Clockwork Orange']
+
+@step('I remove the "(.*)" directory')
+def remove_directory(step, directory):
+    del world.expected[1][u'Changed']
+    del world.expected[2][os.path.join(world.directory[0][0], u'second_test.flac')]
+    del world.expected[4][u'Changed1111Changed']
+    world.db.actualize([world.directory[1]], world.ignores)
+
+@step('I disable the "(.*)" directory')
+def disable_directory(step, directory):
+    world.expected = (version, {}, {}, {}, {}, [True])
+    world.db.actualize([(world.directory[1][0], 0)], world.ignores)
+
+@step('I enable the "(.*)" directory')
+def enable_directory(step, directory):
+    (world.index, test, data) = world.data[directory]
+    clockwork_test = os.path.join(world.directory[world.index][0], test)
+    __add_to_expected((
+        data + (clockwork_test,),
+        (
+            os.path.join(world.directory[world.index][0], test),
+            os.stat(clockwork_test).st_mtime
+        )
+    ))
+    world.db.actualize([(world.directory[1][0], 2)], world.ignores)

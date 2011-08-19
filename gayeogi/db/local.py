@@ -24,16 +24,24 @@ from mutagen.flac import FLAC
 from mutagen.asf import ASF
 from mutagen.musepack import Musepack
 from mutagen.wavpack import WavPack
+from mutagen.mp4 import MP4
 from mutagen import File
 
 class Filesystem(QThread):
-    u"""Create/Update local file info library"""
+    """Create/Update local file info library.
+
+    Signals:
+        updated (void): emitted at the end
+        stepped (unicode): emitted after each file (filename)
+        errors (unicode, unicode, unicode, unicode): emitted at the end
+
+    """
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, directory, library, ignores):
         QThread.__init__(self)
-        self.directory = directory
+        self.directories = directory
         self.library = library[1]
         self.paths = library[2]
         self.avai = library[4]
@@ -41,12 +49,15 @@ class Filesystem(QThread):
         self.ignores = [v for (v, _) in ignores]
         self.toremove = set()
     def append(self, path, existing = False):
-        u"""Append new entry to the library.
+        """Append new entry to the library.
         
-        Arguments:
-        path -- path to the file one wants to append
-        existing -- (bool) whether path points to completely new entry
-        or an changed one
+        Ars:
+            path (unicode): path to the file one wants to append
+
+        Kwargs:
+            existing (bool): whether path points to completely new entry
+            or an changed one
+
         """
         tags = self.tagsread(path)
         if tags:
@@ -98,13 +109,14 @@ class Filesystem(QThread):
                         u'remote': set()
                         }
     def remove(self, path):
-        u"""Remove specified item from the library.
+        """Remove specified item from the library.
 
-        Arguments:
-        path -- path to the file one wants to remove
+        Args:
+            path (unicode): path to the file one wants to remove
 
-        Return value:
-        artist who can probably be removed completely
+        Returns:
+            unicode -- artist who can probably be removed completely
+
         """
         result = None
         path_ = self.paths[path]
@@ -134,23 +146,28 @@ class Filesystem(QThread):
         del self.paths[path]
         return result
     def ignored(self, root):
-        u"""Check if specified folder is on list to ignore.
+        """Check if specified folder is on list to ignore.
 
-        Arguments:
-        root -- folder to check against
+        Args:
+            root (unicode): folder to check against
+
+        Returns:
+            bool -- True if root is in ignores, False otherwise
+
         """
         for ignore in self.ignores:
             if fnmatch(root, u'*' + ignore + u'*'):
                 return True
         return False
     def tagsread(self, filepath):
-        u"""Read needed tags (metadata/ID3) from specified file.
+        """Read needed tags (metadata/ID3) from specified file.
         
-        Arguments:
-        filepath --  path to the files one wants to read
+        Args:
+            filepath (unicode): path to the files one wants to read
 
-        Return value:
-        a dictionary of tags
+        Returns:
+            dict -- a dictionary of tags
+
         """
         ext = os.path.splitext(filepath)[1]
         try:
@@ -169,6 +186,20 @@ class Filesystem(QThread):
                             u'errors',
                             filepath,
                             self.trUtf8("You're probably missing some tags."))
+            elif ext in [u'.mp4', u'.m4a', u'.mpeg4', u'.aac']:
+                f = MP4(filepath)
+                try:
+                    return {u'artist': f['\xa9ART'][0],
+                            u'album': f['\xa9alb'][0],
+                            u'date': f['\xa9day'][0],
+                            u'title': f['\xa9nam'][0],
+                            u'tracknumber': unicode(f['trkn'][0][0])
+                            }
+                except KeyError:
+                    self.errors.emit(u'local',
+                            u'errors',
+                            filepath,
+                            self.trUtf8("You're probably missing some tags."))
             else:
                 if ext == u'.flac':
                     f = FLAC(filepath)
@@ -176,9 +207,9 @@ class Filesystem(QThread):
                     f = ASF(filepath)
                 elif ext == u'.wv':
                     f = WavPack(filepath)
-                elif ext == u'.mpc' or ext == u'.mpp' or ext == u'.mp+':
+                elif ext in [u'.mpc', u'.mpp', u'.mp+']:
                     f = Musepack(filepath)
-                elif ext == u'.ogg' or ext == u'.ape': # different .ogg and .ape files
+                elif ext in [u'.ogg', u'.ape']:
                     f = File(filepath)
                 else:
                     return False
@@ -201,42 +232,46 @@ class Filesystem(QThread):
                     filepath,
                     u'Cannot open file')
     def actualize(self, directory, ignores):
-        u"""Actualize directory and ignores list.
+        """Actualize directory and ignores list.
 
-        Arguments:
-        directory -- new directory
-        ignores -- new ignores list
+        Args:
+            directory (list): new directories list
+            ignores (list): new ignores list
 
         Note: This is executed after settings changes.
+
         """
-        self.directory = directory
+        self.directories = directory
         self.ignores = [v for (v, _) in ignores]
     def run(self):
-        u"""Run the creating/updating process (or rather a thread ;).
+        """Run the creating/updating process (or rather a thread ;).
         
         Note: Should be called using start() method.
+
         """
         self.stepped.emit(self.trUtf8('Working'))
         tfiles = deepcopy(self.paths)
-        for root, _, filenames in os.walk(self.directory):
-            for filename in filenames:
-                path = os.path.join(root, filename)
-                if not self.ignored(root):
-                    try:
-                        modified = self.paths[path][u'modified']
-                    except KeyError:
-                        self.append(path)
-                        self.modified[0] = True
-                    else:
-                        if os.stat(path).st_mtime != modified:
-                            self.append(path, True)
-                            self.modified[0] = True
-                        try:
-                            del tfiles[path]
-                        except KeyError:
-                            pass
-                elif path in self.paths.keys():
-                    self.toremove.add(self.remove(path))
+        for (directory, enabled) in self.directories:
+            if enabled:
+                for root, _, filenames in os.walk(directory):
+                    for filename in filenames:
+                        path = os.path.join(root, filename)
+                        if not self.ignored(root):
+                            try:
+                                modified = self.paths[path][u'modified']
+                            except KeyError:
+                                self.append(path)
+                                self.modified[0] = True
+                            else:
+                                if os.stat(path).st_mtime != modified:
+                                    self.append(path, True)
+                                    self.modified[0] = True
+                                try:
+                                    del tfiles[path]
+                                except KeyError:
+                                    pass
+                        elif path in self.paths.keys():
+                            self.toremove.add(self.remove(path))
         if tfiles:
             self.modified[0] = True
         for tf in tfiles:
