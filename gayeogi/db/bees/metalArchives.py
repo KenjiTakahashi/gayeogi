@@ -97,7 +97,7 @@ def __sense(url, releases):
 
     """
     soup = reqread(u'http://www.metal-archives.com/band/discography/id/' +
-            url + u'/tab/all').decode(u'utf-8')
+        url + u'/tab/all').decode(u'utf-8')
     return (url, __getalbums(soup, releases))
 
 def __parse2(json, artist, element, releases):
@@ -115,17 +115,15 @@ def __parse2(json, artist, element, releases):
     urls = JParse(artist).decode(json)
     if not urls:
         raise NoBandError()
-    else:
-        sensor = Bandsensor(__sense, urls, element, releases)
-        data = sensor.run()
-        if data:
-            return {
-                u'choice': data[0],
-                u'result': data[1],
-                u'errors': sensor.errors
-            }
-        else:
-            raise NoBandError()
+    sensor = Bandsensor(__sense, urls, element, releases)
+    data = sensor.run()
+    if not data:
+        raise NoBandError()
+    return {
+        u'choice': data[0],
+        u'result': data[1],
+        u'errors': sensor.errors
+    }
 
 def work(artist, element, urls, releases):
     """Retrieves new or updated info for specified artist.
@@ -147,14 +145,12 @@ def work(artist, element, urls, releases):
             u'errors': set(),
             u'artist': artist
         }
-    else:
-        artist_ = urllib2.quote(
-            artist.replace(u'&', u'and').replace(u'/', u'').encode(u'utf-8')
-        ).replace(u'%20', u'+')
-        json = reqread(
-            u'http://www.metal-archives.com/search/ajax-band-search/?field=name&query=' +
-            artist_ +
-            '&sEcho=1&iColumns=3&sColumns=&iDisplayStart=0&iDisplayLength=100&sNames=%2C%2C'
-        )
-        result = __parse2(json, artist, element, releases)
-    return result
+    artist_ = urllib2.quote(
+        artist.replace(u'&', u'and').replace(u'/', u'').encode(u'utf-8')
+    ).replace(u'%20', u'+')
+    json = reqread(
+        u'http://www.metal-archives.com/search/ajax-band-search/?field=name&query=' +
+        artist_ +
+        '&sEcho=1&iColumns=3&sColumns=&iDisplayStart=0&iDisplayLength=100&sNames=%2C%2C'
+    )
+    return __parse2(json, artist, element, releases)

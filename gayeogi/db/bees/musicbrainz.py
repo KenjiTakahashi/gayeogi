@@ -36,7 +36,7 @@ class JParse(json.JSONDecoder):
     def jparse(self, element):
         try:
             if element[u'name'].lower().replace(u' ',
-                    u'').startswith(self.artist):
+            u'').startswith(self.artist):
                 return element[u'id']
         except KeyError:
             try:
@@ -66,8 +66,8 @@ def __getalbums(site, existing):
         except IndexError:
             years = u'0'
         try:
-            if __internal.result[albums] == u'0' \
-                    or __internal.result[albums] > years:
+            if (__internal.result[albums] == u'0' or
+            __internal.result[albums] > years):
                 __internal.result[albums] = years
         except KeyError:
             __internal.result[albums] = years
@@ -78,10 +78,10 @@ def __getalbums(site, existing):
     ns[u'test'] = __internal
     root = etree.XML(site)
     root.xpath(
-            u'n:release-list/n:release[mb:test(n:title, n:date)]',
-            namespaces = {u'n': u'http://musicbrainz.org/ns/mmd-2.0#'})
+        u'n:release-list/n:release[mb:test(n:title, n:date)]',
+        namespaces = {u'n': u'http://musicbrainz.org/ns/mmd-2.0#'})
     count = root.xpath(u'n:release-list/@count',
-            namespaces = {u'n': u'http://musicbrainz.org/ns/mmd-2.0#'})
+        namespaces = {u'n': u'http://musicbrainz.org/ns/mmd-2.0#'})
     return (__internal.result, int(count[0]))
 
 def __sense(url, releases):
@@ -102,9 +102,9 @@ def __sense(url, releases):
     partial = dict()
     while count > 0:
         soup = reqread(
-                u'http://www.musicbrainz.org/ws/2/release?artist=' + url
-                + u'&type=' + u'|'.join(releases).lower() + u'&offset='
-                + unicode(offset) + u'&limit=100')
+            u'http://www.musicbrainz.org/ws/2/release?artist=' + url
+            + u'&type=' + u'|'.join(releases).lower() + u'&offset='
+            + unicode(offset) + u'&limit=100')
         (partial, n) = __getalbums(soup, partial)
         result.update(partial)
         count = n - count - offset
@@ -125,27 +125,26 @@ def work(artist, element, urls, releases):
     """
     if urls and u'musicbrainz' in urls.keys():
         (url, albums) = __sense(urls[u'musicbrainz'], releases)
-        return {u'choice': url,
-                u'result': albums,
-                u'errors': set(),
-                u'artist': artist
-                }
-    else:
-        artist_ = urllib2.quote(artist.replace(u'/', u'').encode(
-                    u'utf-8')).replace(u'%20', u'+')
-        urls_ = reqread(
-                u'http://search.musicbrainz.org/ws/2/artist/?query=artist:'
-                + artist_ + u'*&fmt=json')
-        if not urls_:
-            raise NoBandError()
-        else:
-            sensor = Bandsensor(__sense, JParse(artist).decode(urls_),
-                    element, releases)
-            data = sensor.run()
-            if data:
-                return {u'choice': data[0],
-                        u'result': data[1],
-                        u'errors': sensor.errors
-                        }
-            else:
-                raise NoBandError()
+        return {
+            u'choice': url,
+            u'result': albums,
+            u'errors': set(),
+            u'artist': artist
+        }
+    artist_ = urllib2.quote(artist.replace(u'/', u'').encode(
+                u'utf-8')).replace(u'%20', u'+')
+    urls_ = reqread(
+            u'http://search.musicbrainz.org/ws/2/artist/?query=artist:'
+            + artist_ + u'*&fmt=json')
+    if not urls_:
+        raise NoBandError()
+    sensor = Bandsensor(__sense, JParse(artist).decode(urls_),
+            element, releases)
+    data = sensor.run()
+    if not data:
+        raise NoBandError()
+    return {
+        u'choice': data[0],
+        u'result': data[1],
+        u'errors': sensor.errors
+    }

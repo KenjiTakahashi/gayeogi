@@ -19,7 +19,6 @@ from threading import RLock
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings, pyqtSignal
 from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
-from gayeogi.main import version
 import urllib2
 
 def reqread(url):
@@ -32,6 +31,7 @@ def reqread(url):
 
     """
     req = urllib2.Request(url)
+    from gayeogi.main import version
     req.add_header(u'User-Agent', u'gayeogi/' + version +
         u'+http://github.com/KenjiTakahashi/gayeogi')
     try:
