@@ -66,27 +66,43 @@ def have_some_files(step, directory):
     clockwork_test = os.path.join(world.directory[world.index][0], test)
     __add_to_expected((
         data + (clockwork_test,),
-        (
-            os.path.join(world.directory[world.index][0], test),
-            os.stat(clockwork_test).st_mtime
-        )
+        (clockwork_test, os.stat(clockwork_test).st_mtime)
     ))
 
 @step('I add "(.*)" pattern')
 def add_pattern(step, pattern):
-    world.ignores.append((pattern, True))
+    world.ignores.append((pattern, 2))
+
+def __add_pattern_data(pattern):
+    system_test = os.path.join(world.directory[0][0],
+        pattern, u'system_volume_test.mp3')
+    __add_to_expected((
+        (
+            u'Windows', u'1985', u'Volume Information',
+            u'xxx', u'System', system_test
+        ),
+        (system_test, os.stat(system_test).st_mtime)
+    ))
+def __remove_pattern_data(pattern):
+    del world.expected[1][u'Windows']
+    del world.expected[2][os.path.join(world.directory[0][0],
+        pattern, u'system_volume_test.mp3')]
+    del world.expected[4][u'Windows1985Volume Information']
 
 @step('I disable "(.*)" pattern')
 def disable_pattern(step, pattern):
-    assert False
+    __add_pattern_data(pattern)
+    world.db.actualize(ignores = [(pattern, 0)])
 
 @step('I enable "(.*)" pattern')
 def enable_pattern(step, pattern):
-    assert False
+    __remove_pattern_data(pattern)
+    world.db.actualize(ignores = [(pattern, 2)])
 
 @step('I remove "(.*)" pattern')
 def remove_pattern(step, pattern):
-    assert False
+    __add_pattern_data(pattern)
+    world.db.actualize(ignores = [])
 
 @step('I have an empty database')
 def have_an_empty_database(step):
@@ -105,9 +121,9 @@ def scan_the_directory(step):
 @step('they should be updated in the database')
 @step('it should be removed from the database')
 def should_get_added(step):
-    assert world.database == world.expected
-    #assert False, "\n" + repr(world.database) + "\n" + repr(world.expected)
-    #assert world.database == world.expected, "\n" + repr(world.database) + "\n" + repr(world.expected)
+    #assert world.database == world.expected
+    #assert False, "\n" + repr(world.database[2]) + "\n" + repr(world.expected[2])
+    assert world.database == world.expected, "\n" + repr(world.database) + "\n" + repr(world.expected)
 
 @step('I add some more files to the directory')
 def add_some_more_files(step):
@@ -196,12 +212,13 @@ def remove_directory(step, directory):
     del world.expected[1][u'Changed']
     del world.expected[2][os.path.join(world.directory[0][0], u'second_test.flac')]
     del world.expected[4][u'Changed1111Changed']
-    world.db.actualize([world.directory[1]], world.ignores)
+    __remove_pattern_data(u'System Volume Information')
+    world.db.actualize(directory = [world.directory[1]])
 
 @step('I disable the "(.*)" directory')
 def disable_directory(step, directory):
     world.expected = (version, {}, {}, {}, {}, [True])
-    world.db.actualize([(world.directory[1][0], 0)], world.ignores)
+    world.db.actualize(directory = [(world.directory[1][0], 0)])
 
 @step('I enable the "(.*)" directory')
 def enable_directory(step, directory):
@@ -214,4 +231,4 @@ def enable_directory(step, directory):
             os.stat(clockwork_test).st_mtime
         )
     ))
-    world.db.actualize([(world.directory[1][0], 2)], world.ignores)
+    world.db.actualize(directory = [(world.directory[1][0], 2)])

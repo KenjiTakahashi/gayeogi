@@ -40,17 +40,25 @@ class Filesystem(QThread):
     stepped = pyqtSignal(unicode)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, directory, library, ignores):
+        """Constructs new Filesystem instance.
+
+        Args:
+            directory (list): list of directories to search in
+            library (tuple): library object
+            ignores (list): list of patterns to ignore
+
+        """
         QThread.__init__(self)
         self.directories = directory
         self.library = library[1]
         self.paths = library[2]
         self.avai = library[4]
         self.modified = library[5]
-        self.ignores = [v for (v, _) in ignores]
+        self.ignores = ignores
         self.toremove = set()
     def append(self, path, existing = False):
-        """Append new entry to the library.
-        
+        """Appends new entry to the library.
+
         Ars:
             path (unicode): path to the file one wants to append
 
@@ -155,8 +163,8 @@ class Filesystem(QThread):
             bool -- True if root is in ignores, False otherwise
 
         """
-        for ignore in self.ignores:
-            if fnmatch(root, u'*' + ignore + u'*'):
+        for (ignore, enabled) in self.ignores:
+            if enabled and fnmatch(root, u'*' + ignore + u'*'):
                 return True
         return False
     def tagsread(self, filepath):
@@ -231,18 +239,20 @@ class Filesystem(QThread):
                     u'errors',
                     filepath,
                     u'Cannot open file')
-    def actualize(self, directory, ignores):
+    def actualize(self, directory = None, ignores = None):
         """Actualize directory and ignores list.
 
-        Args:
+        Kwargs:
             directory (list): new directories list
             ignores (list): new ignores list
 
         Note: This is executed after settings changes.
 
         """
-        self.directories = directory
-        self.ignores = [v for (v, _) in ignores]
+        if directory != None:
+            self.directories = directory
+        if ignores != None:
+            self.ignores = ignores
     def run(self):
         """Run the creating/updating process (or rather a thread ;).
         
@@ -272,6 +282,7 @@ class Filesystem(QThread):
                                     pass
                         elif path in self.paths.keys():
                             self.toremove.add(self.remove(path))
+                            del tfiles[path]
         if tfiles:
             self.modified[0] = True
         for tf in tfiles:

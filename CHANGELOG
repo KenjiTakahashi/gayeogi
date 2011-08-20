@@ -149,3 +149,4 @@ unsaved changes.
 -Fixed: 'Something has been removed' sometimes appeared when it shouldn't do so.
 -Added posibility to have more than one directory in database.
 -Added MP4-style tags support (.mp4, .mpeg4, .aac and .m4a).
+-Enabling/disabling ignores is handled properly now.
