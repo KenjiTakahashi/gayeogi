@@ -54,14 +54,15 @@ class JParse(json.JSONDecoder):
         return result
 
 def __getalbums(site, releases):
-    """Parse discography website and return list of albums and years.
+    """Parses discography website for a list of albums and years.
 
-    Arguments:
-    site -- string containing HTML content
-    releases -- list of release types to check for
+    Args:
+        site: string containing HTML content
+        releases: list of release types to check for
 
-    Return value:
-    a list of tuples in a form of (<album_name>, <year>)
+    Returns:
+        list -- of tuples in a form of (<album_name>, <year>)
+
     """
     def __internal(context, albums, types, years):
         for i, t in enumerate(types):
@@ -78,33 +79,32 @@ def __getalbums(site, releases):
     return __internal.result
 
 def __sense(url, releases):
-    """Retrieve releases for specified band id.
+    """Retrieves releases for specified band id.
+
     Injected into Bandsensor.
 
-    Arguments:
-    url -- ID of the current band
-    releases -- types of releases to search for
+    Args:
+        url: ID of the current band
+        releases: types of releases to search for
 
     Note: It is meant for internal usage only!
+
     """
-    try:
-        soup = reqread(u'http://www.metal-archives.com/band/discography/id/' +
-                url + u'/tab/all').decode(u'utf-8')
-    except (urllib2.HTTPError, urllib2.URLError):
-        raise ConnError()
-    else:
-        return (url, __getalbums(soup, releases))
+    soup = reqread(u'http://www.metal-archives.com/band/discography/id/' +
+            url + u'/tab/all').decode(u'utf-8')
+    return (url, __getalbums(soup, releases))
 
 def __parse2(json, artist, element, releases):
-    """Retrieve info on an new release and return list of results.
+    """Retrieves info on an new release for a list of results.
 
-    Arguments:
-    json -- Actually, a string retrieved from metal-archives JSON search
-    artist -- artist to check against
-    element -- db element containing existing info (it is db[<artist_name>])
-    releases -- types of releases to check for
+    Args:
+        json: Actually, a string retrieved from metal-archives JSON search
+        artist: artist to check against
+        element: db element containing existing info (it is db[<artist_name>])
+        releases: types of releases to check for
 
     Note: It is meant for internal usage only!
+
     """
     urls = JParse(artist).decode(json)
     if not urls:
@@ -125,15 +125,16 @@ def __parse2(json, artist, element, releases):
                 raise NoBandError()
 
 def work(artist, element, urls, releases):
-    """Retrieve new or updated info for specified artist.
+    """Retrieves new or updated info for specified artist.
 
-    Arguments:
-    artist -- artist to check against
-    element -- db element containing existing info (it is db[<artist_name>])
-    urls -- urls previously retrieved for given artist
-    releases -- types of releases to check for
+    Args:
+        artist: artist to check against
+        element: db element containing existing info (it is db[<artist_name>])
+        urls: urls previously retrieved for given artist
+        releases: types of releases to check for
 
     Note: Should be threaded in real application.
+
     """
     if urls and u'metalArchives' in urls.keys():
         (url, albums) = __sense(urls[u'metalArchives'], releases)

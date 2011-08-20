@@ -48,15 +48,16 @@ class JParse(json.JSONDecoder):
                     pass
 
 def __getalbums(site, existing):
-    u"""Parse site and return albums.
+    """Parses site for albums.
 
-    Arguments:
-    site -- site XML to parse
-    existing -- results already received from previous offset
+    Args:
+        site: site XML to parse
+        existing: results already received from previous offset
 
-    Return value:
-    A tuple in form (<results>, <result_count>), where
-    <results> is a dictionary in form [<album_name>] = <year>
+    Returns:
+        tuple -- in form (<results>, <result_count>), where
+        <results> is a dictionary in form [<album_name>] = <year>
+
     """
     def __internal(context, albums, years):
         albums = albums[0].text
@@ -84,14 +85,16 @@ def __getalbums(site, existing):
     return (__internal.result, int(count[0]))
 
 def __sense(url, releases):
-    """Retrieve releases for specified band id.
+    """Retrieves releases for specified band id.
+
     Injected into Bandsensor.
 
-    Arguments:
-    url -- ID of the current band (it's mbid format here)
-    releases -- types of releases to search for
+    Args:
+        url: ID of the current band (it's mbid format here)
+        releases: types of releases to search for
 
     Note: It is meant for internal usage only!
+
     """
     result = dict()
     offset = 0
@@ -109,15 +112,16 @@ def __sense(url, releases):
     return (url, list(result.iteritems()))
 
 def work(artist, element, urls, releases):
-    """Retrieve new or updated info for specified artist.
+    """Retrieves new or updated info for specified artist.
 
-    Arguments:
-    artist -- artist to check against
-    element -- db element containing existing info (it is db[<artist_name>])
-    urls -- urls previously retrieved for given artist
-    releases -- types of releases to check for
+    Args:
+        artist: artist to check against
+        element: db element containing existing info (it is db[<artist_name>])
+        urls: urls previously retrieved for given artist
+        releases: types of releases to check for
 
     Note: Should be threaded in real application.
+
     """
     if urls and u'musicbrainz' in urls.keys():
         (url, albums) = __sense(urls[u'musicbrainz'], releases)
@@ -129,27 +133,23 @@ def work(artist, element, urls, releases):
     else:
         artist_ = urllib2.quote(artist.replace(u'/', u'').encode(
                     u'utf-8')).replace(u'%20', u'+')
-        try:
-            urls_ = reqread(
-                    u'http://search.musicbrainz.org/ws/2/artist/?query=artist:'
-                    + artist_ + u'*&fmt=json')
-        except (urllib2.HTTPError, urllib2.URLError):
-            raise ConnError()
+        urls_ = reqread(
+                u'http://search.musicbrainz.org/ws/2/artist/?query=artist:'
+                + artist_ + u'*&fmt=json')
+        if not urls_:
+            raise NoBandError()
         else:
-            if not urls_:
-                raise NoBandError()
+            try:
+                sensor = Bandsensor(__sense, JParse(artist).decode(urls_),
+                        element, releases)
+                data = sensor.run()
+            except (urllib2.HTTPError, urllib2.URLError):
+                raise ConnError()
             else:
-                try:
-                    sensor = Bandsensor(__sense, JParse(artist).decode(urls_),
-                            element, releases)
-                    data = sensor.run()
-                except (urllib2.HTTPError, urllib2.URLError):
-                    raise ConnError()
+                if data:
+                    return {u'choice': data[0],
+                            u'result': data[1],
+                            u'errors': sensor.errors
+                            }
                 else:
-                    if data:
-                        return {u'choice': data[0],
-                                u'result': data[1],
-                                u'errors': sensor.errors
-                                }
-                    else:
-                        raise NoBandError()
+                    raise NoBandError()

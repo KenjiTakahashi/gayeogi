@@ -76,10 +76,10 @@ class Bee(QThread):
         self.processed = processed
         self.start()
     def run(self):
-        u"""Start worker thread, fetch given artist releases and append them
-        to the library.
+        """Starts worker thread, fetches given artist releases and appends them to the library.
 
         Note: Use start() method to run it in a separate thread.
+
         """
         while True:
             work, (artist, element), types = self.tasks.get()
@@ -189,7 +189,7 @@ class Bee(QThread):
                 self.tasks.task_done()
 
 class Distributor(QThread):
-    u"""Main db object to fetch all releases and append them to the library.
+    """Main db object to fetch all releases and append them to the library.
 
     Signals:
     updated -- emitted at the end (should be 'finished', but comp. reasons)
@@ -200,16 +200,18 @@ class Distributor(QThread):
         unicode -- error type
         unicode -- release name
         unicode -- error message
+
     """
     __settings = QSettings(u'gayeogi', u'Databases')
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, library):
-        u"""Distributor constructor.
+        """Constructs new Distributor instance.
 
-        Arguments:
-        library -- reference to the library structure
+        Args:
+            library (tuple): reference to the library structure
+
         """
         QThread.__init__(self)
         self.library = library[1]
@@ -217,10 +219,12 @@ class Distributor(QThread):
         self.avai = library[4]
         self.modified = library[5]
     def run(self):
-        u"""Start Distributor and fetch releases for enabled dbs.
+        """Starts Distributor and fetches releases for enabled dbs.
+
         It also reads appropriate settings from Databases.conf file.
 
         Note: Use start() method to run in separate thread.
+
         """
         bases = [(unicode(self.__settings.value(x + u'/module').toString()),
                     self.__settings.value(x + u'/size').toInt()[0],
