@@ -20,7 +20,7 @@ import json
 from lxml import etree
 from gayeogi.db.bandsensor import Bandsensor
 from gayeogi.db.distributor import reqread
-from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
+from gayeogi.db.bees.beeexceptions import NoBandError
 
 items = [[u'Full-length', u'Live album', u'Demo'],
         [u'Single', u'EP', u'DVD'],
@@ -36,6 +36,12 @@ class JParse(json.JSONDecoder):
 
     """
     def __init__(self, artist):
+        """Constructs new JParse instance.
+
+        Args:
+            artist (str): artist name
+
+        """
         self.artist = artist.lower().replace(u' ', u'')
         json.JSONDecoder.__init__(self, object_hook = self.jparse)
     def jparse(self, element):
@@ -110,19 +116,16 @@ def __parse2(json, artist, element, releases):
     if not urls:
         raise NoBandError()
     else:
-        try:
-            sensor = Bandsensor(__sense, urls, element, releases)
-            data = sensor.run()
-        except (urllib2.HTTPError, urllib2.URLError):
-            raise ConnError()
+        sensor = Bandsensor(__sense, urls, element, releases)
+        data = sensor.run()
+        if data:
+            return {
+                u'choice': data[0],
+                u'result': data[1],
+                u'errors': sensor.errors
+            }
         else:
-            if data:
-                return {u'choice': data[0],
-                        u'result': data[1],
-                        u'errors': sensor.errors
-                        }
-            else:
-                raise NoBandError()
+            raise NoBandError()
 
 def work(artist, element, urls, releases):
     """Retrieves new or updated info for specified artist.
@@ -138,23 +141,20 @@ def work(artist, element, urls, releases):
     """
     if urls and u'metalArchives' in urls.keys():
         (url, albums) = __sense(urls[u'metalArchives'], releases)
-        return {u'choice': url,
-                u'result': albums,
-                u'errors': set(),
-                u'artist': artist
-                }
+        return {
+            u'choice': url,
+            u'result': albums,
+            u'errors': set(),
+            u'artist': artist
+        }
     else:
         artist_ = urllib2.quote(
-                artist.replace(u'&', u'and').replace(u'/', u'').encode(
-                    u'utf-8')).replace(u'%20', u'+')
-        try:
-            json = reqread(
-                    u'http://www.metal-archives.com/search/ajax-band-search/?field=name&query=' +
-                    artist_ +
-                    '&sEcho=1&iColumns=3&sColumns=&iDisplayStart=0&iDisplayLength=100&sNames=%2C%2C'
-                    )
-        except (urllib2.HTTPError, urllib2.URLError):
-            raise ConnError()
-        else:
-            result = __parse2(json, artist, element, releases)
+            artist.replace(u'&', u'and').replace(u'/', u'').encode(u'utf-8')
+        ).replace(u'%20', u'+')
+        json = reqread(
+            u'http://www.metal-archives.com/search/ajax-band-search/?field=name&query=' +
+            artist_ +
+            '&sEcho=1&iColumns=3&sColumns=&iDisplayStart=0&iDisplayLength=100&sNames=%2C%2C'
+        )
+        result = __parse2(json, artist, element, releases)
     return result

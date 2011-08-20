@@ -20,7 +20,7 @@ import json
 from lxml import etree
 from gayeogi.db.bandsensor import Bandsensor
 from gayeogi.db.distributor import reqread
-from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
+from gayeogi.db.bees.beeexceptions import NoBandError
 
 items = [[u'Album', u'Single', u'EP'],
         [u'Compilation', u'Soundtrack', u'Spokenword'],
@@ -139,17 +139,13 @@ def work(artist, element, urls, releases):
         if not urls_:
             raise NoBandError()
         else:
-            try:
-                sensor = Bandsensor(__sense, JParse(artist).decode(urls_),
-                        element, releases)
-                data = sensor.run()
-            except (urllib2.HTTPError, urllib2.URLError):
-                raise ConnError()
+            sensor = Bandsensor(__sense, JParse(artist).decode(urls_),
+                    element, releases)
+            data = sensor.run()
+            if data:
+                return {u'choice': data[0],
+                        u'result': data[1],
+                        u'errors': sensor.errors
+                        }
             else:
-                if data:
-                    return {u'choice': data[0],
-                            u'result': data[1],
-                            u'errors': sensor.errors
-                            }
-                else:
-                    raise NoBandError()
+                raise NoBandError()
