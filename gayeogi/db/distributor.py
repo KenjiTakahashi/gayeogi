@@ -19,9 +19,28 @@ from threading import RLock
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings, pyqtSignal
 from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
+from gayeogi.main import version
+import urllib2
+
+def reqread(url):
+    """Retrieves data from the given url.
+
+    Also sets up proper User-Agent, so people won't complain.
+
+    Args:
+        url (str): url to retrieve from
+
+    """
+    req = urllib2.Request(url)
+    req.add_header(u'User-Agent', u'gayeogi/' + version +
+        u'+http://github.com/KenjiTakahashi/gayeogi')
+    try:
+        return urllib2.urlopen(req).read()
+    except (urllib2.HTTPError, urllib2.URLError):
+        raise ConnError()
 
 class Bee(QThread):
-    u"""Worker thread used by Distributor.
+    """Worker thread used by Distributor.
 
     Signals:
     errors -- emitted when an error occurs:
@@ -29,21 +48,22 @@ class Bee(QThread):
         unicode -- error type
         unicode -- release name
         unicode -- error message
+
     """
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, tasks, library, urls, avai,
             modified, name, rlock, processed):
-        u"""Worker thread constructor.
+        """Constructs new worker instance.
 
-        Arguments:
-        tasks -- initial tasks queue (it will get tasks from here)
-        library -- main library part (library[1])
-        urls -- urls library part (library[3])
-        avai -- available library part (library[4])
-        name -- used database name
-        rlock -- RLock object used to provide thread-safety (should be the same
-        for all instances of Bee!)
-        processed -- processed artists storage (used in ~behaviour mode)
+        Args:
+            tasks -- initial tasks queue (it will get tasks from here)
+            library -- main library part (library[1])
+            urls -- urls library part (library[3])
+            avai -- available library part (library[4])
+            name -- used database name
+            rlock -- RLock object used to provide thread-safety (should be the same for all instances of Bee!)
+            processed -- processed artists storage (used in ~behaviour mode)
+
         """
         QThread.__init__(self)
         self.tasks = tasks

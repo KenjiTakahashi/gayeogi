@@ -18,7 +18,8 @@
 import urllib2
 import json
 from lxml import etree
-from gayeogi.db.bees.bandsensor import Bandsensor
+from gayeogi.db.bandsensor import Bandsensor
+from gayeogi.db.distributor import reqread
 from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
 
 items = [[u'Album', u'Single', u'EP'],
@@ -45,21 +46,6 @@ class JParse(json.JSONDecoder):
                     return [e for e in element[u'artist'] if e is not None]
                 except KeyError:
                     pass
-
-def reqread(url):
-    u"""Get url and retrieve data.
-    Also setup proper User-Agent, so people won't complain.
-
-    Arguments:
-    url -- url to retrieve from
-    """
-    req = urllib2.Request(url)
-    req.add_header(u'User-Agent',
-            u'gayeogi/0.6 +http://github.com/KenjiTakahashi/gayeogi')
-    try:
-        return urllib2.urlopen(req).read()
-    except (urllib2.HTTPError, urllib2.URLError):
-        raise ConnError()
 
 def __getalbums(site, existing):
     u"""Parse site and return albums.

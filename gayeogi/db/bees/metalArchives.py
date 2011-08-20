@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
 # Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
 #
@@ -13,12 +14,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 import urllib2
 import json
 from lxml import etree
-from gayeogi.db.bees.bandsensor import Bandsensor
+from gayeogi.db.bandsensor import Bandsensor
+from gayeogi.db.distributor import reqread
 from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
 
 items = [[u'Full-length', u'Live album', u'Demo'],
@@ -30,17 +31,19 @@ name = u'metal-archives.com'
 
 class JParse(json.JSONDecoder):
     """Decode metal-archives JSON object.
-    
+
     Note: It is meant for internal usage only!
+
     """
     def __init__(self, artist):
         self.artist = artist.lower().replace(u' ', u'')
         json.JSONDecoder.__init__(self, object_hook = self.jparse)
     def jparse(self, element):
-        """Parse the given JSON element and return list of artists IDs.
+        """Parses the given JSON element and return list of artists IDs.
 
-        Arguments:
-        element -- a JSON element given by json module default decoder
+        Args:
+            element (dict): a JSON element given by json module default decoder
+
         """
         result = list()
         for e in element[u'aaData']:
@@ -49,21 +52,6 @@ class JParse(json.JSONDecoder):
             if a.lower().replace(u' ', u'').startswith(self.artist):
                 result.append(s[0].rsplit(u'/', 1)[1][:-1])
         return result
-
-def reqread(url):
-    u"""Get url and retrieve data.
-    Also setup proper User-Agent, so people won't complain.
-
-    Arguments:
-    url -- url to retrieve from
-    """
-    req = urllib2.Request(url)
-    req.add_header(u'User-Agent',
-            u'gayeogi/0.6 +http://github.com/KenjiTakahashi/gayeogi')
-    try:
-        return urllib2.urlopen(req).read()
-    except (urllib2.HTTPError, urllib2.URLError):
-        raise ConnError()
 
 def __getalbums(site, releases):
     """Parse discography website and return list of albums and years.
