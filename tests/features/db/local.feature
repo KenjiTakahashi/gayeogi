@@ -5,7 +5,7 @@ Feature: Managing local files
 
     Scenario: Add files to database
         Given I have some files in "data" directory
-        And I ignore "System Volume Information" directory
+        And I add "System Volume Information" pattern
         And I have an empty database
         When I scan the directory for files
         Then they should get added to the database
@@ -60,6 +60,21 @@ Feature: Managing local files
     Scenario: Enable directory again
         When I enable the "data2" directory again
         And I scan the directory for files agan
+        Then they should get added to the database
+
+    Scenario: Disable ignore pattern
+        When I disable "System Volume Information" pattern
+        And I scan the directory for files again
+        Then they should get added to the database
+
+    Scenario: Enable ignore pattern again
+        When I enable "System Volume Information" pattern
+        And I scan the directory for files again
+        Then they should be removed from the database
+
+    Scenario: Remove ignore pattern completely
+        When I remove "System Volume Information" pattern
+        And I scan the directory for files again
         Then they should get added to the database
 
 # *1: It is actualy handled by exchanging two previously prepared files

@@ -72,9 +72,21 @@ def have_some_files(step, directory):
         )
     ))
 
-@step('I ignore "(.*)" directory')
-def ignore_directory(step, ignore):
-    world.ignores.append((ignore, False))
+@step('I add "(.*)" pattern')
+def add_pattern(step, pattern):
+    world.ignores.append((pattern, True))
+
+@step('I disable "(.*)" pattern')
+def disable_pattern(step, pattern):
+    assert False
+
+@step('I enable "(.*)" pattern')
+def enable_pattern(step, pattern):
+    assert False
+
+@step('I remove "(.*)" pattern')
+def remove_pattern(step, pattern):
+    assert False
 
 @step('I have an empty database')
 def have_an_empty_database(step):

@@ -293,9 +293,7 @@ class Main(QtGui.QMainWindow):
                 self.__settings.value(u'splitters').toByteArray())
         self.setCentralWidget(widget)
         self.library = (version, {}, {}, {}, {}, [False])
-        self.ignores = self.__settings.value(u'ignores').toPyObject()
-        if not self.ignores:
-            self.ignores = []
+        self.ignores = self.__settings.value(u'ignores', []).toPyObject()
         if not os.path.exists(os.path.join(dbPath, u'db.pkl')):
             dialog = Settings()
             dialog.exec_()

@@ -52,7 +52,7 @@ class QHoveringRadioButton(QtGui.QRadioButton):
 
 class DatabasesTab(QtGui.QWidget):
     """Databases management widget.
-    
+
     Signals:
         hovered (unicode): emitted when behaviour is hovered (globalMessage text)
         unhovered (int): emitted when behaviour is unhovered (globalMessage number)
@@ -375,19 +375,22 @@ class LocalTab(QtGui.QWidget):
         return not bool(self.directories.count())
     def values(self):
         """Gets appropriate values (for saving).
-        
+
         Returns:
             tuple. It looks like (indices)::
                 0 (list) -- directories names
                 1 (list) -- ignores patterns
 
         """
-        return (
-            [unicode(self.directories.item(i).text())
-            for i in range(self.directories.count())],
-            [unicode(self.ignores.item(i).text())
-            for i in range(self.ignores.count())]
-        )
+        directories = list()
+        ignores = list()
+        for i in range(self.directories.count()):
+            item = self.directories.item(i)
+            directories.append((item.text(), item.checkState()))
+        for i in range(self.ignores.count()):
+            item = self.ignores.item(i)
+            ignores.append((item.text(), item.checkState()))
+        return (directories, ignores)
 
 class PluginsTab(QtGui.QWidget):
     """Plugins management widget."""
@@ -422,10 +425,10 @@ class PluginsTab(QtGui.QWidget):
         self.setLayout(self.layout)
     def displayOptions(self, text):
         """Displays selected plugin's options.
-        
+
         Args:
             text (unicode): plugin's name
-        
+
         """
         for k, v in self.__plugins.iteritems():
             if unicode(text) == k:
@@ -458,6 +461,7 @@ class PluginsTab(QtGui.QWidget):
 
         It doesn't return anything, instead it relies on specific plugin's
         internal saving methods.
+
         """
         for i in range(self.plugins.count()):
             item = self.plugins.item(i)
@@ -466,11 +470,11 @@ class PluginsTab(QtGui.QWidget):
 
 class Settings(QtGui.QDialog):
     """Main settings dialog window.
-    
+
     Attributes:
         __settings (QSettings): reference to the main settings
         __dbsettings (QSettings): reference to the DB settings
-        
+
     """
     __settings = QSettings(u'gayeogi', u'gayeogi')
     __dbsettings = QSettings(u'gayeogi', u'Databases')
