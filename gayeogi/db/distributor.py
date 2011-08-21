@@ -219,7 +219,7 @@ class Distributor(QThread):
         for (name, threads, types) in bases:
             try:
                 db = __import__(u'gayeogi.db.bees.' + name, globals(),
-                        locals(), [u'work', u'name'], -1)
+                        locals(), [u'work', u'name', u'init'], -1)
             except ImportError: # it should not ever happen
                 self.errors.emit(db.name, u'errors', u'gayeogi.db.bees.' + name,
                         u'No such module has been found!!!')
@@ -227,6 +227,10 @@ class Distributor(QThread):
                 tasks = Queue(threads)
                 threa = list()
                 rlock = RLock()
+                try:
+                    db.init()
+                except AttributeError:
+                    pass
                 for _ in range(threads):
                     t = Bee(tasks, self.library, self.urls,
                             self.avai, self.modified, db.name, rlock, processed)
