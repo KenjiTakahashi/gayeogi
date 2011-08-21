@@ -19,25 +19,6 @@ from threading import RLock
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings, pyqtSignal
 from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
-import urllib2
-
-def reqread(url):
-    """Retrieves data from the given url.
-
-    Also sets up proper User-Agent, so people won't complain.
-
-    Args:
-        url (str): url to retrieve from
-
-    """
-    req = urllib2.Request(url)
-    from gayeogi.main import version
-    req.add_header(u'User-Agent', u'gayeogi/' + version +
-        u'+http://github.com/KenjiTakahashi/gayeogi')
-    try:
-        return urllib2.urlopen(req).read()
-    except (urllib2.HTTPError, urllib2.URLError):
-        raise ConnError()
 
 class Bee(QThread):
     """Worker thread used by Distributor.

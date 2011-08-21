@@ -514,8 +514,10 @@ class Settings(QtGui.QDialog):
         # Local
         directory = self.__settings.value(u'directory', []).toPyObject()
         directory = type(directory) == list and directory or [(directory, 2)]
-        self.directories = LocalTab(directory,
-                self.__settings.value('ignores', []).toPyObject())
+        ignores = self.__settings.value(u'ignores', []).toPyObject()
+        if ignores == None:
+            ignores = []
+        self.directories = LocalTab(directory, ignores)
         self.tabs.addTab(self.directories, self.trUtf8('&Local'))
         # Logs
         self.tabs.addTab(self.logsList, self.trUtf8('Lo&gs'))

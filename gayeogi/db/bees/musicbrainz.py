@@ -19,7 +19,7 @@ import urllib2
 import json
 from lxml import etree
 from gayeogi.db.bandsensor import Bandsensor
-from gayeogi.db.distributor import reqread
+from gayeogi.db.utils import reqread
 from gayeogi.db.bees.beeexceptions import NoBandError
 
 items = [[u'Album', u'Single', u'EP'],
@@ -92,6 +92,9 @@ def __sense(url, releases):
     Args:
         url: ID of the current band (it's mbid format here)
         releases: types of releases to search for
+
+    Returns:
+        tuple -- (<url>, <list-of-tuples> -- (<album>, <year>))
 
     Note: It is meant for internal usage only!
 

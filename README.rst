@@ -6,12 +6,13 @@ At the moment, these features are considered "working":
 - Library
 - Internet DB checking
 
-  - metal-archives.com
-  - musicbrainz.org
+    - metal-archives.com
+    - musicbrainz.org
+    - progarchives.com
 
 - Playback
 
-  - last.fm/libre.fm scrobbling
+    - last.fm/libre.fm scrobbling
 
 INSTALLATION
 ============
@@ -31,7 +32,7 @@ REQUIRES
 
     pylast >= 0.5.6 (last.fm, libre.fm scrobbling)
 
-    lxml >= 2.3 (metal-archives.com, musicbrainz.org)
+    lxml >= 2.3 (metal-archives.com, musicbrainz.org, progarchives.com)
 NOTES
 *****
 - Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
