@@ -231,8 +231,8 @@ class DatabasesTab(QtGui.QWidget):
         """
         result = list()
         order = list()
-        for i in range(self.dbs.count()):
-            item = self.dbs.item(i)
+        for i in range(self.dbs.topLevelItemCount()):
+            item = self.dbs.topLevelItem(i)
             text = item.text(0)
             order.append(text)
             result.append((text, (
@@ -345,7 +345,7 @@ class LocalTab(QtGui.QWidget):
             text (unicode): text to add
 
         """
-        item = QtGui.QListWidgetItem(self.fsName.text())
+        item = QtGui.QListWidgetItem(text)
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
         item.setCheckState(2)
         if name == 'directories':
@@ -364,7 +364,9 @@ class LocalTab(QtGui.QWidget):
         else:
             widget = self.ignores
         for item in widget.selectedItems():
-            item.deleteLater()
+            row = widget.row(item)
+            widget.takeItem(row)
+            item = None
     def isEmpty(self):
         """Checks whether there are some directories present.
 
@@ -386,10 +388,10 @@ class LocalTab(QtGui.QWidget):
         ignores = list()
         for i in range(self.directories.count()):
             item = self.directories.item(i)
-            directories.append((item.text(), item.checkState()))
+            directories.append((unicode(item.text()), item.checkState()))
         for i in range(self.ignores.count()):
             item = self.ignores.item(i)
-            ignores.append((item.text(), item.checkState()))
+            ignores.append((unicode(item.text()), item.checkState()))
         return (directories, ignores)
 
 class PluginsTab(QtGui.QWidget):

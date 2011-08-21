@@ -51,17 +51,26 @@ ARCHLINUX
 
     yaourt -S gayeogi (or any other AUR wrapper)
 
+.DEB/.RPM
+*********
+
+There are binary packages (along with custom repositories) for some popular distributions available through `Novell's Open Build Service`_.
+
+.. _Novell's Open Build Service: https://build.opensuse.org/package/show?package=gayeogi&project=home%3AKenjiTakahashi
+
 GENERAL
 *******
 In package main directory::
 
     python2 setup.py install
 
-also available in PyPI::
+also available in PyPI_::
 
     pip install gayeogi
     #or
     easy_install gayeogi
+
+.. _PyPI: http://pypi.python.org/pypi/gayeogi/
 
 WINDOWS
 -------

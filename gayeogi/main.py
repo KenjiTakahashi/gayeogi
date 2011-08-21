@@ -294,6 +294,8 @@ class Main(QtGui.QMainWindow):
         self.setCentralWidget(widget)
         self.library = (version, {}, {}, {}, {}, [False])
         self.ignores = self.__settings.value(u'ignores', []).toPyObject()
+        if self.ignores == None:
+            self.ignores = []
         if not os.path.exists(os.path.join(dbPath, u'db.pkl')):
             dialog = Settings()
             dialog.exec_()
@@ -511,8 +513,8 @@ class Main(QtGui.QMainWindow):
     def showSettings(self):
         u"""Show settings dialog and then update accordingly."""
         def __save():
-            directory = unicode(
-                    self.__settings.value(u'directory', u'').toString())
+            directory = self.__settings.value(u'directory', []).toPyObject()
+            directory = type(directory) == list and directory or [(directory, 2)]
             self.ignores = self.__settings.value(u'ignores', []).toPyObject()
             self.fs.actualize(directory, self.ignores)
             self.removePluginsTranslators()
