@@ -71,7 +71,7 @@ class Main(object):
         kind.addItem(u'Last.FM')
         kind.addItem(u'Libre.FM')
         username = QtGui.QLineEdit(
-                Main.__settings.value(u'username', u'').toString())
+            Main.__settings.value(u'username', u'').toString())
         password = QtGui.QLineEdit()
         password.setEchoMode(password.Password)
         password__ = Main.__settings.value(u'password', u'').toInt()[0] * u'*'
@@ -95,9 +95,9 @@ class Main(object):
             username_ = unicode(username.text())
             if password.text() == password__:
                 pass_hash = unicode(
-                        Main.__settings.value(u'password_hash', u'').toString())
-                password_ = Main.__settings.value(u'password',
-                        0).toInt()[0] * u'*'
+                    Main.__settings.value(u'password_hash', u'').toString())
+                password_ = Main.__settings.value(
+                    u'password', 0).toInt()[0] * u'*'
             else:
                 password_ = unicode(password.text())
                 pass_hash = pylast.md5(password_)
@@ -109,11 +109,11 @@ class Main(object):
                 def __connect():
                     try:
                         Main.__net = getattr(pylast, Main.__opt[kind_])(
-                                api_key = Main.__key,
-                                api_secret = Main.__sec,
-                                username = username_,
-                                password_hash = pass_hash
-                                )
+                            api_key = Main.__key,
+                            api_secret = Main.__sec,
+                            username = username_,
+                            password_hash = pass_hash
+                        )
                         update(QtGui.QApplication.translate(
                             'Last.FM', 'Successful'), Qt.green)
                         Main.__settings.setValue(u'kind', kind_)
@@ -145,22 +145,22 @@ class Main(object):
         def __scrobble(artist, title, album, track_number, timestamp = None):
             try:
                 Main.__net.scrobble(
-                        artist = unicode(artist),
-                        title = unicode(title),
-                        timestamp = timestamp or unicode(int(time())),
-                        album = unicode(album),
-                        track_number = unicode(track_number)
-                        )
+                    artist = unicode(artist),
+                    title = unicode(title),
+                    timestamp = timestamp or unicode(int(time())),
+                    album = unicode(album),
+                    track_number = unicode(track_number)
+                )
             except:
                 i = Main.__settings.value(u'queue/size', 0).toInt()[0]
                 Main.__settings.setValue(u'queue/' + unicode(i) + u'/elem',
-                        (artist, title, album, track_number,
-                            timestamp or unicode(int(time()))))
+                    (artist, title, album, track_number,
+                        timestamp or unicode(int(time()))))
                 Main.__settings.setValue(u'queue/size', i + 1)
         queue = []
         for i in range(Main.__settings.value(u'queue/size', 0).toInt()[0]):
             queue.append(Main.__settings.value(
-                    u'queue/' + unicode(i) + u'/elem').toPyObject())
+                u'queue/' + unicode(i) + u'/elem').toPyObject())
             Main.__settings.remove(u'queue/' + unicode(i) + u'/elem')
         Main.__settings.setValue(u'queue/size', 0)
         for q in queue:

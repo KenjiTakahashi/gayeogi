@@ -178,21 +178,21 @@ class Main(QtGui.QWidget):
             'Player', 'Add selected item(s) to the playlist.'))
         add.clicked.connect(self.addByButton)
         addShortcut = QtGui.QShortcut(
-                QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_A), add)
+            QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_A), add)
         addShortcut.activated.connect(self.addByButton)
         remove = RemovePushButton()
         remove.setStatusTip(QtGui.QApplication.translate(
             'Player', 'Remove selected item(s) from the playlist.'))
         remove.clicked.connect(self.removeByButton)
         removeShortcut = QtGui.QShortcut(
-                QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_R), remove)
+            QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_R), remove)
         removeShortcut.activated.connect(self.removeByButton)
         previous = PreviousPushButton()
         previous.setStatusTip(QtGui.QApplication.translate(
             'Player', 'Jump to previous track.'))
         previous.clicked.connect(self.previous)
         previousShortcut = QtGui.QShortcut(
-                QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_B), previous)
+            QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_B), previous)
         previousShortcut.activated.connect(self.previous)
         self.playButton = PlayPausePushButton()
         self.playButton.setStatusTip(QtGui.QApplication.translate(
@@ -206,14 +206,14 @@ class Main(QtGui.QWidget):
             'Player', 'Stop playback.'))
         stop.clicked.connect(self.stop)
         stopShortcut = QtGui.QShortcut(
-                QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_S), stop)
+            QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_S), stop)
         stopShortcut.activated.connect(self.stop)
         next_ = NextPushButton()
         next_.setStatusTip(QtGui.QApplication.translate(
             'Player', 'Jump to next track.'))
         next_.clicked.connect(self.next_)
         next_Shortcut = QtGui.QShortcut(
-                QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_N), next_)
+            QtGui.QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_N), next_)
         next_Shortcut.activated.connect(self.next_)
         volume = Phonon.VolumeSlider()
         volume.setStatusTip(QtGui.QApplication.translate(
@@ -250,7 +250,7 @@ class Main(QtGui.QWidget):
         self.playlist.itemActivated.connect(self.play)
         #self.playlist.dropped.connect(self.addItem)
         playlistShortcut = QtGui.QShortcut(
-                QtGui.QKeySequence(Qt.Key_Delete), self.playlist)
+            QtGui.QKeySequence(Qt.Key_Delete), self.playlist)
         playlistShortcut.activated.connect(self.removeByButton)
         layout = QtGui.QVBoxLayout()
         layout.addWidget(buttons)
@@ -272,7 +272,7 @@ class Main(QtGui.QWidget):
         self.mediaobject.stateChanged.connect(self.state)
         self.audiooutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
         self.audiooutput.setVolume(
-                self.__settings.value('volume', 1).toReal()[0])
+            self.__settings.value('volume', 1).toReal()[0])
         Phonon.createPath(self.mediaobject, self.audiooutput)
         progress.setMediaObject(self.mediaobject)
         volume.setAudioOutput(self.audiooutput)
@@ -293,10 +293,9 @@ class Main(QtGui.QWidget):
         self.removeWidget(u'horizontalLayout_2', self, 2)
         Main.loaded = False
     def QConfiguration():
-        __settings = QSettings(u'gayeogi', u'Player')
         widget = QtGui.QWidget()
-        widget.enabled = __settings.value(u'enabled', 0).toInt()[0]
-        widget.setSetting = lambda x, y : __settings.setValue(x, y)
+        widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
+        widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
     QConfiguration = staticmethod(QConfiguration)
     def updateView(self, _):
@@ -305,11 +304,11 @@ class Main(QtGui.QWidget):
         item.setData(670, self.__timeConvert(0))
         self.playlist.scrollToItem(item)
         self.trackChanged.emit(
-                item.data(669).toString(),
-                item.data(667).toString(),
-                item.data(668).toString(),
-                item.data(666).toInt()[0]
-                )
+            item.data(669).toString(),
+            item.data(667).toString(),
+            item.data(668).toString(),
+            item.data(666).toInt()[0]
+        )
     def updateTotalTime(self, time):
         if time != -1:
             self.playlist.activeItem.setData(671, self.__timeConvert(time))
@@ -386,8 +385,8 @@ class Main(QtGui.QWidget):
                         item.data(0, 987).toString(), d[u'path']))
                         for tracknumber, tracks
                         in self.library[1][item_.artist][year]\
-                                [album].iteritems() for title, d in 
-                                tracks.iteritems()]
+                            [album].iteritems() for title, d in 
+                            tracks.iteritems()]
                     items_.sort(self.__compare)
                     items.extend(items_)
                 for i in items:
@@ -396,13 +395,13 @@ class Main(QtGui.QWidget):
                 for i in range(self.parent.tracks.topLevelItemCount()):
                     item_ = self.parent.tracks.topLevelItem(i)
                     path = self.library[1][item_.artist][item_.year]\
-                            [item_.album][unicode(item_.text(0))]\
-                            [unicode(item_.text(1))][u'path']
+                        [item_.album][unicode(item_.text(0))]\
+                        [unicode(item_.text(1))][u'path']
                     self.playlist.addItem(self.__createItem((item_.text(0),
                         item_.text(1), item_.album, item_.artist, path)))
         else:
             path = self.library[1][item.artist][item.year][item.album]\
-                    [unicode(item.text(0))][unicode(item.text(1))][u'path']
+                [unicode(item.text(0))][unicode(item.text(1))][u'path']
             self.playlist.addItem(self.__createItem((item.text(0),
                 item.text(1), item.album, item.artist, path)))
         if column != -1 and self.playlist.count():
@@ -418,10 +417,11 @@ class Main(QtGui.QWidget):
                 else:
                     return u'Completely unknown error.'
             self.errors.emit(
-                    u'Player',
-                    u'errors',
-                    self.playlist.activeItem.path,
-                    getErrorMessage())
+                u'Player',
+                u'errors',
+                self.playlist.activeItem.path,
+                getErrorMessage()
+            )
     def __createItem(self, source):
         item = QtGui.QListWidgetItem()
         item.setData(666, source[0])
@@ -443,4 +443,4 @@ class Main(QtGui.QWidget):
         addZero = lambda x : x < 10 and u"0" + unicode(x) or unicode(x)
         time /= 1000
         return addZero(time / 3600 % 60) + u":" + addZero(time / 60 % 60)\
-                + u":" + addZero(time % 60)
+        + u":" + addZero(time % 60)
