@@ -261,7 +261,7 @@ class Main(QtGui.QWidget):
         self.parent.artists.itemActivated.connect(self.addItem)
         self.parent.albums.itemActivated.connect(self.addItem)
         self.parent.tracks.itemActivated.connect(self.addItem)
-        self.addWidget(u'horizontalLayout_2', self, 2)
+        self.addWidget(u'horizontalLayout_2', self, 'end')
         self.mediaobject = Phonon.MediaObject()
         self.mediaobject.setTickInterval(200)
         self.mediaobject.tick.connect(self.tick)
@@ -290,14 +290,14 @@ class Main(QtGui.QWidget):
             self.__settings.setValue(unicode(i) + '669', item.data(669))
             self.__settings.setValue(unicode(i) + 'path', item.path)
         self.__settings.endGroup()
-        self.removeWidget(u'horizontalLayout_2', self, 2)
+        self.removeWidget(u'horizontalLayout_2', self, 'end')
         Main.loaded = False
+    @staticmethod
     def QConfiguration():
         widget = QtGui.QWidget()
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
         widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
-    QConfiguration = staticmethod(QConfiguration)
     def updateView(self, _):
         item = self.playlist.item(self.playlist.activeRow)
         self.playlist.activeItem = item

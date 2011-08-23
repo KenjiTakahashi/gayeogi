@@ -303,27 +303,28 @@ class Main(QtGui.QMainWindow):
             self.library = self.db.read()
             self.update()
         directory = self.__settings.value(u'directory', []).toPyObject()
-        directory = type(directory) == list and directory or [(directory, 2)]
+        directory = (type(directory) == list
+        and directory or [(unicode(directory), 2)])
         self.fs = Filesystem(directory, self.library, self.ignores)
         self.fs.stepped.connect(self.statusBar().showMessage)
         self.fs.updated.connect(self.update)
-        self.fs.errors.connect(self.logs)
+        #self.fs.errors.connect(self.logs)
         self.rt = Distributor(self.library)
         self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
-        self.rt.errors.connect(self.logs)
-        self.ui.logs.setHeaderLabels(QStringList([
-            self.trUtf8('Module'),
-            self.trUtf8('Type'),
-            self.trUtf8('File/Entry'),
-            self.trUtf8('Message')]))
+        #self.rt.errors.connect(self.logs)
+        #self.ui.logs.setHeaderLabels(QStringList([
+        #    self.trUtf8('Module'),
+        #    self.trUtf8('Type'),
+        #    self.trUtf8('File/Entry'),
+        #    self.trUtf8('Message')]))
         self.ui.local.clicked.connect(self.local)
         self.ui.remote.clicked.connect(self.remote)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
-        self.ui.clearLogs.clicked.connect(self.ui.logs.clear)
-        self.ui.saveLogs.clicked.connect(self.saveLogs)
+        #self.ui.clearLogs.clicked.connect(self.ui.logs.clear)
+        #self.ui.saveLogs.clicked.connect(self.saveLogs)
         self.ui.artistFilter.textEdited.connect(self.filter_)
         self.ui.albumFilter.textEdited.connect(self.filter_)
         self.ui.trackFilter.textEdited.connect(self.filter_)
@@ -377,8 +378,8 @@ class Main(QtGui.QMainWindow):
                 class__ = class_(self.ui, self.library, self.appendPlugin,
                         self.removePlugin)
                 class__.load()
-                if hasattr(class__, 'errors'):
-                    class__.errors.connect(self.logs)
+                #if hasattr(class__, 'errors'):
+                #    class__.errors.connect(self.logs)
                 self.ui.plugins[plugin] = class__
             elif not option and class_.loaded:
                 self.ui.plugins[plugin].unload()
@@ -390,6 +391,10 @@ class Main(QtGui.QMainWindow):
                     del self.ui.plugins[plugin]
     def appendPlugin(self, parent, child, position):
         parent = getattr(self.ui, parent)
+        if position == 'start':
+            position = 0
+        elif position == 'end':
+            position = len(parent.parent().children()) - 1
         if isinstance(parent, QtGui.QLayout):
             widget = parent.itemAt(position)
             if not widget:
@@ -406,6 +411,10 @@ class Main(QtGui.QMainWindow):
                     parent.insertWidget(position, tab)
     def removePlugin(self, parent, child, position):
         parent = getattr(self.ui, parent)
+        if position == 'start':
+            position = 0
+        elif position == 'end':
+            position = len(parent.parent().children()) - 2
         if isinstance(parent, QtGui.QLayout):
             widget = parent.itemAt(position).widget()
             try:
@@ -426,10 +435,10 @@ class Main(QtGui.QMainWindow):
         adr = [u'a', u'd', u'r', u'not a', u'not d', u'not r']
         num_adr = dict()
         __num_adr = {
-                u'a': 123,
-                u'd': 234,
-                u'r': 345
-                }
+            u'a': 123,
+            u'd': 234,
+            u'r': 345
+        }
         for a in (unicode(text)).split(u'|'):
             temp = a.split(u':')
             if len(temp) == 1 and temp[0] in adr:
@@ -483,33 +492,33 @@ class Main(QtGui.QMainWindow):
             tree = self.sender().parent().children()[2]
             for i in range(tree.topLevelItemCount()):
                 tree.topLevelItem(i).setHidden(False)
-    def saveLogs(self):
-        dialog = QtGui.QFileDialog()
-        filename = dialog.getSaveFileName()
-        if filename:
-            fh = open(filename, u'w')
-            fh.write(self.trUtf8('Database:Type:File/Entry:Message'))
-            for i in range(self.ui.logs.topLevelItemCount()):
-                item = self.ui.logs.topLevelItem(i)
-                for c in range(4):
-                    fh.write(item.text(c))
-                    if c != 3:
-                        fh.write(u':')
-                fh.write(u'\n')
-            fh.close()
-            self.statusBar().showMessage(self.trUtf8('Logs saved'))
-    def logs(self, db, kind, filename, message):
-        if self.__settings.value(u'logs/' + kind).toInt()[0]:
-            item = QtGui.QTreeWidgetItem(QStringList([
-                db,
-                kind,
-                filename,
-                message
-                ]))
-            self.ui.logs.addTopLevelItem(item)
-            self.ui.logs.scrollToItem(item)
-        for i in range(4):
-            self.ui.logs.resizeColumnToContents(i)
+    #def saveLogs(self):
+    #    dialog = QtGui.QFileDialog()
+    #    filename = dialog.getSaveFileName()
+    #    if filename:
+    #        fh = open(filename, u'w')
+    #        fh.write(self.trUtf8('Database:Type:File/Entry:Message'))
+    #        for i in range(self.ui.logs.topLevelItemCount()):
+    #            item = self.ui.logs.topLevelItem(i)
+    #            for c in range(4):
+    #                fh.write(item.text(c))
+    #                if c != 3:
+    #                    fh.write(u':')
+    #            fh.write(u'\n')
+    #        fh.close()
+    #        self.statusBar().showMessage(self.trUtf8('Logs saved'))
+    #def logs(self, db, kind, filename, message):
+    #    if self.__settings.value(u'logs/' + kind).toInt()[0]:
+    #        item = QtGui.QTreeWidgetItem(QStringList([
+    #            db,
+    #            kind,
+    #            filename,
+    #            message
+    #            ]))
+    #        self.ui.logs.addTopLevelItem(item)
+    #        self.ui.logs.scrollToItem(item)
+    #    for i in range(4):
+    #        self.ui.logs.resizeColumnToContents(i)
     def showSettings(self):
         u"""Show settings dialog and then update accordingly."""
         def __save():

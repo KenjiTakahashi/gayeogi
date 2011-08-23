@@ -66,6 +66,7 @@ class Main(object):
         except AttributeError:
             pass
         Main.loaded = False
+    @staticmethod
     def QConfiguration():
         kind = QtGui.QComboBox()
         kind.addItem(u'Last.FM')
@@ -140,7 +141,6 @@ class Main(object):
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
         widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
-    QConfiguration = staticmethod(QConfiguration)
     def scrobble(self, artist, title, album, track_number):
         def __scrobble(artist, title, album, track_number, timestamp = None):
             try:
