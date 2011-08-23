@@ -34,7 +34,7 @@ class Main(object):
     def __init__(self, parent, ___, _, __):
         username = unicode(Main.__settings.value(u'username', u'').toString())
         password = unicode(
-                Main.__settings.value(u'password_hash', u'').toString())
+            Main.__settings.value(u'password_hash', u'').toString())
         kind = unicode(Main.__settings.value(u'kind', u'Last.FM').toString())
         if username != u'' and password != u'':
             self.parent = parent
@@ -42,11 +42,11 @@ class Main(object):
                 def __connect_():
                     try:
                         Main.__net = getattr(pylast, Main.__opt[kind])(
-                                api_key = self.__key,
-                                api_secret = self.__sec,
-                                username = username,
-                                password_hash = password
-                                )
+                            api_key = self.__key,
+                            api_secret = self.__sec,
+                            username = username,
+                            password_hash = password
+                        )
                         Main.__sem = False
                     except:
                         sleep(5)

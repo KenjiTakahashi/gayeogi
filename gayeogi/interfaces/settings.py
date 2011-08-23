@@ -396,6 +396,7 @@ class LocalTab(QtGui.QWidget):
 
 class PluginsTab(QtGui.QWidget):
     """Plugins management widget."""
+    selected = pyqtSignal(unicode, QtGui.QWidget)
     def __init__(self, parent = None):
         """Contructs new PluginsTab instance.
 
@@ -404,8 +405,8 @@ class PluginsTab(QtGui.QWidget):
 
         """
         QtGui.QWidget.__init__(self, parent)
+        self.parent = parent
         self.plugins = QtGui.QListWidget()
-        self.plugins.currentTextChanged.connect(self.displayOptions)
         self.plugins.itemChanged.connect(self.checkDependencies)
         self.layout = QtGui.QVBoxLayout()
         self.layout.addWidget(self.plugins)
@@ -416,46 +417,46 @@ class PluginsTab(QtGui.QWidget):
             item = QtGui.QListWidgetItem(ref.name)
             item.depends = ref.depends
             ref2 = ref.QConfiguration()
-            ref2.hide()
-            self.layout.addWidget(ref2)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(ref2.enabled)
+            if ref2.enabled and ref2.children():
+                self.parent.addTab(ref2, ref.name)
             self.plugins.addItem(item)
             self.__plugins[ref.name] = ref2
             for d in ref.depends:
-                self.__depends.setdefault(d, [ref.name]).append(ref.name)
+                self.__depends.setdefault(d, set([ref.name])).add(ref.name)
         self.setLayout(self.layout)
-    def displayOptions(self, text):
-        """Displays selected plugin's options.
-
-        Args:
-            text (unicode): plugin's name
-
-        """
-        for k, v in self.__plugins.iteritems():
-            if unicode(text) == k:
-                v.show()
-            else:
-                v.hide()
     def checkDependencies(self, item):
         """Checks whether selected plugin's dependencies are available.
 
         If they are, they are automatically selected.
-        If an dependant is being deselected, it's parent(s) will be deselecte as well.
+        If an dependant is being deselected, it's parent(s) will be deselected as well.
+
+        Also adds/removes appropriate settings tabs.
 
         Args:
             item (QListWidgetItem): selected item
 
         """
         if item.checkState() != 0:
+            ref = self.__plugins[unicode(item.text())]
+            if ref.children():
+                self.parent.addTab(ref, item.text())
             for d in item.depends:
                 for i in self.plugins.findItems(d, Qt.MatchFixedString):
                     i.setCheckState(2)
+                    ref = self.__plugins[unicode(i.text())]
+                    if ref.children():
+                        self.parent.addTab(ref, i.text())
         else:
+            self.parent.removeTab(self.parent.indexOf(
+                self.__plugins[unicode(item.text())]))
             try:
                 for d in self.__depends[unicode(item.text()).lower()]:
                     for i in self.plugins.findItems(d, Qt.MatchFixedString):
                         i.setCheckState(0)
+                        self.parent.removeTab(self.parent.indexOf(
+                            self.__plugins[unicode(i.text())]))
             except KeyError:
                 pass
     def save(self):
@@ -524,8 +525,8 @@ class Settings(QtGui.QDialog):
         # Logs
         self.tabs.addTab(self.logsList, self.trUtf8('Lo&gs'))
         # Plugins
-        self.plugins = PluginsTab()
-        self.tabs.addTab(self.plugins, self.trUtf8('&Plugins'))
+        self.plugins = PluginsTab(self.tabs)
+        self.tabs.insertTab(3, self.plugins, self.trUtf8('&Plugins'))
         # Main
         self.globalMessage(0)
         layout = QtGui.QVBoxLayout()
