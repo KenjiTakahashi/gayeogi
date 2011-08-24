@@ -313,18 +313,11 @@ class Main(QtGui.QMainWindow):
         self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
         #self.rt.errors.connect(self.logs)
-        #self.ui.logs.setHeaderLabels(QStringList([
-        #    self.trUtf8('Module'),
-        #    self.trUtf8('Type'),
-        #    self.trUtf8('File/Entry'),
-        #    self.trUtf8('Message')]))
         self.ui.local.clicked.connect(self.local)
         self.ui.remote.clicked.connect(self.remote)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
-        #self.ui.clearLogs.clicked.connect(self.ui.logs.clear)
-        #self.ui.saveLogs.clicked.connect(self.saveLogs)
         self.ui.artistFilter.textEdited.connect(self.filter_)
         self.ui.albumFilter.textEdited.connect(self.filter_)
         self.ui.trackFilter.textEdited.connect(self.filter_)
@@ -403,12 +396,17 @@ class Main(QtGui.QMainWindow):
                 if isinstance(widget, QtGui.QTabWidget):
                     widget.addTab(child, child.name)
                 else:
-                    widget = parent.takeAt(position).widget()
-                    tab = QtGui.QTabWidget()
-                    tab.setTabPosition(tab.South)
-                    tab.addTab(widget, widget.name)
-                    tab.addTab(child, child.name)
-                    parent.insertWidget(position, tab)
+                    try:
+                        widget.name
+                    except AttributeError:
+                        parent.insertWidget(position, child)
+                    else:
+                        widget = parent.takeAt(position).widget()
+                        tab = QtGui.QTabWidget()
+                        tab.setTabPosition(tab.South)
+                        tab.addTab(widget, widget.name)
+                        tab.addTab(child, child.name)
+                        parent.insertWidget(position, tab)
     def removePlugin(self, parent, child, position):
         parent = getattr(self.ui, parent)
         if position == 'start':
@@ -492,33 +490,6 @@ class Main(QtGui.QMainWindow):
             tree = self.sender().parent().children()[2]
             for i in range(tree.topLevelItemCount()):
                 tree.topLevelItem(i).setHidden(False)
-    #def saveLogs(self):
-    #    dialog = QtGui.QFileDialog()
-    #    filename = dialog.getSaveFileName()
-    #    if filename:
-    #        fh = open(filename, u'w')
-    #        fh.write(self.trUtf8('Database:Type:File/Entry:Message'))
-    #        for i in range(self.ui.logs.topLevelItemCount()):
-    #            item = self.ui.logs.topLevelItem(i)
-    #            for c in range(4):
-    #                fh.write(item.text(c))
-    #                if c != 3:
-    #                    fh.write(u':')
-    #            fh.write(u'\n')
-    #        fh.close()
-    #        self.statusBar().showMessage(self.trUtf8('Logs saved'))
-    #def logs(self, db, kind, filename, message):
-    #    if self.__settings.value(u'logs/' + kind).toInt()[0]:
-    #        item = QtGui.QTreeWidgetItem(QStringList([
-    #            db,
-    #            kind,
-    #            filename,
-    #            message
-    #            ]))
-    #        self.ui.logs.addTopLevelItem(item)
-    #        self.ui.logs.scrollToItem(item)
-    #    for i in range(4):
-    #        self.ui.logs.resizeColumnToContents(i)
     def showSettings(self):
         u"""Show settings dialog and then update accordingly."""
         def __save():

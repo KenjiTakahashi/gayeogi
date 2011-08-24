@@ -19,18 +19,33 @@ from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, QStringList
 
 class Main(QtGui.QWidget):
+    """Logs plugin widget."""
     name = u'Logs'
     loaded = False
     depends = []
     __settings = QSettings(u'gayeogi', u'Logs')
     def __init__(self, parent, ___, addWidget, removeWidget):
+        """Constructs new Main instance.
+
+        Args:
+            parent: parent widget
+            ___: whatever
+            addWidget: function for adding widget to main window
+            removeWidget: function for removing widget from main window
+
+        """
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
         self.addWidget = addWidget
         self.removeWidget = removeWidget
     def load(self):
-        logs = QtGui.QTreeWidget()
-        logs.setHeaderLabels(QStringList([
+        """Loads the plugin in.
+
+        Also creates appropriate widgets and adds them to main window.
+
+        """
+        self.logs = QtGui.QTreeWidget()
+        self.logs.setHeaderLabels(QStringList([
             QtGui.QApplication.translate('Logs', 'Module'),
             QtGui.QApplication.translate('Logs', 'Type'),
             QtGui.QApplication.translate('Logs', 'File/Entry'),
@@ -38,25 +53,64 @@ class Main(QtGui.QWidget):
         ]))
         clear = QtGui.QPushButton(QtGui.QApplication.translate(
             'Logs', 'Cle&ar'))
+        clear.clicked.connect(self.logs.clear)
         save = QtGui.QPushButton(QtGui.QApplication.translate(
             'Logs', 'Sa&ve'))
+        save.clicked.connect(self.save)
         buttonL = QtGui.QHBoxLayout()
         buttonL.addWidget(clear)
         buttonL.addWidget(save)
         buttonL.addStretch()
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(logs)
+        layout.addWidget(self.logs)
         layout.addLayout(buttonL)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         self.addWidget(u'horizontalLayout_2', self, 'start')
         Main.loaded = True
     def unload(self):
+        """Unloads the plugin.
+
+        Also removes appropriate widgets from main window, if needed.
+
+        """
         self.removeWidget(u'horizontalLayout_2', self, 'start')
         Main.loaded = False
     @staticmethod
     def QConfiguration():
+        """Creates configuration widget.
+
+        Returns:
+            QWidget -- config widget used in settings dialog.
+
+        """
         widget = QtGui.QWidget()
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
         widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
+    def save(self):
+        """Saves logs to file.
+
+        Displays dialog window asking user to choose a file.
+
+        """
+        filename = QtGui.QFileDialog().getSaveFileName()
+        if filename:
+            fh = open(filename, u'w')
+            header = self.logs.headerItem()
+            count = header.columnCount()
+            for i in range(count):
+                if not self.logs.isColumnHidden(i):
+                    if i != 0:
+                        fh.write(':')
+                    fh.write(header.text(i))
+            fh.write('\n')
+            for i in range(self.logs.topLevelItemCount()):
+                item = self.logs.topLevelItem(i)
+                for c in range(count):
+                    if not self.logs.isColumnHidden(i):
+                        if i != 0:
+                            fh.write(':')
+                        fh.write(item.text(c))
+                fh.write('\n')
+            fh.close()
