@@ -26,6 +26,9 @@ from mutagen.musepack import Musepack
 from mutagen.wavpack import WavPack
 from mutagen.mp4 import MP4
 from mutagen import File
+import logging
+
+logger = logging.getLogger('gayeogi.local')
 
 class Filesystem(QThread):
     """Create/Update local file info library.
@@ -33,12 +36,10 @@ class Filesystem(QThread):
     Signals:
         updated (void): emitted at the end
         stepped (unicode): emitted after each file (filename)
-        errors (unicode, unicode, unicode, unicode): emitted at the end
 
     """
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
-    errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, directory, library, ignores):
         """Constructs new Filesystem instance.
 
@@ -71,16 +72,17 @@ class Filesystem(QThread):
         if tags:
             if existing:
                 self.toremove.add(self.remove(path))
-            item = {tags[u'date']: {
-                        tags[u'album']: {
-                            tags[u'tracknumber']: {
-                                tags[u'title']: {
-                                    u'path': path
-                                    }
-                                }
+            item = {
+                tags[u'date']: {
+                    tags[u'album']: {
+                        tags[u'tracknumber']: {
+                            tags[u'title']: {
+                                u'path': path
                             }
                         }
                     }
+                }
+            }
             try:
                 partial = self.library[tags[u'artist']]
             except KeyError:
@@ -190,10 +192,8 @@ class Filesystem(QThread):
                             u'tracknumber': f[u'TRCK'].text[0],
                             }
                 except KeyError:
-                    self.errors.emit(u'local',
-                            u'errors',
-                            filepath,
-                            self.trUtf8("You're probably missing some tags."))
+                    logger.error([filepath,
+                        self.trUtf8("You're probably missing some tags.")])
             elif ext in [u'.mp4', u'.m4a', u'.mpeg4', u'.aac']:
                 f = MP4(filepath)
                 try:
@@ -204,10 +204,8 @@ class Filesystem(QThread):
                             u'tracknumber': unicode(f['trkn'][0][0])
                             }
                 except KeyError:
-                    self.errors.emit(u'local',
-                            u'errors',
-                            filepath,
-                            self.trUtf8("You're probably missing some tags."))
+                    logger.error([filepath,
+                        self.trUtf8("You're probably missing some tags.")])
             else:
                 if ext == u'.flac':
                     f = FLAC(filepath)
@@ -230,15 +228,10 @@ class Filesystem(QThread):
                             u'tracknumber': f[u'tracknumber'][0]
                             }
                 except KeyError:
-                    self.errors.emit(u'local',
-                            u'errors',
-                            filepath,
-                            self.trUtf8("You're probably missing some tags."))
+                    logger.error([filepath,
+                        self.trUtf8("You're probably missing some tags.")])
         except IOError:
-            self.errors.emit(u'local',
-                    u'errors',
-                    filepath,
-                    u'Cannot open file')
+            logger.error([filepath, self.trUtf8('Cannot open file')])
     def actualize(self, directory = None, ignores = None):
         """Actualize directory and ignores list.
 
@@ -303,4 +296,6 @@ class Filesystem(QThread):
                 else:
                     if remove:
                         del self.library[tr]
+                        logger.info(
+                            [tr, self.trUtf8('Something has been removed')])
         self.updated.emit()
