@@ -110,14 +110,13 @@ class Filesystem(QThread):
             self.paths[path] = tags
             self.paths[path][u'modified'] = os.stat(path).st_mtime
             key = tags[u'artist'] + tags[u'date'] + tags[u'album']
-            try:
-                self.avai[key][u'digital'] = True
-            except KeyError:
-                self.avai[key] = {
-                        u'digital': True,
-                        u'analog': False,
-                        u'remote': set()
-                        }
+            self.avai.setdefault(key,
+                {
+                    u'digital': True,
+                    u'analog': False,
+                    u'remote': set()
+                }
+            )[u'digital'] = True
     def remove(self, path):
         """Remove specified item from the library.
 
@@ -130,19 +129,19 @@ class Filesystem(QThread):
         """
         result = None
         path_ = self.paths[path]
-        item = self.library[path_[u'artist']][path_[u'date']] \
-                [path_[u'album']][path_[u'tracknumber']]
+        item = self.library[path_[u'artist']][path_[u'date']]\
+            [path_[u'album']][path_[u'tracknumber']]
         if item[path_[u'title']][u'path'] == path:
             del item[path_[u'title']]
             if not item:
-                item = self.library[path_[u'artist']][path_[u'date']] \
-                        [path_[u'album']]
+                item = self.library[path_[u'artist']]\
+                    [path_[u'date']][path_[u'album']]
                 del item[path_[u'tracknumber']]
                 key = path_[u'artist'] + path_[u'date'] + path_[u'album']
                 if not item:
                     result = path_[u'artist']
-                    if not self.avai[key][u'analog'] and \
-                            not self.avai[key][u'remote']:
+                    if (not self.avai[key][u'analog'] and
+                    not self.avai[key][u'remote']):
                         item = self.library[path_[u'artist']][path_[u'date']]
                         del item[path_[u'album']]
                         del self.avai[key]
@@ -185,24 +184,26 @@ class Filesystem(QThread):
                 self.stepped.emit(filepath)
                 f = ID3(filepath)
                 try:
-                    return {u'artist': f[u'TPE1'].text[0],
-                            u'album': f[u'TALB'].text[0],
-                            u'date': unicode(f[u'TDRC'].text[0]),
-                            u'title': f[u'TIT2'].text[0],
-                            u'tracknumber': f[u'TRCK'].text[0],
-                            }
+                    return {
+                        u'artist': f[u'TPE1'].text[0],
+                        u'album': f[u'TALB'].text[0],
+                        u'date': unicode(f[u'TDRC'].text[0]),
+                        u'title': f[u'TIT2'].text[0],
+                        u'tracknumber': f[u'TRCK'].text[0],
+                    }
                 except KeyError:
                     logger.error([filepath,
                         self.trUtf8("You're probably missing some tags.")])
             elif ext in [u'.mp4', u'.m4a', u'.mpeg4', u'.aac']:
                 f = MP4(filepath)
                 try:
-                    return {u'artist': f['\xa9ART'][0],
-                            u'album': f['\xa9alb'][0],
-                            u'date': f['\xa9day'][0],
-                            u'title': f['\xa9nam'][0],
-                            u'tracknumber': unicode(f['trkn'][0][0])
-                            }
+                    return {
+                        u'artist': f['\xa9ART'][0],
+                        u'album': f['\xa9alb'][0],
+                        u'date': f['\xa9day'][0],
+                        u'title': f['\xa9nam'][0],
+                        u'tracknumber': unicode(f['trkn'][0][0])
+                    }
                 except KeyError:
                     logger.error([filepath,
                         self.trUtf8("You're probably missing some tags.")])
@@ -221,12 +222,13 @@ class Filesystem(QThread):
                     return False
                 self.stepped.emit(filepath)
                 try:
-                    return {u'artist': f[u'artist'][0],
-                            u'album': f[u'album'][0],
-                            u'date': f[u'date'][0],
-                            u'title': f[u'title'][0],
-                            u'tracknumber': f[u'tracknumber'][0]
-                            }
+                    return {
+                        u'artist': f[u'artist'][0],
+                        u'album': f[u'album'][0],
+                        u'date': f[u'date'][0],
+                        u'title': f[u'title'][0],
+                        u'tracknumber': f[u'tracknumber'][0]
+                    }
                 except KeyError:
                     logger.error([filepath,
                         self.trUtf8("You're probably missing some tags.")])
