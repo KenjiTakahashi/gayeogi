@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, QStringList, Qt, QObject, pyqtSignal
+from PyQt4.QtCore import QSettings, Qt, QObject, pyqtSignal
 import logging
 import re
 
@@ -69,10 +69,7 @@ class Filter(logging.Filter):
             record (LogRecord): a log record received from Logger
 
         """
-        if record.levelno in self.levels:
-            return 1
-        else:
-            return 0
+        return record.levelno in self.levels
     def addLevel(self, level):
         """Adds specified level to enabled.
 
@@ -123,13 +120,27 @@ class Main(QtGui.QWidget):
         self.filter.textEdited.connect(self.filter_)
         self.logs = QtGui.QTreeWidget()
         self.logs.setIndentation(0)
+        self.logs.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
         self.logs.setSortingEnabled(True)
-        self.logs.setHeaderLabels(QStringList([
+        self.logs.setContextMenuPolicy(Qt.ActionsContextMenu)
+        copy = QtGui.QAction(
+            QtGui.QApplication.translate('Logs', '&Copy'),
+            self.logs
+        )
+        copy.triggered.connect(self.copy)
+        remove = QtGui.QAction(
+            QtGui.QApplication.translate('Logs', '&Remove'),
+            self.logs
+        )
+        remove.triggered.connect(self.remove)
+        self.logs.addAction(copy)
+        self.logs.addAction(remove)
+        self.logs.setHeaderLabels([
             QtGui.QApplication.translate('Logs', 'Module'),
             QtGui.QApplication.translate('Logs', 'Type'),
             QtGui.QApplication.translate('Logs', 'File/Entry'),
             QtGui.QApplication.translate('Logs', 'Message')
-        ]))
+        ])
         clear = QtGui.QPushButton(QtGui.QApplication.translate(
             'Logs', 'Cle&ar'))
         clear.clicked.connect(self.logs.clear)
@@ -243,6 +254,31 @@ class Main(QtGui.QWidget):
         else:
             for i in range(tree.topLevelItemCount()):
                 tree.topLevelItem(i).setHidden(False)
+    def copy(self, _):
+        """Copies selected messages to the clipboard.
+
+        Args:
+            _: whatever (signal comp.)
+
+        """
+        text = ''
+        for item in self.logs.selectedItems():
+            for c in range(self.logs.columnCount()):
+                if c != 0:
+                    text += ':'
+                text += item.text(c)
+            text += '\n'
+        QtGui.QApplication.clipboard().setText(text)
+    def remove(self, _):
+        """Removes selected messages from the logs.
+
+        Args:
+            _: whatever (signal comp.)
+
+        """
+        for item in self.logs.selectedItems():
+            item = self.logs.takeTopLevelItem(
+                self.logs.indexOfTopLevelItem(item))
     def save(self):
         """Saves logs to file.
 
