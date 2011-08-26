@@ -18,6 +18,7 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, QStringList, Qt, QObject, pyqtSignal
 import logging
+import re
 
 class Handler(QObject, logging.Handler):
     """Logs handler.
@@ -73,8 +74,11 @@ class Main(QtGui.QWidget):
         Also creates appropriate widgets and adds them to main window.
 
         """
+        self.filter = QtGui.QLineEdit()
+        self.filter.textEdited.connect(self.filter_)
         self.logs = QtGui.QTreeWidget()
         self.logs.setIndentation(0)
+        self.logs.setSortingEnabled(True)
         self.logs.setHeaderLabels(QStringList([
             QtGui.QApplication.translate('Logs', 'Module'),
             QtGui.QApplication.translate('Logs', 'Type'),
@@ -92,6 +96,7 @@ class Main(QtGui.QWidget):
         buttonL.addWidget(save)
         buttonL.addStretch()
         layout = QtGui.QVBoxLayout()
+        layout.addWidget(self.filter)
         layout.addWidget(self.logs)
         layout.addLayout(buttonL)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -131,7 +136,52 @@ class Main(QtGui.QWidget):
         widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
     def update(self, data):
+        """Updates logs widget with new logs.
+
+        Args:
+            data (list): list of entries for appropriate columns
+
+        """
         self.logs.addTopLevelItem(QtGui.QTreeWidgetItem(data))
+    def filter_(self, text):
+        """Filters log messages.
+
+        Args:
+            text (unicode): filter pattern (regexp)
+
+        """
+        columns = list()
+        arguments = list()
+        for a in unicode(text).split(u'|'):
+            temp = a.split(u':')
+            if len(temp) != 2 or temp[1] == u'':
+                break
+            columns.append(temp[0].lower())
+            arguments.append(temp[1].lower())
+        tree = self.sender().parent().children()[2]
+        if len(columns) != 0 and len(columns) == len(arguments):
+            header = tree.header().model()
+            num_columns = [i for i in range(tree.columnCount())
+                if not tree.isColumnHidden(i) and unicode(header.headerData(i,
+                    Qt.Horizontal).toString()).lower() in columns]
+            for i in range(tree.topLevelItemCount()):
+                item = tree.topLevelItem(i)
+                hidden = list()
+                for j, c in enumerate(num_columns):
+                    try:
+                        if item not in hidden:
+                            if not re.search(arguments[j],
+                            unicode(item.text(c)).lower()):
+                                item.setHidden(True)
+                                item.setSelected(False)
+                                hidden.append(item)
+                            else:
+                                item.setHidden(False)
+                    except:
+                        pass
+        else:
+            for i in range(tree.topLevelItemCount()):
+                tree.topLevelItem(i).setHidden(False)
     def save(self):
         """Saves logs to file.
 

@@ -308,7 +308,6 @@ class Main(QtGui.QMainWindow):
         self.fs = Filesystem(directory, self.library, self.ignores)
         self.fs.stepped.connect(self.statusBar().showMessage)
         self.fs.updated.connect(self.update)
-        #self.fs.errors.connect(self.logs)
         self.rt = Distributor(self.library)
         self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
@@ -425,8 +424,8 @@ class Main(QtGui.QMainWindow):
                     parent.insertWidget(position, tmp)
                     parent.itemAt(position).widget().show()
     def filter_(self, text):
-        columns = []
-        arguments = []
+        columns = list()
+        arguments = list()
         adr = [u'a', u'd', u'r', u'not a', u'not d', u'not r']
         num_adr = dict()
         __num_adr = {
@@ -434,7 +433,7 @@ class Main(QtGui.QMainWindow):
             u'd': 234,
             u'r': 345
         }
-        for a in (unicode(text)).split(u'|'):
+        for a in unicode(text).split(u'|'):
             temp = a.split(u':')
             if len(temp) == 1 and temp[0] in adr:
                 temp2 = temp[0].split(u' ')
@@ -447,12 +446,12 @@ class Main(QtGui.QMainWindow):
                 break
             columns.append(temp[0].lower())
             arguments.append(temp[1].lower())
+        tree = self.sender().parent().children()[2]
         if (len(columns) != 0 and len(columns) == len(arguments)) or num_adr:
-            tree = self.sender().parent().children()[2]
             header = tree.header().model()
             num_columns = [i for i in range(tree.columnCount())
-                    if (unicode(header.headerData(i,
-                        Qt.Horizontal).toString())).lower() in columns]
+                if unicode(header.headerData(i,
+                    Qt.Horizontal).toString()).lower() in columns]
             adr_column = -1
             if num_adr:
                 item = tree.topLevelItem(0)
@@ -467,7 +466,7 @@ class Main(QtGui.QMainWindow):
                     try:
                         if item not in hidden:
                             if not re.search(arguments[j],
-                                    (unicode(item.text(c)).lower())):
+                            unicode(item.text(c)).lower()):
                                 item.setHidden(True)
                                 item.setSelected(False)
                                 hidden.append(item)
@@ -484,7 +483,6 @@ class Main(QtGui.QMainWindow):
                             item.setSelected(False)
                             hidden.append(item)
         else:
-            tree = self.sender().parent().children()[2]
             for i in range(tree.topLevelItemCount()):
                 tree.topLevelItem(i).setHidden(False)
     def showSettings(self):
