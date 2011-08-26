@@ -141,6 +141,20 @@ class Main(QtGui.QWidget):
             QtGui.QApplication.translate('Logs', 'File/Entry'),
             QtGui.QApplication.translate('Logs', 'Message')
         ])
+        header = self.logs.header()
+        header.setContextMenuPolicy(Qt.ActionsContextMenu)
+        for i, label in enumerate(['Module', 'Type', 'File/Entry', 'Message']):
+            checked = self.__settings.value(label, True).toBool()
+            action = QtGui.QAction(
+                QtGui.QApplication.translate('Logs', label),
+                self.logs
+            )
+            action.i = i
+            action.setCheckable(True)
+            action.setChecked(checked)
+            action.toggled.connect(self.hideColumn)
+            header.addAction(action)
+            self.logs.setColumnHidden(i, not checked)
         clear = QtGui.QPushButton(QtGui.QApplication.translate(
             'Logs', 'Cle&ar'))
         clear.clicked.connect(self.logs.clear)
@@ -279,6 +293,16 @@ class Main(QtGui.QWidget):
         for item in self.logs.selectedItems():
             item = self.logs.takeTopLevelItem(
                 self.logs.indexOfTopLevelItem(item))
+    def hideColumn(self, checked):
+        """Hides or reveals a column.
+
+        Args:
+            checked (bool): whether to hide or to reveal
+
+        """
+        sender = self.sender()
+        self.logs.setColumnHidden(sender.i, not checked)
+        self.__settings.setValue(str(sender.text()), checked)
     def save(self):
         """Saves logs to file.
 

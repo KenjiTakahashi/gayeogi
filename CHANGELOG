@@ -154,3 +154,6 @@ unsaved changes.
 
 ===MAIN:
 -Plugins now have their own settings tabs if needed.
+
+===LOGS:
+-Yup, rewrite ;).
