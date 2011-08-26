@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, QStringList
+from PyQt4.QtCore import QSettings, QStringList, Qt
+import logging
 
 class Main(QtGui.QWidget):
     """Logs plugin widget."""
@@ -84,7 +85,16 @@ class Main(QtGui.QWidget):
             QWidget -- config widget used in settings dialog.
 
         """
+        levels = QtGui.QListWidget()
+        for level in [u'Critical', u'Error', u'Warning', u'Info', u'Debug']:
+            item = QtGui.QListWidgetItem(level)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(Main.__settings.value(level, 2).toInt()[0])
+            levels.addItem(item)
+        layout = QtGui.QHBoxLayout()
+        layout.addWidget(levels)
         widget = QtGui.QWidget()
+        widget.setLayout(layout)
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
         widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget

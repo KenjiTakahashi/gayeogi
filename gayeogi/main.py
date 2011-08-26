@@ -494,7 +494,8 @@ class Main(QtGui.QMainWindow):
         u"""Show settings dialog and then update accordingly."""
         def __save():
             directory = self.__settings.value(u'directory', []).toPyObject()
-            directory = type(directory) == list and directory or [(directory, 2)]
+            directory = (type(directory) == list
+                and directory or [(unicode(directory), 2)])
             self.ignores = self.__settings.value(u'ignores', []).toPyObject()
             self.fs.actualize(directory, self.ignores)
             self.removePluginsTranslators()
@@ -670,10 +671,10 @@ class Main(QtGui.QMainWindow):
             else:
                 detailed[a][u'r'] = False
         self.statistics = {
-                u'artists': artists,
-                u'albums': albums,
-                u'detailed': detailed
-                }
+            u'artists': artists,
+            u'albums': albums,
+            u'detailed': detailed
+        }
     def closeEvent(self, event):
         def unload():
             for plugin in self.ui.plugins.values():

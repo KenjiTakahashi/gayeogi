@@ -462,8 +462,8 @@ class PluginsTab(QtGui.QWidget):
     def save(self):
         """Save plugins options.
 
-        It doesn't return anything, instead it relies on specific plugin's
-        internal saving methods.
+        It doesn't return anything, instead it just sets plugin enabled/disabled
+        and relies on specific plugin's internal saving methods.
 
         """
         for i in range(self.plugins.count()):
@@ -484,8 +484,6 @@ class Settings(QtGui.QDialog):
     def __init__(self, parent = None):
         """Constructs new Settings instance.
 
-        It also contructs 'Logs' tab for now. (Will be moved sometime)
-
         Kwargs:
             parent (QWidget): widget's parent
 
@@ -493,17 +491,6 @@ class Settings(QtGui.QDialog):
         QtGui.QDialog.__init__(self, parent)
         self.info = QtGui.QLabel()
         self.info.setWordWrap(True)
-        # Logs - start
-        self.logsList = QtGui.QListWidget()
-        item = QtGui.QListWidgetItem(u'errors')
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-        item.setCheckState(self.__settings.value(u'logs/errors', 2).toInt()[0])
-        self.logsList.addItem(item)
-        item = QtGui.QListWidgetItem(u'info')
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-        item.setCheckState(self.__settings.value(u'logs/info', 0).toInt()[0])
-        self.logsList.addItem(item)
-        # Logs - end
         self.tabs = QtGui.QTabWidget()
         self.tabs.currentChanged.connect(self.globalMessage)
         # Databases
@@ -522,8 +509,6 @@ class Settings(QtGui.QDialog):
             ignores = []
         self.directories = LocalTab(directory, ignores)
         self.tabs.addTab(self.directories, self.trUtf8('&Local'))
-        # Logs
-        self.tabs.addTab(self.logsList, self.trUtf8('Lo&gs'))
         # Plugins
         self.plugins = PluginsTab(self.tabs)
         self.tabs.insertTab(3, self.plugins, self.trUtf8('&Plugins'))
