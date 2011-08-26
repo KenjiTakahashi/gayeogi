@@ -273,6 +273,7 @@ class QValueWidget(QtGui.QWidget):
         remove = QtGui.QPushButton(self.trUtf8('&Remove'))
         remove.clicked.connect(self.remove)
         layout = QtGui.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.box)
         if browse:
             browse = QtGui.QPushButton(self.trUtf8('&Browse'))
@@ -511,7 +512,7 @@ class Settings(QtGui.QDialog):
         self.tabs.addTab(self.directories, self.trUtf8('&Local'))
         # Plugins
         self.plugins = PluginsTab(self.tabs)
-        self.tabs.insertTab(3, self.plugins, self.trUtf8('&Plugins'))
+        self.tabs.insertTab(2, self.plugins, self.trUtf8('&Plugins'))
         # Main
         self.globalMessage(0)
         layout = QtGui.QVBoxLayout()
