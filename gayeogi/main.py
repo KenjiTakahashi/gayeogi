@@ -312,7 +312,6 @@ class Main(QtGui.QMainWindow):
         self.rt = Distributor(self.library)
         self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
-        #self.rt.errors.connect(self.logs)
         self.ui.local.clicked.connect(self.local)
         self.ui.remote.clicked.connect(self.remote)
         self.ui.close.clicked.connect(self.close)
@@ -371,8 +370,6 @@ class Main(QtGui.QMainWindow):
                 class__ = class_(self.ui, self.library, self.appendPlugin,
                         self.removePlugin)
                 class__.load()
-                #if hasattr(class__, 'errors'):
-                #    class__.errors.connect(self.logs)
                 self.ui.plugins[plugin] = class__
             elif not option and class_.loaded:
                 self.ui.plugins[plugin].unload()

@@ -537,10 +537,6 @@ class Settings(QtGui.QDialog):
             (directories, ignores) = self.directories.values()
             self.__settings.setValue(u'directory', directories)
             self.__settings.setValue(u'ignores', ignores)
-            self.__settings.setValue(u'logs/errors',
-                    self.logsList.item(0).checkState())
-            self.__settings.setValue(u'logs/info',
-                    self.logsList.item(1).checkState())
             (checked, data, order) = self.dbs.values()
             self.__dbsettings.setValue(u'behaviour', checked)
             self.__dbsettings.setValue(u'order', order)

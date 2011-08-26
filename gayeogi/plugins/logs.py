@@ -20,13 +20,32 @@ from PyQt4.QtCore import QSettings, QStringList, Qt, QObject, pyqtSignal
 import logging
 
 class Handler(QObject, logging.Handler):
+    """Logs handler.
+
+    Signals:
+        signal (object): propagates log to the widget.
+
+    """
     signal = pyqtSignal(object)
-    def __init__(self, update, level = logging.NOTSET):
+    def __init__(self, update, level = logging.DEBUG):
+        """Constructs new Handler instance.
+
+        Args:
+            update (function): function used to update widget
+            level (int): logging level
+
+        """
         QObject.__init__(self)
         logging.Handler.__init__(self, level)
         self.signal.connect(update)
     def emit(self, record):
-        self.signal.emit(record.msg)
+        """Emits signal.
+
+        Args:
+            record (LogRecord): log record
+
+        """
+        self.signal.emit([record.name, record.levelname] + record.msg)
 
 class Main(QtGui.QWidget):
     """Logs plugin widget."""
@@ -78,8 +97,9 @@ class Main(QtGui.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         self.addWidget(u'horizontalLayout_2', self, 'start')
-        logging.getLogger('gayeogi').addHandler(
-            Handler(self.update, logging.DEBUG))
+        logger = logging.getLogger('gayeogi')
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(Handler(self.update))
         Main.loaded = True
     def unload(self):
         """Unloads the plugin.

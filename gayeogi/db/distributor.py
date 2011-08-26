@@ -19,19 +19,12 @@ from threading import RLock
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings, pyqtSignal
 from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
+import logging
+
+logger = logging.getLogger('gayeogi.remote')
 
 class Bee(QThread):
-    """Worker thread used by Distributor.
-
-    Signals:
-    errors -- emitted when an error occurs:
-        unicode -- database name
-        unicode -- error type
-        unicode -- release name
-        unicode -- error message
-
-    """
-    errors = pyqtSignal(unicode, unicode, unicode, unicode)
+    """Worker thread used by Distributor."""
     def __init__(self, tasks, library, urls, avai,
             modified, name, rlock, processed):
         """Constructs new worker instance.
@@ -86,12 +79,12 @@ class Bee(QThread):
                 except KeyError:
                     pass
                 self.rlock.release()
-                self.errors.emit(self.name, u'errors', artist, e.message)
+                logger.warning([artist, e.message])
             except ConnError as e:
-                self.errors.emit(self.name, u'errors', artist, e.message)
+                logger.error([artist, e.message])
             else:
                 for error in result[u'errors']:
-                    self.errors.emit(self.name, u'errors', artist, error)
+                    logger.warning([artist, error])
                 for (album, year) in result[u'result']:
                     albums.setdefault(year, set([album])).add(album)
                     self.rlock.acquire()
@@ -141,16 +134,16 @@ class Bee(QThread):
                         for album in a:
                             __internal(artist, year, album)
                 if added:
-                    self.errors.emit(self.name, u'info', artist,
-                            self.trUtf8('Something has been added.'))
+                    logger.info(
+                        [artist, self.trUtf8('Something has been added')])
                     self.modified[0] = True
                 if __internal.torem or __internal.norem:
-                    self.errors.emit(self.name, u'info', artist,
-                            self.trUtf8('Something has been removed.'))
+                    logger.info(
+                        [artist, self.trUtf8('Something has been removed')])
                     self.modified[0] = True
                 elif not added:
-                    self.errors.emit(self.name, u'info', artist,
-                            self.trUtf8('Nothing has been changed.'))
+                    logger.info(
+                        [artist, self.trUtf8('Nothing has been changed')])
                 while __internal.torem:
                     (artist, year, album) = __internal.torem.pop()
                     del self.library[artist][year][album]
@@ -176,17 +169,11 @@ class Distributor(QThread):
     updated -- emitted at the end (should be 'finished', but comp. reasons)
     stepped -- emitted after every release:
         unicode -- release name
-    errors -- emitted when an error occurs:
-        unicode -- database name
-        unicode -- error type
-        unicode -- release name
-        unicode -- error message
 
     """
     __settings = QSettings(u'gayeogi', u'Databases')
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
-    errors = pyqtSignal(unicode, unicode, unicode, unicode)
     def __init__(self, library):
         """Constructs new Distributor instance.
 
@@ -221,8 +208,8 @@ class Distributor(QThread):
                 db = __import__(u'gayeogi.db.bees.' + name, globals(),
                         locals(), [u'work', u'name', u'init'], -1)
             except ImportError: # it should not ever happen
-                self.errors.emit(db.name, u'errors', u'gayeogi.db.bees.' + name,
-                        u'No such module has been found!!!')
+                logger.error(
+                    [name, self.trUtf8('No such module has been found!!!')])
             else:
                 tasks = Queue(threads)
                 threa = list()
@@ -234,7 +221,6 @@ class Distributor(QThread):
                 for _ in range(threads):
                     t = Bee(tasks, self.library, self.urls,
                             self.avai, self.modified, db.name, rlock, processed)
-                    t.errors.connect(self.errors)
                     threa.append(t)
                 for entry in self.library.iteritems():
                     if not behaviour:
