@@ -16,8 +16,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, QStringList, Qt
+from PyQt4.QtCore import QSettings, QStringList, Qt, QObject, pyqtSignal
 import logging
+
+class Handler(QObject, logging.Handler):
+    signal = pyqtSignal(object)
+    def __init__(self, update, level = logging.NOTSET):
+        QObject.__init__(self)
+        logging.Handler.__init__(self, level)
+        self.signal.connect(update)
+    def emit(self, record):
+        self.signal.emit(record.msg)
 
 class Main(QtGui.QWidget):
     """Logs plugin widget."""
@@ -46,6 +55,7 @@ class Main(QtGui.QWidget):
 
         """
         self.logs = QtGui.QTreeWidget()
+        self.logs.setIndentation(0)
         self.logs.setHeaderLabels(QStringList([
             QtGui.QApplication.translate('Logs', 'Module'),
             QtGui.QApplication.translate('Logs', 'Type'),
@@ -68,6 +78,8 @@ class Main(QtGui.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         self.addWidget(u'horizontalLayout_2', self, 'start')
+        logging.getLogger('gayeogi').addHandler(
+            Handler(self.update, logging.DEBUG))
         Main.loaded = True
     def unload(self):
         """Unloads the plugin.
@@ -98,6 +110,8 @@ class Main(QtGui.QWidget):
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
         widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
+    def update(self, data):
+        self.logs.addTopLevelItem(QtGui.QTreeWidgetItem(data))
     def save(self):
         """Saves logs to file.
 
@@ -119,7 +133,7 @@ class Main(QtGui.QWidget):
                 item = self.logs.topLevelItem(i)
                 for c in range(count):
                     if not self.logs.isColumnHidden(i):
-                        if i != 0:
+                        if c != 0:
                             fh.write(':')
                         fh.write(item.text(c))
                 fh.write('\n')
