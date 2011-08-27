@@ -118,6 +118,9 @@ class Main(QtGui.QWidget):
         """
         self.filter = QtGui.QLineEdit()
         self.filter.textEdited.connect(self.filter_)
+        self.filter.setStatusTip(
+            QtGui.QApplication.translate('Logs', 'Pattern: <pair>|<pair>, where <pair> is <column_name>:<searching_phrase>. Case insensitive, regexp allowed.')
+        )
         self.logs = QtGui.QTreeWidget()
         self.logs.setIndentation(0)
         self.logs.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
