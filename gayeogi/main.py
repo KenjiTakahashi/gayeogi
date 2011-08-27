@@ -636,32 +636,29 @@ class Main(QtGui.QMainWindow):
                     key = self.library[4][a + y + al]
                     if key[u'analog']:
                         albums[0] += 1
-                    elif key[u'digital']:
-                        albums[1] += 1
-                    elif key[u'remote']:
-                        albums[2] += 1
-                    if not key[u'analog']:
+                    else:
                         aa = 0
-                    if not key[u'digital']:
+                    if key[u'digital']:
+                        albums[1] += 1
+                    else:
                         ad = 0
-                    if not key[u'remote']:
+                    if key[u'remote']:
+                        albums[2] += 1
+                    else:
                         ar = 0
             if aa:
-                artists[0] += 1
-            elif ad:
-                artists[1] += 1
-            elif ar:
-                artists[2] += 1
-            if aa:
                 detailed[a][u'a'] = True
+                artists[0] += 1
             else:
                 detailed[a][u'a'] = False
             if ad:
                 detailed[a][u'd'] = True
+                artists[1] += 1
             else:
                 detailed[a][u'd'] = False
             if ar:
                 detailed[a][u'r'] = True
+                artists[2] += 1
             else:
                 detailed[a][u'r'] = False
         self.statistics = {

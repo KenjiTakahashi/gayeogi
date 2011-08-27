@@ -155,6 +155,7 @@ unsaved changes.
 ===MAIN:
 -Plugins now have their own settings tabs if needed.
 -Filters now survive selection changes.
+-Corrected statistics counting (it now counts the same way for a and d and r).
 
 ===LOGS:
 -Yup, rewrite ;).
