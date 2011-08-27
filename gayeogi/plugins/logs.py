@@ -143,6 +143,7 @@ class Main(QtGui.QWidget):
         ])
         header = self.logs.header()
         header.setContextMenuPolicy(Qt.ActionsContextMenu)
+        header.restoreState(self.__settings.value('state').toByteArray())
         for i, label in enumerate(['Module', 'Type', 'File/Entry', 'Message']):
             checked = self.__settings.value(label, True).toBool()
             action = QtGui.QAction(
@@ -187,6 +188,7 @@ class Main(QtGui.QWidget):
         Also removes appropriate widgets from main window, if needed.
 
         """
+        self.__settings.setValue('state', self.logs.header().saveState())
         self.removeWidget(u'horizontalLayout_2', self, 'start')
         Main.loaded = False
     @staticmethod
