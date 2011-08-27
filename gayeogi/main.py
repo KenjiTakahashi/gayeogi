@@ -20,7 +20,7 @@ import os
 import cPickle
 import re
 from PyQt4 import QtGui
-from PyQt4.QtCore import QStringList, Qt, QSettings, QLocale, QTranslator, QSize
+from PyQt4.QtCore import Qt, QSettings, QLocale, QTranslator, QSize
 from PyQt4.QtCore import pyqtSignal, QModelIndex
 from gayeogi.db.local import Filesystem
 from gayeogi.db.distributor import Distributor
@@ -278,16 +278,16 @@ class Main(QtGui.QMainWindow):
         self.ui = Ui_main()
         widget = QtGui.QWidget()
         self.ui.setupUi(widget)
-        self.ui.artists.setHeaderLabels(QStringList([u'Artist']))
+        self.ui.artists.setHeaderLabels([u'Artist'])
         self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
         delegate = ADRItemDelegate()
         self.ui.artists.setItemDelegateForColumn(0, delegate)
         self.ui.albums = ADRTreeWidget()
-        self.ui.albums.setHeaderLabels(QStringList([u'Year', u'Album']))
+        self.ui.albums.setHeaderLabels([u'Year', u'Album'])
         self.ui.albums.buttonClicked.connect(self.setAnalog)
         self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
         self.ui.verticalLayout_4.addWidget(self.ui.albums)
-        self.ui.tracks.setHeaderLabels(QStringList(['#', u'Title']))
+        self.ui.tracks.setHeaderLabels(['#', u'Title'])
         self.ui.plugins = {}
         self.ui.splitter.restoreState(
                 self.__settings.value(u'splitters').toByteArray())
@@ -551,7 +551,7 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.clear()
         self.ui.artists.setSortingEnabled(False)
         for i, l in enumerate(self.library[1].keys()):
-            item = QtGui.QTreeWidgetItem(QStringList([l]))
+            item = QtGui.QTreeWidgetItem([l])
             item.setData(0, 123, self.statistics[u'detailed'][l][u'a'])
             item.setData(0, 234, self.statistics[u'detailed'][l][u'd'])
             item.setData(0, 345, self.statistics[u'detailed'][l][u'r'])
@@ -566,12 +566,10 @@ class Main(QtGui.QMainWindow):
             i = self.ui.artists.findItems(a, Qt.MatchExactly)
             if i:
                 i[0].setSelected(True)
-        self.ui.albumFilter.textEdited.emit(self.ui.albumFilter.text())
         for a in sAlbums:
             i = self.ui.albums.findItems(a, Qt.MatchExactly, 1)
             if i:
                 i[0].setSelected(True)
-        self.ui.trackFilter.textEdited.emit(self.ui.trackFilter.text())
         for a in sTracks:
             i = self.ui.tracks.findItems(a, Qt.MatchExactly)
             if i:
@@ -591,7 +589,7 @@ class Main(QtGui.QMainWindow):
             for date, albums in self.library[1][artist].iteritems():
                 for album, data in albums.iteritems():
                     key = self.library[4][artist + date + album]
-                    item_ = QtGui.QTreeWidgetItem(QStringList([date, album]))
+                    item_ = QtGui.QTreeWidgetItem([date, album])
                     item_.artist = artist
                     item_.aIndex = self.ui.artists.indexOfTopLevelItem(item)
                     item_.setData(1, 123, key[u'analog'])
@@ -603,6 +601,7 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.sortItems(0, 0)
         for i in range(4):
             self.ui.albums.resizeColumnToContents(i)
+        self.ui.albumFilter.textEdited.emit(self.ui.albumFilter.text())
     def fillTracks(self):
         items = self.ui.albums.selectedItems()
         self.ui.tracks.clear()
@@ -613,8 +612,7 @@ class Main(QtGui.QMainWindow):
             for num, titles in self.library[1][item.artist] \
                     [date][album].iteritems():
                 for title in titles.keys():
-                    item_ = NumericTreeWidgetItem(QStringList([
-                        num, title]))
+                    item_ = NumericTreeWidgetItem([num, title])
                     item_.album = album
                     item_.year = date
                     item_.artist = item.artist
@@ -623,6 +621,7 @@ class Main(QtGui.QMainWindow):
         self.ui.tracks.sortItems(0, 0)
         self.ui.tracks.resizeColumnToContents(0)
         self.ui.tracks.resizeColumnToContents(1)
+        self.ui.trackFilter.textEdited.emit(self.ui.trackFilter.text())
     def computeStats(self):
         artists = [0, 0, 0]
         albums = [0, 0, 0]

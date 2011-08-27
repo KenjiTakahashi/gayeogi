@@ -154,6 +154,7 @@ unsaved changes.
 
 ===MAIN:
 -Plugins now have their own settings tabs if needed.
+-Filters now survive selection changes.
 
 ===LOGS:
 -Yup, rewrite ;).
