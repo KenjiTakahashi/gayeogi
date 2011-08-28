@@ -91,8 +91,8 @@ class Filesystem(QThread):
         tags = self.tagsread(path)
         if tags:
             if existing:
-                self.toremove.add(self.remove(path))
                 self.log(u'info', tags[u'artist'], u'changed')
+                self.toremove.add(self.remove(path))
             else:
                 self.log(u'info', tags[u'artist'], u'added')
             partial = self.library.setdefault(tags[u'artist'], {})

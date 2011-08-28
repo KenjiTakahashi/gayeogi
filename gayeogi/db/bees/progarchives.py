@@ -75,7 +75,7 @@ def __sense(url, releases):
         return False
     result = list()
     def __internal(context, albums, years):
-        result.append((albums[0].text, years[0].text))
+        result.append((albums[0].text.strip(), years[0].text.strip()))
         return False
     root = etree.HTML(res)
     ns = etree.FunctionNamespace(u'http://fake.gayeogi/functions')

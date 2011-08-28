@@ -628,20 +628,29 @@ class Main(QtGui.QMainWindow):
         detailed = dict()
         for a, d in self.library[1].iteritems():
             detailed[a] = dict()
+            aa = 1
+            ad = 1
+            ar = 1
             for y, t in d.iteritems():
                 for al in t.keys():
                     key = self.library[4][a + y + al]
-                    aa = int(key[u'analog'])
-                    albums[0] += aa
-                    ad = int(key[u'digital'])
-                    albums[1] += ad
-                    ar = int(bool(key[u'remote']))
-                    albums[2] += ar
+                    analog = int(key[u'analog'])
+                    digital = int(key[u'digital'])
+                    remote = int(bool(key[u'remote']))
+                    albums[0] += analog
+                    albums[1] += digital
+                    albums[2] += remote
+                    if not analog:
+                        aa = 0
+                    if not digital:
+                        ad = 0
+                    if not remote:
+                        ar = 0
             detailed[a][u'a'] = bool(aa)
-            artists[0] += aa
             detailed[a][u'd'] = bool(ad)
-            artists[1] += ad
             detailed[a][u'r'] = bool(ar)
+            artists[0] += aa
+            artists[1] += ad
             artists[2] += ar
         self.statistics = {
             u'artists': artists,
