@@ -77,5 +77,15 @@ Feature: Managing local files
         And I scan the directory for files agan
         Then they should get added to the database
 
-# *1: It is actualy handled by exchanging two previously prepared files
-# *2: It actualy is moved away to temp dir, so we can restore it at the end
+    Scenario: Logs generation
+        Given I prepare a logger
+        When I add a file "sweet_hommie.mp3"
+        And I scan the directory for files
+        And I replace new "second_test.flac" with the old one
+        And scan the directory for files again
+        And remove file named "sweet_hommie.mp3"
+        And scan the directory for files again
+        Then proper logs should be generated
+
+# *1: It is actualy handled by exchanging two previously prepared files.
+# *2: It actualy is moved away to temp dir, so we can restore it at the end.

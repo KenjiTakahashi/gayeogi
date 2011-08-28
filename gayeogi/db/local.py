@@ -40,6 +40,13 @@ class Filesystem(QThread):
     """
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
+    __messages = {
+        u'added': u'Something has been added.',
+        u'changed': u'Something has been changed.',
+        u'removed': u'Something has been removed.',
+        u'missing': u"You're probably missing some tags.",
+        u'cannot': u'Cannot open file.'
+    }
     def __init__(self, directory, library, ignores):
         """Constructs new Filesystem instance.
 
@@ -57,6 +64,19 @@ class Filesystem(QThread):
         self.modified = library[5]
         self.ignores = ignores
         self.toremove = set()
+        self.logged = set()
+    def log(self, level, element, message):
+        """Sends specified message to logger if element wasn't logged already.
+
+        Args:
+            level (unicode): log severity level
+            element (unicode): file/entry
+            message (unicode): message to log
+
+        """
+        if element not in self.logged:
+            getattr(logger, level)([element, self.__messages[message]])
+            self.logged.add(element)
     def append(self, path, existing = False):
         """Appends new entry to the library.
 
@@ -72,41 +92,13 @@ class Filesystem(QThread):
         if tags:
             if existing:
                 self.toremove.add(self.remove(path))
-            item = {
-                tags[u'date']: {
-                    tags[u'album']: {
-                        tags[u'tracknumber']: {
-                            tags[u'title']: {
-                                u'path': path
-                            }
-                        }
-                    }
-                }
-            }
-            try:
-                partial = self.library[tags[u'artist']]
-            except KeyError:
-                self.library[tags[u'artist']] = item
+                self.log(u'info', tags[u'artist'], u'changed')
             else:
-                item = item[tags[u'date']]
-                try:
-                    partial = partial[tags[u'date']]
-                except KeyError:
-                    partial[tags[u'date']] = item
-                else:
-                    item = item[tags[u'album']]
-                    try:
-                        partial = partial[tags[u'album']]
-                    except KeyError:
-                        partial[tags[u'album']] = item
-                    else:
-                        item = item[tags[u'tracknumber']]
-                        try:
-                            partial = partial[tags[u'tracknumber']]
-                        except KeyError:
-                            partial[tags[u'tracknumber']] = item
-                        else:
-                            partial[tags[u'title']] = item[tags[u'title']]
+                self.log(u'info', tags[u'artist'], u'added')
+            partial = self.library.setdefault(tags[u'artist'], {})
+            for tag in [u'date', u'album', u'tracknumber', u'title']:
+                partial = partial.setdefault(tags[tag], {})
+            partial[u'path'] = path
             self.paths[path] = tags
             self.paths[path][u'modified'] = os.stat(path).st_mtime
             key = tags[u'artist'] + tags[u'date'] + tags[u'album']
@@ -153,6 +145,7 @@ class Filesystem(QThread):
                     else:
                         self.avai[key][u'digital'] = False
         del self.paths[path]
+        self.log(u'info', path_[u'artist'], u'removed')
         return result
     def ignored(self, root):
         """Check if specified folder is on list to ignore.
@@ -192,8 +185,7 @@ class Filesystem(QThread):
                         u'tracknumber': f[u'TRCK'].text[0],
                     }
                 except KeyError:
-                    logger.error([filepath,
-                        self.trUtf8("You're probably missing some tags.")])
+                    self.log(u'warning', filepath, u'missing')
             elif ext in [u'.mp4', u'.m4a', u'.mpeg4', u'.aac']:
                 f = MP4(filepath)
                 try:
@@ -205,8 +197,7 @@ class Filesystem(QThread):
                         u'tracknumber': unicode(f['trkn'][0][0])
                     }
                 except KeyError:
-                    logger.error([filepath,
-                        self.trUtf8("You're probably missing some tags.")])
+                    self.log(u'warning', filepath, u'missing')
             else:
                 if ext == u'.flac':
                     f = FLAC(filepath)
@@ -230,10 +221,9 @@ class Filesystem(QThread):
                         u'tracknumber': f[u'tracknumber'][0]
                     }
                 except KeyError:
-                    logger.error([filepath,
-                        self.trUtf8("You're probably missing some tags.")])
+                    self.log(u'warning', filepath, u'missing')
         except IOError:
-            logger.error([filepath, self.trUtf8('Cannot open file')])
+            self.log(u'error', filepath, u'cannot')
     def actualize(self, directory = None, ignores = None):
         """Actualize directory and ignores list.
 
@@ -298,6 +288,6 @@ class Filesystem(QThread):
                 else:
                     if remove:
                         del self.library[tr]
-                        logger.info(
-                            [tr, self.trUtf8('Something has been removed')])
+                        self.log(u'info', tr, u'removed')
+        self.logged.clear()
         self.updated.emit()

@@ -3,6 +3,14 @@ from gayeogi.main import version
 from gayeogi.db import local
 import os
 import shutil
+import logging
+
+class Handler(logging.Handler):
+    def __init__(self, logs, level = logging.DEBUG):
+        logging.Handler.__init__(self, level)
+        self.logs = logs
+    def emit(self, record):
+        self.logs.append(record.msg)
 
 @before.all
 def init():
@@ -10,8 +18,10 @@ def init():
     world.renames = list()
     world.exchanges = set()
     world.directory = list()
+    world.logs = list()
     world.ignores = list()
     world.expected = (version, {}, {}, {}, {}, [True])
+    world.expected_logs = list()
     world.data = {
         'data': (
             0, u'clockwork_test.mp3',
@@ -31,8 +41,10 @@ def init():
 
 @after.all
 def deinit(total):
-    shutil.move(os.path.join(world.basedir, u'temp', u'sweet_hommie.mp3'),
-            world.directory[0][0])
+    shutil.move(
+        os.path.join(world.basedir, u'temp', u'sweet_hommie.mp3'),
+        world.directory[0][0]
+    )
     for (old, new) in world.renames:
         os.rename(old, new)
     for ex in world.exchanges:
@@ -99,7 +111,7 @@ def enable_pattern(step, pattern):
     __remove_pattern_data(pattern)
     world.db.actualize(ignores = [(pattern, 2)])
 
-@step('I remove "(.*)" pattern')
+@step('remove "(.*)" pattern')
 def remove_pattern(step, pattern):
     __add_pattern_data(pattern)
     world.db.actualize(ignores = [])
@@ -112,7 +124,7 @@ def have_an_empty_database(step):
         world.database, world.ignores
     )
 
-@step('I scan the directory for files')
+@step('scan the directory for files')
 def scan_the_directory(step):
     world.db.start()
     world.db.wait()
@@ -121,14 +133,12 @@ def scan_the_directory(step):
 @step('they should be updated in the database')
 @step('it should be removed from the database')
 def should_get_added(step):
-    #assert world.database == world.expected
-    #assert False, "\n" + repr(world.database[2]) + "\n" + repr(world.expected[2])
-    assert world.database == world.expected, "\n" + repr(world.database) + "\n" + repr(world.expected)
+    assert world.database == world.expected
 
 @step('I add some more files to the directory')
 def add_some_more_files(step):
     shutil.copy2(os.path.join(world.basedir, u'temp/second_test.flac'),
-            os.path.join(world.basedir, u'data'))
+        os.path.join(world.basedir, u'data'))
     second_test = os.path.join(world.directory[world.index][0], u'second_test.flac')
     __add_to_expected((
         (
@@ -151,7 +161,7 @@ def rename_file(step, oldname, newname):
     world.expected[2][newpath][u'modified'] = os.stat(newpath).st_mtime
     del world.expected[2][oldpath]
     world.expected[1][u'Anthony Burgess'][u'1962'][u'A Clockwork Orange']\
-            [u'01'][u'Sweet Hommie'][u'path'] = newpath
+        [u'01'][u'Sweet Hommie'][u'path'] = newpath
 
 @step('I change (artist|date|album|tracknumber|title) tag for file "(.*)"')
 def change_tags_for_file(step, tag, filename):
@@ -161,39 +171,38 @@ def change_tags_for_file(step, tag, filename):
         del world.expected[1][u'Second']
         world.expected[2][oldpath][u'artist'] = u'Changed'
         world.expected[4][u'Changed0000Test'] =\
-                world.expected[4][u'Second0000Test']
+            world.expected[4][u'Second0000Test']
         del world.expected[4][u'Second0000Test']
     elif tag == 'date':
         world.expected[1][u'Changed'][u'1111'] =\
-                world.expected[1][u'Changed'][u'0000']
+            world.expected[1][u'Changed'][u'0000']
         del world.expected[1][u'Changed'][u'0000']
         world.expected[2][oldpath][u'date'] = u'1111'
         world.expected[4][u'Changed1111Test'] =\
-                world.expected[4][u'Changed0000Test']
+            world.expected[4][u'Changed0000Test']
         del world.expected[4][u'Changed0000Test']
     elif tag == 'album':
         world.expected[1][u'Changed'][u'1111'][u'Changed'] =\
-                world.expected[1][u'Changed'][u'1111'][u'Test']
+            world.expected[1][u'Changed'][u'1111'][u'Test']
         del world.expected[1][u'Changed'][u'1111'][u'Test']
         world.expected[2][oldpath][u'album'] = u'Changed'
         world.expected[4][u'Changed1111Changed'] =\
-                world.expected[4][u'Changed1111Test']
+            world.expected[4][u'Changed1111Test']
         del world.expected[4][u'Changed1111Test']
     elif tag == 'tracknumber':
         world.expected[1][u'Changed'][u'1111'][u'Changed'][u'777'] =\
-                world.expected[1][u'Changed'][u'1111'][u'Changed'][u'666']
+            world.expected[1][u'Changed'][u'1111'][u'Changed'][u'666']
         del world.expected[1][u'Changed'][u'1111'][u'Changed'][u'666']
         world.expected[2][oldpath][u'tracknumber'] = u'777'
     elif tag == 'title':
         world.expected[1][u'Changed'][u'1111'][u'Changed'][u'777'][u'Ch'] =\
-                world.expected[1][u'Changed']\
-                [u'1111'][u'Changed'][u'777'][u'ST']
+            world.expected[1][u'Changed'][u'1111'][u'Changed'][u'777'][u'ST']
         del world.expected[1][u'Changed'][u'1111'][u'Changed'][u'777'][u'ST']
         world.expected[2][oldpath][u'title'] = u'Ch'
     newpath = os.path.join(world.basedir,
-            u'temp', tag + u'_change_test_.flac')
+        u'temp', tag + u'_change_test_.flac')
     oldnewpath = os.path.join(world.basedir,
-            u'temp', tag + u'_change_test.flac')
+        u'temp', tag + u'_change_test.flac')
     shutil.copy2(oldpath, newpath)
     shutil.copy2(oldnewpath, oldpath)
     world.exchanges.add(newpath)
@@ -232,3 +241,42 @@ def enable_directory(step, directory):
         )
     ))
     world.db.actualize(directory = [(world.directory[1][0], 2)])
+
+@step('prepare a logger')
+def prepare_a_logger(step):
+    logger = logging.getLogger('gayeogi.local')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(Handler(world.logs))
+    world.db.actualize(
+        directory = world.db.directories + [(world.directory[0][0], 2)]
+    )
+    world.expected_logs = [
+        [u'Anthony Burgess', u'Something has been added.'],
+        [u'Changed', u'Something has been added.'],
+        [u'Windows', u'Something has been added.'],
+        [u'Changed', u'Something has been removed.'],
+        [u'Second', u'Something has been changed.'],
+        [u'Anthony Burgess', u'Something has been removed.']
+    ]
+
+@step('I add a file "(.*)"')
+def add_a_file(step, filename):
+    shutil.copy2(
+        os.path.join(world.basedir, u'temp', filename),
+        world.directory[0][0]
+    )
+
+@step('I replace new "(.*)" with the old one')
+def replace_new_with_the_old_one(step, filename):
+    shutil.copy2(
+        os.path.join(world.basedir, u'temp', u'second_test.flac'),
+        world.directory[0][0]
+    )
+
+@step('remove file named "(.*)"')
+def remove_file_named(step, filename):
+    os.remove(os.path.join(world.directory[0][0], filename))
+
+@step('proper logs should be generated')
+def proper_logs_should_be_generated(step):
+    assert world.logs == world.expected_logs
