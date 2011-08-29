@@ -40,13 +40,6 @@ class Filesystem(QThread):
     """
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
-    __messages = {
-        u'added': u'Something has been added.',
-        u'changed': u'Something has been changed.',
-        u'removed': u'Something has been removed.',
-        u'missing': u"You're probably missing some tags.",
-        u'cannot': u'Cannot open file.'
-    }
     def __init__(self, directory, library, ignores):
         """Constructs new Filesystem instance.
 
@@ -65,6 +58,13 @@ class Filesystem(QThread):
         self.ignores = ignores
         self.toremove = set()
         self.logged = set()
+        self.__messages = {
+            u'added': self.trUtf8('Something has been added.'),
+            u'changed': self.trUtf8('Something has been changed.'),
+            u'removed': self.trUtf8('Something has been removed.'),
+            u'missing': self.trUtf8("You're probably missing some tags."),
+            u'cannot': self.trUtf8('Cannot open file.')
+        }
     def log(self, level, element, message):
         """Sends specified message to logger if element wasn't logged already.
 

@@ -8,66 +8,80 @@ from sys import modules
 from threading import RLock
 from Queue import Queue
 from copy import deepcopy
+import logging
+
+class Handler(logging.Handler):
+    def __init__(self, logs, level = logging.DEBUG):
+        logging.Handler.__init__(self, level)
+        self.logs = logs
+    def emit(self, record):
+        self.logs.append(record.msg)
 
 @step('I have an existing database with some entries')
 def have_an_existing_database_with_some_entries(step):
     world.database = (version,
-            {
-                u'Metallica': {
-                    u'1984': {
-                        u'Ride the Lightning': {
-                            u'01': {
-                                u'Fight Fire with Fire': {
-                                    u'path': u'fire.mp3'
-                                }
-                            }
-                        }
-                    }
-                },
-                u'Iron Maiden': {
-                    u'1992': {
-                        u'Fear of the Dark': {
-                            u'01': {
-                                u'Be Quick or Be Dead': {
-                                    u'path': u'quick.mp3'
-                                }
-                            }
-                        }
-                    }
-                },
-                u'Pink Floyd': {
-                    u'1977': {
-                        u'Animals': {
-                            u'02': {
-                                u'Dogs': {
-                                    u'path': u'dogs.mp3'
-                                }
+        {
+            u'Metallica': {
+                u'1984': {
+                    u'Ride the Lightning': {
+                        u'01': {
+                            u'Fight Fire with Fire': {
+                                u'path': u'fire.mp3'
                             }
                         }
                     }
                 }
             },
-            {}, # It doesn't matter in these tests
-            {},
-            {
-                u'Metallica1984Ride the Lightning': {
-                    u'remote': set(),
-                    u'analog': False,
-                    u'digital': True
-                },
-                u'Iron Maiden1992Fear of the Dark': {
-                    u'remote': set(),
-                    u'analog': False,
-                    u'digital': True
-                },
-                u'Pink Floyd1977Animals': {
-                    u'remote': set(),
-                    u'analog': False,
-                    u'digital': True
+            u'Iron Maiden': {
+                u'1992': {
+                    u'Fear of the Dark': {
+                        u'01': {
+                            u'Be Quick or Be Dead': {
+                                u'path': u'quick.mp3'
+                            }
+                        }
+                    }
                 }
             },
-            [False])
+            u'Pink Floyd': {
+                u'1977': {
+                    u'Animals': {
+                        u'02': {
+                            u'Dogs': {
+                                u'path': u'dogs.mp3'
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {}, # It doesn't matter in these tests
+        {},
+        {
+            u'Metallica1984Ride the Lightning': {
+                u'remote': set(),
+                u'analog': False,
+                u'digital': True
+            },
+            u'Iron Maiden1992Fear of the Dark': {
+                u'remote': set(),
+                u'analog': False,
+                u'digital': True
+            },
+            u'Pink Floyd1977Animals': {
+                u'remote': set(),
+                u'analog': False,
+                u'digital': True
+            }
+        },
+        [False]
+    )
     world.expected = deepcopy(world.database)
+    world.logs = list()
+    world.expected_logs = list()
+    logger = logging.getLogger('gayeogi.remote')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(Handler(world.logs))
 
 @step('I start an internet update for "(.*)" (or|and) "(.*)"')
 def start_an_internet_update(step, firstdb, tribe, seconddb):
@@ -183,6 +197,11 @@ def remote1addexp():
     world.expected[3][u'Iron Maiden'] = {u'remote1': u'r1a'}
     world.expected[3][u'Metallica'] = {u'remote1': u'r1a'}
     world.expected[3][u'Pink Floyd'] = {u'remote1': u'r1a'}
+    world.expected_logs.extend([
+        [u'Pink Floyd', u'Something has been added.'],
+        [u'Iron Maiden', u'Something has been added.'],
+        [u'Metallica', u'Something has been added.']
+    ])
 def remote1remove(artist, element, urls, types):
     return {
         u'errors': set(),
@@ -197,6 +216,11 @@ def __remoteremoveexp(remote):
     world.expected[4][u'Metallica1984Ride the Lightning']\
         [u'remote'].discard(remote)
     world.expected[4][u'Pink Floyd1977Animals'][u'remote'].discard(remote)
+    world.expected_logs.extend([
+        [u'Pink Floyd', u'Something has been removed.'],
+        [u'Iron Maiden', u'Something has been removed.'],
+        [u'Metallica', u'Something has been removed.']
+    ])
 def remote1removeexp():
     __remoteremoveexp(u'remote1')
     world.expected[4][u'Iron Maiden2010Album2'][u'remote'].discard(u'remote1')
@@ -235,6 +259,11 @@ def remote2addexp():
     world.expected[3][u'Iron Maiden'][u'remote2'] = u'r2a'
     world.expected[3][u'Metallica'][u'remote2'] = u'r2a'
     world.expected[3][u'Pink Floyd'][u'remote2'] = u'r2a'
+    world.expected_logs.extend([
+        [u'Pink Floyd', u'Something has been added.'],
+        [u'Iron Maiden', u'Something has been added.'],
+        [u'Metallica', u'Something has been added.']
+    ])
 def remote2remove(artist, element, urls, types):
     return {
         u'errors': set(),
@@ -263,6 +292,14 @@ def remote2removecompexp():
     del world.expected[1][u'Iron Maiden'][u'2110']
     del world.expected[1][u'Metallica'][u'2110']
     del world.expected[1][u'Pink Floyd'][u'2110']
+    world.expected_logs.extend([
+        [u'Pink Floyd', u'No such band has been found.'],
+        [u'Pink Floyd', u'Something has been removed.'],
+        [u'Iron Maiden', u'No such band has been found.'],
+        [u'Iron Maiden', u'Something has been removed.'],
+        [u'Metallica', u'No such band has been found.'],
+        [u'Metallica', u'Something has been removed.']
+    ])
 
 @step('I (add|remove) (some|all) remote informations from "(.*)"')
 def some_remote_informations(step, option, option2, base):
@@ -273,8 +310,8 @@ def some_remote_informations(step, option, option2, base):
         real_base = remote2removecomp
         remote2removecompexp()
     tasks = Queue(1)
-    bee = Bee(tasks, world.database[1], world.database[3], world.database[4],
-            world.database[5], base, RLock(), dict())
+    bee = Bee(tasks, world.database[1], world.database[3],
+        world.database[4], world.database[5], base, RLock(), dict())
     for entry in world.database[1].iteritems():
         tasks.put((real_base, entry, []))
     tasks.put((False, (False, False), False))

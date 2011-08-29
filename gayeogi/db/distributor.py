@@ -101,21 +101,23 @@ class Bee(QThread):
                             partial[album] = {}
                             added = True
                     self.avai.setdefault(artist + year + album,
-                            {u'digital': False, u'analog': False,
-                                u'remote': set([self.name])}
-                            )[u'remote'].add(self.name)
+                        {
+                            u'digital': False, u'analog': False,
+                            u'remote': set([self.name])
+                        }
+                    )[u'remote'].add(self.name)
                     self.urls.setdefault(artist,
-                            {self.name: result[u'choice']}
-                            )[self.name] = result[u'choice']
+                        {self.name: result[u'choice']}
+                    )[self.name] = result[u'choice']
                     self.processed[artist] = True
                     self.rlock.release()
             finally:
                 self.rlock.acquire()
                 def __internal(artist, year, album):
                     key = artist + year + album
-                    if not self.avai[key][u'digital'] and \
-                            not self.avai[key][u'analog'] and \
-                            self.avai[key][u'remote'] == set([self.name]):
+                    if (not self.avai[key][u'digital'] and
+                    not self.avai[key][u'analog'] and
+                    self.avai[key][u'remote'] == set([self.name])):
                         __internal.torem.add((artist, year, album))
                     else:
                         try:
@@ -135,15 +137,15 @@ class Bee(QThread):
                             __internal(artist, year, album)
                 if added:
                     logger.info(
-                        [artist, self.trUtf8('Something has been added')])
+                        [artist, self.trUtf8('Something has been added.')])
                     self.modified[0] = True
                 if __internal.torem or __internal.norem:
                     logger.info(
-                        [artist, self.trUtf8('Something has been removed')])
+                        [artist, self.trUtf8('Something has been removed.')])
                     self.modified[0] = True
                 elif not added:
                     logger.info(
-                        [artist, self.trUtf8('Nothing has been changed')])
+                        [artist, self.trUtf8('Nothing has been changed.')])
                 while __internal.torem:
                     (artist, year, album) = __internal.torem.pop()
                     del self.library[artist][year][album]
@@ -206,7 +208,7 @@ class Distributor(QThread):
         for (name, threads, types) in bases:
             try:
                 db = __import__(u'gayeogi.db.bees.' + name, globals(),
-                        locals(), [u'work', u'name', u'init'], -1)
+                    locals(), [u'work', u'name', u'init'], -1)
             except ImportError: # it should not ever happen
                 logger.error(
                     [name, self.trUtf8('No such module has been found!!!')])
@@ -220,7 +222,7 @@ class Distributor(QThread):
                     pass
                 for _ in range(threads):
                     t = Bee(tasks, self.library, self.urls,
-                            self.avai, self.modified, db.name, rlock, processed)
+                        self.avai, self.modified, db.name, rlock, processed)
                     threa.append(t)
                 for entry in self.library.iteritems():
                     if not behaviour:

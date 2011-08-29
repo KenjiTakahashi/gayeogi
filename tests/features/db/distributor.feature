@@ -20,19 +20,24 @@ Feature: Synchronizing database with internet knowledge
         Given I have an existing database with some entries
         When I add some remote informations from "remote1" to it
         Then The local database should get updated appropriately
+        And proper logs should be generated
 
     Scenario: Add some entries received from the second remote database
         When I add some remote informations from "remote2" to it
         Then The local database should get updated appropriately
+        And proper logs should be generated
 
     Scenario: Remove some entries received from the first remote database
         When I remove some remote informations from "remote1" from it
         Then The local database should get updated appropriately
+        And proper logs should be generated
 
     Scenario: Remove some entries received from the second remote database
         When I remove some remote informations from "remote2" from it
         Then The local database should get updated appropriately
+        And proper logs should be generated
 
     Scenario: Remove the artist completely from the second remote database
         When I remove all remote informations from "remote2"
         Then The local database should get updated appropriately
+        And proper logs should be generated

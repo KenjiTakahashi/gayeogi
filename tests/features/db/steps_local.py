@@ -254,8 +254,8 @@ def prepare_a_logger(step):
         [u'Anthony Burgess', u'Something has been added.'],
         [u'Changed', u'Something has been added.'],
         [u'Windows', u'Something has been added.'],
-        [u'Changed', u'Something has been removed.'],
         [u'Second', u'Something has been changed.'],
+        [u'Changed', u'Something has been removed.'],
         [u'Anthony Burgess', u'Something has been removed.']
     ]
 
@@ -279,4 +279,6 @@ def remove_file_named(step, filename):
 
 @step('proper logs should be generated')
 def proper_logs_should_be_generated(step):
-    assert world.logs == world.expected_logs
+    assert world.logs == world.expected_logs, "\n"+repr(world.logs)+"\n"+repr(world.expected_logs)
+    del world.logs[:]
+    del world.expected_logs[:]
