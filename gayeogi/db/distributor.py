@@ -88,24 +88,18 @@ class Bee(QThread):
                 for (album, year) in result[u'result']:
                     albums.setdefault(year, set([album])).add(album)
                     self.rlock.acquire()
-                    partial = self.library[artist]
-                    try:
-                        partial = partial[year]
-                    except KeyError:
-                        partial[year] = {album: {}}
+                    partial = self.library[artist].setdefault(year, {})
+                    partial.setdefault(album, {})
+                    key = artist + year + album
+                    partial = self.avai.setdefault(key, {})
+                    if not partial:
+                        partial[u'analog'] = False
+                        partial[u'digital'] = False
+                        partial[u'remote'] = set([self.name])
                         added = True
-                    else:
-                        try:
-                            partial = partial[album]
-                        except KeyError:
-                            partial[album] = {}
-                            added = True
-                    self.avai.setdefault(artist + year + album,
-                        {
-                            u'digital': False, u'analog': False,
-                            u'remote': set([self.name])
-                        }
-                    )[u'remote'].add(self.name)
+                    elif self.name not in partial[u'remote']:
+                        partial[u'remote'].add(self.name)
+                        added = True
                     self.urls.setdefault(artist,
                         {self.name: result[u'choice']}
                     )[self.name] = result[u'choice']
