@@ -383,7 +383,7 @@ class Main(QtGui.QMainWindow):
         if position == 'start':
             position = 0
         elif position == 'end':
-            position = len(parent.parent().children()) - 1
+            position = len(parent.parent().children()) - 7
         if isinstance(parent, QtGui.QLayout):
             widget = parent.itemAt(position)
             if not widget:
@@ -408,7 +408,7 @@ class Main(QtGui.QMainWindow):
         if position == 'start':
             position = 0
         elif position == 'end':
-            position = len(parent.parent().children()) - 2
+            position = len(parent.parent().children()) - 8
         if isinstance(parent, QtGui.QLayout):
             widget = parent.itemAt(position).widget()
             try:
