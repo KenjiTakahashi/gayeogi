@@ -27,7 +27,7 @@ from gayeogi.db.distributor import Distributor
 from gayeogi.interfaces.settings import Settings
 import gayeogi.plugins
 
-version = u'0.6.1'
+version = u'0.6.2'
 locale = QLocale.system().name()
 if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices

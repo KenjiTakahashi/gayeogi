@@ -91,17 +91,11 @@ class Main(object):
         palette = msg.palette()
         palette.setColor(msg.backgroundRole(), Qt.yellow)
         msg.setPalette(palette)
-        def store():
+        def test():
             kind_ = unicode(kind.currentText())
             username_ = unicode(username.text())
-            if password.text() == password__:
-                pass_hash = unicode(
-                    Main.__settings.value(u'password_hash', u'').toString())
-                password_ = Main.__settings.value(
-                    u'password', 0).toInt()[0] * u'*'
-            else:
-                password_ = unicode(password.text())
-                pass_hash = pylast.md5(password_)
+            password_ = unicode(password.text())
+            pass_hash = pylast.md5(password_)
             def update(msg_, color):
                 msg.setText(msg_)
                 palette.setColor(msg.backgroundRole(), color)
@@ -117,29 +111,34 @@ class Main(object):
                         )
                         update(QtGui.QApplication.translate(
                             'Last.FM', 'Successful'), Qt.green)
-                        Main.__settings.setValue(u'kind', kind_)
-                        Main.__settings.setValue(u'username', username_) 
-                        Main.__settings.setValue(u'password', len(password_))
-                        Main.__settings.setValue(u'password_hash', pass_hash) 
                     except (pylast.NetworkError, pylast.WSError) as msg_:
                         update(unicode(msg_).split(u'.')[0], Qt.red)
                 Thread(target = __connect).start()
             else:
                 update(QtGui.QApplication.translate(
                     'Last.FM', 'Username and/or password is empty'), Qt.yellow)
-        apply_ = QtGui.QPushButton(QtGui.QApplication.translate(
-            'Last.FM', 'Apply'))
-        apply_.clicked.connect(store)
+        apply_ = QtGui.QPushButton(
+            QtGui.QApplication.translate('Last.FM', 'Test')
+        )
+        apply_.clicked.connect(test)
         testLayout = QtGui.QHBoxLayout()
         testLayout.addWidget(apply_)
         testLayout.addWidget(msg)
         layout = QtGui.QVBoxLayout()
         layout.addLayout(formLayout)
         layout.addLayout(testLayout)
+        layout.addStretch()
         widget = QtGui.QWidget()
         widget.setLayout(layout)
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
-        widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
+        def save(x, y):
+            Main.__settings.setValue(x, y)
+            Main.__settings.setValue(u'kind', unicode(kind.currentText()))
+            Main.__settings.setValue(u'username',unicode(username.text()))
+            password_ = unicode(password.text())
+            Main.__settings.setValue(u'password', len(password_))
+            Main.__settings.setValue(u'password_hash', pylast.md5(password_)) 
+        widget.setSetting = lambda x, y : save(x, y)
         return widget
     def scrobble(self, artist, title, album, track_number):
         def __scrobble(artist, title, album, track_number, timestamp = None):
