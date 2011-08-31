@@ -156,6 +156,8 @@ unsaved changes.
 -Plugins now have their own settings tabs if needed.
 -Filters now survive selection changes.
 -Corrected statistics counting (it now counts the same way for a and d and r).
+-Added gayeogi.desktop file. Keep in mind that it is NOT installed by setup.py
+directly, but by specific distribution binary packages.
 
 ===LOGS:
 -Yup, rewrite ;).

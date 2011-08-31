@@ -18,41 +18,44 @@
 from setuptools import setup
 
 setup(
-        name = 'gayeogi',
-        version = '0.6.1',
-        description = 'A fully-featured music management suite.',
-        author = 'Karol "Kenji Takahashi" Woźniak',
-        author_email = 'wozniakk@gmail.com',
-        license = 'GPL3',
-        url = 'http://github.com/KenjiTakahashi/gayeogi',
-        packages = [
-            'gayeogi',
-            'gayeogi.interfaces',
-            'gayeogi.db',
-            'gayeogi.db.bees',
-            'gayeogi.plugins'
-            ],
-        package_data = {
-            '': ['langs/*.qm']
-            },
-        scripts = ['scripts/gayeogi'],
-        install_requires = [
-            'mutagen'
-            ],
-        extras_require = {
-            'Last.FM': ['pylast'],
-            'metal-archives.com': ['lxml'],
-            'musicbrainz.org': ['lxml']
-            },
-        classifiers = [f.strip() for f in """
-        Development Status :: 4 - Beta
-        Environment :: Win32 (MS Windows)
-        Environment :: X11 Applications :: Qt
-        Intended Audience :: End Users/Desktop
-        License :: OSI Approved :: GNU General Public License (GPL)
-        Natural Language :: English
-        Operating System :: OS Independent
-        Programming Language :: Python :: 2
-        Topic :: Multimedia :: Sound/Audio :: Players
-        """.splitlines() if f.strip()]
-        )
+    name = 'gayeogi',
+    version = '0.6.2',
+    description = 'A fully-featured music management suite.',
+    long_description = open('README.rst').read() + 'nn',
+    author = 'Karol "Kenji Takahashi" Woźniak',
+    author_email = 'wozniakk@gmail.com',
+    license = 'GPL3',
+    url = 'http://github.com/KenjiTakahashi/gayeogi',
+    packages = [
+        'gayeogi',
+        'gayeogi.interfaces',
+        'gayeogi.db',
+        'gayeogi.db.bees',
+        'gayeogi.plugins'
+    ],
+    package_data = {
+        '': ['langs/*.qm']
+    },
+    scripts = ['scripts/gayeogi'],
+    install_requires = [
+        'mutagen'
+    ],
+    extras_require = {
+        'Last.FM': ['pylast'],
+        'metal-archives.com': ['lxml'],
+        'musicbrainz.org': ['lxml'],
+        'progarchives.com': ['lxml']
+    },
+    classifiers = [f.strip() for f in """
+    Development Status :: 4 - Beta
+    Environment :: Win32 (MS Windows)
+    Environment :: X11 Applications :: Qt
+    Intended Audience :: End Users/Desktop
+    License :: OSI Approved :: GNU General Public License (GPL)
+    Natural Language :: English
+    Natural Language :: Polish
+    Operating System :: OS Independent
+    Programming Language :: Python :: 2
+    Topic :: Multimedia :: Sound/Audio :: Players
+    """.splitlines() if f.strip()]
+)
