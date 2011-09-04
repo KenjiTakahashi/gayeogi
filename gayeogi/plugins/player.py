@@ -263,7 +263,6 @@ class Main(QtGui.QWidget):
         self.parent.tracks.itemActivated.connect(self.addItem)
         self.addWidget(u'horizontalLayout_2', self, 'end')
         self.mediaobject = Phonon.MediaObject()
-        self.mediaobject.setTickInterval(200)
         self.mediaobject.tick.connect(self.tick)
         self.mediaobject.aboutToFinish.connect(self.nextTrack)
         self.mediaobject.currentSourceChanged.connect(self.updateView)

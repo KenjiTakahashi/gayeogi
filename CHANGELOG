@@ -161,3 +161,6 @@ directly, but by specific distribution binary packages.
 
 ===LOGS:
 -Yup, rewrite ;).
+
+===PLAYER:
+-Removed explicit setTickInterval (it sometimes took over 0.5sec, yet wasn't really needed).
