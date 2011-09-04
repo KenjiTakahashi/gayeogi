@@ -33,6 +33,7 @@ REQUIRES
     pylast >= 0.5.6 (last.fm, libre.fm scrobbling)
 
     lxml >= 2.3 (metal-archives.com, musicbrainz.org, progarchives.com)
+
 NOTES
 *****
 - Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
@@ -81,3 +82,4 @@ USAGE
 NOTES
 -----
 - Keep in mind that first time refresh could take quite some time, but then it should be much faster :).
+
