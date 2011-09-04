@@ -21,7 +21,7 @@ setup(
     name = 'gayeogi',
     version = '0.6.2',
     description = 'A fully-featured music management suite.',
-    long_description = open('README.rst').read() + 'nn',
+    long_description = open('README.rst').read(),
     author = 'Karol "Kenji Takahashi" Woźniak',
     author_email = 'wozniakk@gmail.com',
     license = 'GPL3',
@@ -34,7 +34,7 @@ setup(
         'gayeogi.plugins'
     ],
     package_data = {
-        '': ['langs/*.qm']
+        '': ['langs/*.qm', '*/*.rst']
     },
     scripts = ['scripts/gayeogi'],
     install_requires = [
