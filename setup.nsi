@@ -17,7 +17,7 @@
 !include "Sections.nsh"
 
 Name "gayeogi"
-OutFile "gayeogi-0.6.1-x86.exe"
+OutFile "gayeogi-0.6.2-x86.exe"
 
 InstallDir "$PROGRAMFILES\gayeogi"
 
@@ -110,6 +110,16 @@ SectionGroup "Plugins"
 
         File "dist\plugins\langs\lastfm_pl_PL.qm"
     SectionEnd
+    Section "Logs" LOG
+        SetOutPath "$INSTDIR\plugins"
+
+        File "dist\plugins\logs.pyc"
+    SectionEnd
+    Section "-PolishLogs" POLLOG
+        SetOutPath "$INSTDIR\plugins\langs"
+
+        File "dist\plugins\langs\logs_pl_PL.qm"
+    SectionEnd
 SectionGroupEnd
 
 SectionGroup "Languages"
@@ -139,6 +149,11 @@ SectionGroup "Databases"
     
         File "dist\lxml*"
     SectionEnd
+    Section "progarchives.com" PA
+        SetOutPath "$INSTDIR\bees"
+
+        File "dist\bees\progarchives.pyc"
+    SectionEnd
 SectionGroupEnd
 
 Section "Start Menu Shortcuts"
@@ -154,7 +169,9 @@ FunctionEnd
 Function .onSelChange
     !insertmacro SectionFlagIsSet ${MA} ${SF_SELECTED} Select Second
     Second:
-    !insertmacro SectionFlagIsSet ${MB} ${SF_SELECTED} Select Unselect
+    !insertmacro SectionFlagIsSet ${MB} ${SF_SELECTED} Select Third
+    Third:
+    !insertmacro SectionFlagIsSet ${PA} ${SF_SELECTED} Select Unselect
     Unselect:
     !insertmacro UnselectSection ${LXML}
     Goto Next
@@ -181,9 +198,16 @@ Function .onSelChange
     !insertmacro SectionFlagIsSet ${FM} ${SF_SELECTED} FMSelect FMUnselect
     FMSelect:
     !insertmacro SelectSection ${POLFM}
-    Goto End
+    Goto LogCheck
     FMUnselect:
     !insertmacro UnselectSection ${POLFM}
+    LogCheck:
+    !insertmacro SectionFlagIsSet ${LOG} ${SF_SELECTED} LogSelect LogUnselect
+    LogSelect:
+    !insertmacro SelectSection ${POLLOG}
+    Goto End
+    LogUnselect:
+    !insertmacro UnselectSection ${POLLOG}
     End:
 FunctionEnd
 
@@ -207,10 +231,13 @@ Section "Uninstall"
     Delete "$INSTDIR\qt4_plugins\codecs\qcncodecs4.dll"
     Delete "$INSTDIR\plugins\langs\player_pl_PL.qm"
     Delete "$INSTDIR\plugins\langs\lastfm_pl_PL.qm"
+    Delete "$INSTDIR\plugins\langs\logs_pl_PL.qm"
     Delete "$INSTDIR\plugins\player.pyc"
     Delete "$INSTDIR\plugins\lastfm.pyc"
+    Delete "$INSTDIR\plugins\logs.pyc"
     Delete "$INSTDIR\plugins\__init__.pyc"
     Delete "$INSTDIR\langs\main_pl_PL.qm"
+    Delete "$INSTDIR\bees\progarchives.pyc"
     Delete "$INSTDIR\bees\musicbrainz.pyc"
     Delete "$INSTDIR\bees\metalArchives.pyc"
     Delete "$INSTDIR\win32api.pyd"

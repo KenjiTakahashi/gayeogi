@@ -303,8 +303,8 @@ class Main(QtGui.QMainWindow):
             self.library = self.db.read()
             self.update()
         directory = self.__settings.value(u'directory', []).toPyObject()
-        directory = (type(directory) == list
-        and directory or [(unicode(directory), 2)])
+        if type(directory) != list:
+            directory = [(unicode(directory), 2)]
         self.fs = Filesystem(directory, self.library, self.ignores)
         self.fs.stepped.connect(self.statusBar().showMessage)
         self.fs.updated.connect(self.update)
@@ -489,8 +489,8 @@ class Main(QtGui.QMainWindow):
         u"""Show settings dialog and then update accordingly."""
         def __save():
             directory = self.__settings.value(u'directory', []).toPyObject()
-            directory = (type(directory) == list
-                and directory or [(unicode(directory), 2)])
+            if type(directory) != list:
+                directory = [(unicode(directory), 2)]
             self.ignores = self.__settings.value(u'ignores', []).toPyObject()
             self.fs.actualize(directory, self.ignores)
             self.removePluginsTranslators()

@@ -504,7 +504,8 @@ class Settings(QtGui.QDialog):
         self.tabs.addTab(self.dbs, self.trUtf8('&Databases'))
         # Local
         directory = self.__settings.value(u'directory', []).toPyObject()
-        directory = type(directory) == list and directory or [(directory, 2)]
+        if type(directory) != list:
+            directory = [(unicode(directory), 2)]
         ignores = self.__settings.value(u'ignores', []).toPyObject()
         if ignores == None:
             ignores = []
