@@ -496,7 +496,6 @@ class Settings(QtGui.QDialog):
         self.tabs.currentChanged.connect(self.globalMessage)
         # Databases
         order = self.__dbsettings.value(u'order', []).toPyObject()
-        print order
         if order == None:
             order = []
         self.dbs = DatabasesTab(order, self.__dbsettings)

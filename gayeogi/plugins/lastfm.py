@@ -22,6 +22,7 @@ from threading import Thread
 from time import time, sleep
 
 class Main(object):
+    u"""Last.FM/Libre.FM plugin."""
     name = u'Last.FM'
     loaded = False
     depends = [u'player']
@@ -32,10 +33,22 @@ class Main(object):
     __settings = QSettings(u'gayeogi', u'Last.FM')
     __sem = True
     def __init__(self, parent, ___, _, __):
+        """Creates new Main instance.
+
+        Args:
+            parent: parent widget
+            ___: whatever
+            _: whatever
+            __: whatever
+
+        """
         username = unicode(Main.__settings.value(u'username', u'').toString())
         password = unicode(
-            Main.__settings.value(u'password_hash', u'').toString())
+            Main.__settings.value(u'password_hash', u'').toString()
+        )
         kind = unicode(Main.__settings.value(u'kind', u'Last.FM').toString())
+        proxyhost = unicode(Main.__settings.value(u'phost', u'').toString())
+        proxyport = unicode(Main.__settings.value(u'pport', u'').toString())
         if username != u'' and password != u'':
             self.parent = parent
             def __connect():
@@ -47,6 +60,8 @@ class Main(object):
                             username = username,
                             password_hash = password
                         )
+                        if proxyhost and proxyport:
+                            Main.__net.enable_proxy(proxyhost, proxyport)
                         Main.__sem = False
                     except:
                         sleep(5)
@@ -57,9 +72,11 @@ class Main(object):
             Thread(target = __connect).start()
             parent.plugins[u'player'].trackChanged.connect(self.scrobble)
     def load(self):
+        """Loads the plugin in."""
         Main.__sem = True
         Main.loaded = True
     def unload(self):
+        """Unloads the plugin."""
         Main.__sem = False
         try:
             self.parent.plugins[u'player'].trackChanged.disconnect()
@@ -68,15 +85,29 @@ class Main(object):
         Main.loaded = False
     @staticmethod
     def QConfiguration():
+        """Creates configuration widget.
+
+        Returns:
+            QWidget -- config widget used in settings dialog.
+
+        """
         kind = QtGui.QComboBox()
         kind.addItem(u'Last.FM')
         kind.addItem(u'Libre.FM')
         username = QtGui.QLineEdit(
-            Main.__settings.value(u'username', u'').toString())
+            Main.__settings.value(u'username', u'').toString()
+        )
         password = QtGui.QLineEdit()
         password.setEchoMode(password.Password)
-        password__ = Main.__settings.value(u'password', u'').toInt()[0] * u'*'
-        password.setText(password__)
+        password.setText(
+            Main.__settings.value(u'password', u'').toInt()[0] * u'*'
+        )
+        proxyhost = QtGui.QLineEdit(
+            Main.__settings.value(u'phost', u'').toString()
+        )
+        proxyport = QtGui.QLineEdit(
+            Main.__settings.value(u'pport', u'').toString()
+        )
         formLayout = QtGui.QFormLayout()
         formLayout.addRow(QtGui.QApplication.translate(
             'Last.FM', 'Database:'), kind)
@@ -84,6 +115,10 @@ class Main(object):
             'Last.FM', 'Username:'), username)
         formLayout.addRow(QtGui.QApplication.translate(
             'Last.FM', 'Password:'), password)
+        formLayout.addRow(QtGui.QApplication.translate(
+            'Last.FM', 'Proxy host:'), proxyhost)
+        formLayout.addRow(QtGui.QApplication.translate(
+            'Last.FM', 'Proxy port:'), proxyport)
         msg = QtGui.QLabel(QtGui.QApplication.translate(
             'Last.FM', 'Not tested yet'))
         msg.setAutoFillBackground(True)
@@ -96,6 +131,8 @@ class Main(object):
             username_ = unicode(username.text())
             password_ = unicode(password.text())
             pass_hash = pylast.md5(password_)
+            proxyhost_ = unicode(proxyhost.text())
+            proxyport_ = unicode(proxyport.text())
             def update(msg_, color):
                 msg.setText(msg_)
                 palette.setColor(msg.backgroundRole(), color)
@@ -109,6 +146,8 @@ class Main(object):
                             username = username_,
                             password_hash = pass_hash
                         )
+                        if proxyhost_ and proxyport_:
+                            Main.__net.enable_proxy(proxyhost_, proxyport_)
                         update(QtGui.QApplication.translate(
                             'Last.FM', 'Successful'), Qt.green)
                     except (pylast.NetworkError, pylast.WSError) as msg_:
@@ -138,9 +177,22 @@ class Main(object):
             password_ = unicode(password.text())
             Main.__settings.setValue(u'password', len(password_))
             Main.__settings.setValue(u'password_hash', pylast.md5(password_)) 
+            Main.__settings.setValue(u'phost', unicode(proxyhost.text()))
+            Main.__settings.setValue(u'pport', unicode(proxyport.text()))
         widget.setSetting = lambda x, y : save(x, y)
         return widget
     def scrobble(self, artist, title, album, track_number):
+        """Send specified track to selected scrobbling service.
+
+        It also reads and sends tracks from queue, if any.
+
+        Args:
+            artist (unicode): artist name
+            title (unicode): track title
+            album (unicode): album name
+            track_number (int): track number
+
+        """
         def __scrobble(artist, title, album, track_number, timestamp = None):
             try:
                 Main.__net.scrobble(
