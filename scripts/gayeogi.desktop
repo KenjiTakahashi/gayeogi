@@ -5,4 +5,4 @@ GenericName[pl]=Program do zarządzania muzyką
 Exec=gayeogi
 Terminal=false
 Type=Application
-Categories=Audio;Qt;
+Categories=AudioVideo;Audio;Music;Player;Qt;

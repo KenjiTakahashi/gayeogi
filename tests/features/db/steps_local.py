@@ -133,7 +133,7 @@ def scan_the_directory(step):
 @step('they should be updated in the database')
 @step('it should be removed from the database')
 def should_get_added(step):
-    assert world.database == world.expected
+    assert world.database == world.expected, "\n" + repr(world.database) + "\n" + repr(world.expected)
 
 @step('I add some more files to the directory')
 def add_some_more_files(step):
@@ -203,8 +203,8 @@ def change_tags_for_file(step, tag, filename):
         u'temp', tag + u'_change_test_.flac')
     oldnewpath = os.path.join(world.basedir,
         u'temp', tag + u'_change_test.flac')
-    shutil.copy2(oldpath, newpath)
-    shutil.copy2(oldnewpath, oldpath)
+    shutil.copy(oldpath, newpath)
+    shutil.copy(oldnewpath, oldpath)
     world.exchanges.add(newpath)
     world.expected[2][oldpath][u'modified'] = os.stat(oldpath).st_mtime
 
@@ -279,6 +279,6 @@ def remove_file_named(step, filename):
 
 @step('proper logs should be generated')
 def proper_logs_should_be_generated(step):
-    assert world.logs == world.expected_logs, "\n"+repr(world.logs)+"\n"+repr(world.expected_logs)
+    assert world.logs == world.expected_logs, "\n" + repr(world.logs) + "\n" + repr(world.expected_logs)
     del world.logs[:]
     del world.expected_logs[:]
