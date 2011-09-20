@@ -164,3 +164,8 @@ directly, but by specific distribution binary packages.
 
 ===PLAYER:
 -Removed explicit setTickInterval (it sometimes took over 0.5sec, yet wasn't really needed).
+
+==0.6.3:
+
+===MAIN:
+-Fixed: Databases order wasn't read correctly.
