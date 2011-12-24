@@ -22,7 +22,7 @@ from threading import Thread
 from time import time, sleep
 
 class Main(object):
-    u"""Last.FM/Libre.FM plugin."""
+    """Last.FM/Libre.FM plugin."""
     name = u'Last.FM'
     loaded = False
     depends = [u'player']
