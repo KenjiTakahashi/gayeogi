@@ -171,7 +171,6 @@ class MPRIS2Main(dbus.service.Object):
     __path = '/org/mpris/MediaPlayer2'
     __busname = 'org.mpris.MediaPlayer2.gayeogi'
     __propint = 'org.freedesktop.DBus.Properties'
-    #__intrint = 'org.freedesktop.DBus.Introspectable'
     __root = 'org.mpris.MediaPlayer2'
     __player = 'org.mpris.MediaPlayer2.Player'
     __tracklist = 'org.mpris.MediaPlayer2.TrackList'
@@ -179,6 +178,38 @@ class MPRIS2Main(dbus.service.Object):
     def __init__(self):
         bus = dbus.SessionBus()
         name = dbus.service.BusName(self.__busname, bus)
+        self.__mapping = {
+            self.__root: [
+                "CanQuit",
+                "CanRaise",
+                "HasTrackList",
+                "Identity",
+                "DesktopEntry",
+                "SupportedUriSchemes",
+                "SupportedMimeTypes"
+            ],
+            self.__player: [
+                "PlaybackStatus",
+                "LoopStatus",
+                "Rate",
+                "Shuffle",
+                "Metadata",
+                "Volume",
+                "Position",
+                "MinimumRate",
+                "MaximumRate",
+                "CanGoNext",
+                "CanGoPrevious",
+                "CanPlay",
+                "CanPause",
+                "CanSeek",
+                "CanControl"
+            ],
+            self.__tracklist: [
+                "Tracks",
+                "CanEditTracks"
+            ]
+        }
         super(type(self), self).__init__(name, self.__path)
 
     @dbus.service.method(__root)
@@ -353,28 +384,40 @@ class MPRIS2Main(dbus.service.Object):
         pass
 
     @dbus.service.signal(__tracklist, signature="aoo")
-    def TrackListReplaced(self):
+    def TrackListReplaced(self, arg1, arg2):  # change names!
         pass
 
     @dbus.service.signal(__tracklist, signature="a{sv}o")
-    def TrackAdded(self):
+    def TrackAdded(self, arg1, arg2):
         pass
 
     @dbus.service.signal(__tracklist, signature="o")
-    def TrackRemoved(self):
+    def TrackRemoved(self, arg1):
         pass
 
     @dbus.service.signal(__tracklist, signature="oa{sv}")
-    def TrackMetadataChanged(self):
+    def TrackMetadataChanged(self, arg1, arg2):
         pass
 
     @dbus.service.method(__tracklist, out_signature="ao")
-    def Tracks(self):
+    def Tracks(self, arg1):
         pass
 
     @dbus.service.method(__tracklist, out_signature="b")
-    def CanEditTracks(self):
+    def CanEditTracks(self, arg1):
         pass
+
+    @dbus.service.method(__propint, in_signature="ss", out_signature="v")
+    def Get(self, interface, prop):
+        return getattr(self, prop)()
+
+    @dbus.service.method(__propint, in_signature="ssv")
+    def Set(self, interface, prop, value):
+        getattr(self, "Set" + prop)(value)
+
+    @dbus.service.method(__propint, in_signature="s", out_signature="a{sv}")
+    def GetAll(self, interface):
+        return {key: getattr(self, key)() for key in self.__mapping[interface]}
 
     @dbus.service.signal(__propint, signature="sa{sv}as")
     def PropertiesChanged(self, interface, chprops, invprops):
