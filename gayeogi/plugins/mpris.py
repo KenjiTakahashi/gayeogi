@@ -18,7 +18,8 @@
 import dbus
 import dbus.service
 from dbus.mainloop.qt import DBusQtMainLoop
-from PyQt4.QtCore import QSettings
+from PyQt4 import QtGui
+from PyQt4.QtCore import QSettings, Qt
 
 
 class MPRIS1Main(dbus.service.Object):
@@ -424,22 +425,75 @@ class MPRIS2Main(dbus.service.Object):
         pass
 
 
-from PyQt4 import QtGui
-import sys
-app = QtGui.QApplication(sys.argv)
-DBusQtMainLoop(set_as_default=True)
-#s = MPRIS1Main()
-#ss = MPRIS1Tracklist()
-#sss = MPRIS1Player()
-s = MPRIS2Main()
-sys.exit(app.exec_())
+#from PyQt4 import QtGui
+#import sys
+#app = QtGui.QApplication(sys.argv)
+#DBusQtMainLoop(set_as_default=True)
+##s = MPRIS1Main()
+##ss = MPRIS1Tracklist()
+##sss = MPRIS1Player()
+#s = MPRIS2Main()
+#sys.exit(app.exec_())
 
 
 class Main(object):
     name = u'MPRIS'
     loaded = False
-    depends = [u'player']  # don't know if it will stay here
-    __settings = QSettings(u'gayeogi', u'Mpris')
+    depends = [u'player']
+    __settings = QSettings(u'gayeogi', u'MPRIS')
 
     def __init__(self, parent, ___, _, __):
-        pass
+        """Constructs new Main instance.
+
+        Args:
+            parent: parent widget
+            ___: whatever
+            _: whatever
+            __: whatever
+
+        """
+        self.player = parent.plugins[u'player']
+
+    def load(self):
+        """Loads the plugin in."""
+        DBusQtMainLoop(set_as_default=True)
+        if self.__settings.value(u'2.1').toBool():
+            self.__21 = MPRIS2Main()
+        if self.__settings.value(u'1.0').toBool():
+            self.__10Main = MPRIS1Main()
+            self.__10Player = MPRIS1Player()
+            self.__10Tracklist = MPRIS1Tracklist()
+        Main.loaded = True
+
+    def unload(self):  # should we do sth more here?
+        """Unloads the plugin."""
+        Main.loaded = False
+
+    @staticmethod
+    def QConfiguration():
+        """Creates configuration widget.
+
+        Returns:
+            QWidget -- config widget used in settings dialog.
+
+        """
+        types = QtGui.QListWidget()
+        for type in [u'1.0', u'2.1']:
+            item = QtGui.QListWidgetItem(type)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(Main.__settings.value(type, 0).toInt()[0])
+            types.addItem(item)
+        layout = QtGui.QHBoxLayout()
+        layout.addWidget(types)
+        widget = QtGui.QWidget()
+        widget.setLayout(layout)
+        widget.enabled = Main.__settings.value('enabled', 0).toInt()[0]
+        def save(x, y):
+            Main.__settings.setValue(x, y)
+            for i in range(types.count()):
+                item = types.item(i)
+                type = unicode(item.text())
+                state = item.checkState()
+                Main.__settings.setValue(type, state)
+        widget.setSetting = lambda x, y : save(x, y)
+        return widget
