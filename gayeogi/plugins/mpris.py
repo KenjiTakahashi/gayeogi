@@ -20,6 +20,7 @@ import dbus.service
 from dbus.mainloop.qt import DBusQtMainLoop
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt
+from PyQt4.phonon import Phonon
 
 
 class MPRIS1Main(dbus.service.Object):
@@ -176,7 +177,7 @@ class MPRIS2Main(dbus.service.Object):
     __player = 'org.mpris.MediaPlayer2.Player'
     __tracklist = 'org.mpris.MediaPlayer2.TrackList'
 
-    def __init__(self):
+    def __init__(self, player):
         bus = dbus.SessionBus()
         name = dbus.service.BusName(self.__busname, bus)
         self.__mapping = {
@@ -211,19 +212,14 @@ class MPRIS2Main(dbus.service.Object):
                 "CanEditTracks"
             ]
         }
+        self.player = player
         super(type(self), self).__init__(name, self.__path)
-
-    @dbus.service.method(__root)
-    def Raise(self):
-        pass
-
-    @dbus.service.method(__root)
-    def Quit(self):
-        pass
+        self.player.mediaobject.stateChanged.connect(self.__SetPlaybackStatus)
+        self.player.audiooutput.volumeChanged.connect(self.__emitVolume)
 
     @dbus.service.method(__root, out_signature="b")
     def CanQuit(self):
-        return True
+        return False
 
     @dbus.service.method(__root, out_signature="b")
     def CanRaise(self):
@@ -243,43 +239,48 @@ class MPRIS2Main(dbus.service.Object):
 
     @dbus.service.method(__root, out_signature="as")
     def SupportedUriSchemes(self):
-        pass
+        return dbus.Array(signature="s")
 
     @dbus.service.method(__root, out_signature="as")
     def SupportedMimeTypes(self):
-        pass
+        return dbus.Array(signature="s")
 
     @dbus.service.method(__player)
     def Next(self):
-        pass
+        self.player.next_()
 
     @dbus.service.method(__player)
     def Previous(self):
-        pass
+        self.player.previous()
 
     @dbus.service.method(__player)
     def Pause(self):
-        pass
+        self.player.mediaobject.pause()
 
     @dbus.service.method(__player)
     def PlayPause(self):
-        pass
+        self.player.playByButton()
 
     @dbus.service.method(__player)
     def Stop(self):
-        pass
+        self.player.stop()
 
     @dbus.service.method(__player)
     def Play(self):
-        pass
+        self.player.mediaobject.play()
 
     @dbus.service.method(__player, in_signature="x")
     def Seek(self, offset):
-        pass
+        position = self.player.mediaobject.currentTime() * 1000 + offset
+        self.SetPosition(self.player.playlist.activeRow, position)
 
     @dbus.service.method(__player, in_signature="ox")
     def SetPosition(self, id, position):
-        pass
+        if(id == self.player.playlist.activeRow and
+           position >= 0 and
+           position <= self.player.mediaobject.totalTime()
+        ):
+            self.player.mediaobject.seek(position / 1000)
 
     @dbus.service.method(__player, in_signature="s")
     def OpenUri(self, uri):
@@ -289,13 +290,52 @@ class MPRIS2Main(dbus.service.Object):
     def Seeked(self, position):
         pass
 
+    __playbackStates = {
+        Phonon.LoadingState: "Playing",
+        Phonon.StoppedState: "Stopped",
+        Phonon.PlayingState: "Playing",
+        Phonon.BufferingState: "Playing",
+        Phonon.PausedState: "Paused",
+        Phonon.ErrorState: "Stopped"
+    }
+    __playbackStatus = "Stopped"
+
+    def __SetPlaybackStatus(self, state):
+        """Changes current playback status as it changes in the player.
+
+        Args:
+            state (int): One of possible Phonon playback states
+
+        """
+        self.__playbackStatus = self.__playbackStates[state]
+        self.PropertiesChanged(
+            self.__player,
+            {"PlaybackStatus": self.__playbackStatus},
+            []
+        )
+
     @dbus.service.method(__player, out_signature="s")
     def PlaybackStatus(self):
-        pass
+        """Returns current playback status.
+
+        Should be 'Playing', 'Paused' or 'Stopped'.
+        Set internally with __SetPlaybackStatus method.
+
+        Note: It might not be accurate as Phonon supports more states than
+        MPRIS standard.
+
+        """
+        return self.__playbackStatus
 
     @dbus.service.method(__player, out_signature="s")
     def LoopStatus(self):
-        pass
+        """Returns current loop status.
+
+        Should be 'None', 'Track' or 'Playlist', but returns 'NotSupported'
+        for now, because we have no loop support in the player.
+
+        """
+        return "NotSupported"  # that's temporary
 
     @dbus.service.method(__player, in_signature="s")
     def SetLoopStatus(self, loops):
@@ -303,7 +343,12 @@ class MPRIS2Main(dbus.service.Object):
 
     @dbus.service.method(__player, out_signature="d")
     def Rate(self):
-        pass
+        """Returns current playback rate.
+
+        Always returns 1.0 as our player has no ability to change it.
+
+        """
+        return 1.0
 
     @dbus.service.method(__player, in_signature="d")
     def SetRate(self, rate):
@@ -311,7 +356,12 @@ class MPRIS2Main(dbus.service.Object):
 
     @dbus.service.method(__player, out_signature="b")
     def Shuffle(self):
-        pass
+        """Returns if player is currently shuffling or not.
+
+        Returns False for now as we don't have shuffling support in the player.
+
+        """
+        return False
 
     @dbus.service.method(__player, in_signature="b")
     def SetShuffle(self, shuffle):
@@ -324,51 +374,66 @@ class MPRIS2Main(dbus.service.Object):
         metadata["title"] = "Lol"
         return metadata
 
+    def __emitVolume(self, volume):
+        self.PropertiesChanged(self.__player, {"Volume": volume}, [])
+
     @dbus.service.method(__player, out_signature="d")
     def Volume(self):
-        pass
+        return self.player.audiooutput.volume()
 
     @dbus.service.method(__player, in_signature="d")
     def SetVolume(self, volume):
-        pass
+        self.player.audiooutput.setVolume(volume)
+        self.__emitVolume(volume)
 
     @dbus.service.method(__player, out_signature="x")
     def Position(self):
-        pass
+        return self.player.mediaobject.currentTime() * 1000
 
     @dbus.service.method(__player, out_signature="d")
     def MinimumRate(self):
-        pass
+        """Returns the lowest possible playback rate.
+
+        It's always 1.0 (see Rate).
+
+        """
+        return 1.0
 
     @dbus.service.method(__player, out_signature="d")
     def MaximumRate(self):
-        pass
+        """Returns the highest possible playback rate.
+
+        It's always 1.0 (see Rate).
+
+        """
+        return 1.0
 
     @dbus.service.method(__player, out_signature="b")
     def CanGoNext(self):
-        pass
+        return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanGoPrevious(self):
-        pass
+        return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanPlay(self):
-        pass
+        return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanPause(self):
-        pass
+        return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanSeek(self):
-        pass
+        return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanControl(self):
         return True
 
-    @dbus.service.method(__tracklist, in_signature="ao", out_signature="aa{sv}")
+    @dbus.service.method(__tracklist, in_signature="ao",
+        out_signature="aa{sv}")
     def GetTracksMetadata(self, ids):
         pass
 
@@ -458,7 +523,7 @@ class Main(object):
         """Loads the plugin in."""
         DBusQtMainLoop(set_as_default=True)
         if self.__settings.value(u'2.1').toBool():
-            self.__21 = MPRIS2Main()
+            self.__21 = MPRIS2Main(self.player)
         if self.__settings.value(u'1.0').toBool():
             self.__10Main = MPRIS1Main()
             self.__10Player = MPRIS1Player()
@@ -488,6 +553,7 @@ class Main(object):
         widget = QtGui.QWidget()
         widget.setLayout(layout)
         widget.enabled = Main.__settings.value('enabled', 0).toInt()[0]
+
         def save(x, y):
             Main.__settings.setValue(x, y)
             for i in range(types.count()):
@@ -495,5 +561,5 @@ class Main(object):
                 type = unicode(item.text())
                 state = item.checkState()
                 Main.__settings.setValue(type, state)
-        widget.setSetting = lambda x, y : save(x, y)
+        widget.setSetting = lambda x, y: save(x, y)
         return widget
