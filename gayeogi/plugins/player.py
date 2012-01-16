@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
+# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -57,29 +57,55 @@ class PlayListItemDelegate(QtGui.QStyledItemDelegate):
 
 class Playlist(QtGui.QListWidget, object):
     dropped = pyqtSignal(QtGui.QTreeWidgetItem)
+    activeRemoved = pyqtSignal()
     @property
     def activeItem(self):
-        return self.__activeItem
+        return self._activeItem
     @activeItem.setter
     def activeItem(self, item):
         try:
-            self.__activeItem.setData(670, None)
+            self._activeItem.setData(670, None)
         except AttributeError:
             pass
         else:
-            self.__activeItem.setData(671, None)
-            self.__activeItem.setData(672, False)
+            self._activeItem.setData(671, None)
+            self._activeItem.setData(672, False)
         finally:
-            self.__activeItem = item
+            self._activeItem = item
         if item:
-            self.__activeItem.setData(672, True)
-            self.__activeRow = self.row(item)
+            self._activeItem.setData(672, True)
+            self._activeRow = self.row(item)
     @property
     def activeRow(self):
-        return self.__activeRow
+        return self._activeRow
     @activeRow.setter
     def activeRow(self, value):
-        self.__activeRow += 1
+        self._activeRow += 1
+
+    def remove(self, i):
+        try:
+            activeRow = self.activeRow
+        except AttributeError:
+            activeRow = None
+        if type(i) != int:
+            i = self.row(i)
+        if i == activeRow:
+            self.activeRemoved.emit()
+        self.takeItem(i)
+
+    def __getitem__(self, id):
+        # It will change with the future structure change,
+        # for now just give them what we got...
+        item = self.item(id)
+        if item == None:
+            raise IndexError
+        return {
+            'xesam:trackNumber': item.data(666).toInt()[0],
+            'xesam:title': unicode(item.data(667).toString()),
+            'xesam:album': unicode(item.data(668).toString()),
+            'xesam:artist': [unicode(item.data(669).toString())]
+        }
+
     def dropEvent(self, event):
         source = event.source()
         model = QtGui.QStandardItemModel()
@@ -122,7 +148,8 @@ class PlayPausePushButton(PlayerPushButton):
         PlayerPushButton.__init__(self, parent)
         self.playPath = QtGui.QPainterPath()
         self.playPath.addPolygon(QtGui.QPolygonF(
-            [QPointF(7, 7), QPointF(7, 23), QPointF(23, 15)]))
+            [QPointF(7, 7), QPointF(7, 23), QPointF(23, 15)])
+        )
         self.pausePath = QtGui.QPainterPath()
         self.pausePath.addRoundedRect(7, 7, 6, 16, 60, 20, Qt.RelativeSize)
         self.pausePath.addRoundedRect(17, 7, 6, 16, 60, 20, Qt.RelativeSize)
@@ -146,17 +173,21 @@ class PreviousPushButton(PlayerPushButton):
         PlayerPushButton.__init__(self, parent)
         self.path.addRoundedRect(7, 7, 6, 16, 60, 20, Qt.RelativeSize)
         self.path.addPolygon(QtGui.QPolygonF(
-            [QPointF(13, 15), QPointF(18, 7), QPointF(18, 23)]))
+            [QPointF(13, 15), QPointF(18, 7), QPointF(18, 23)])
+        )
         self.path.addPolygon(QtGui.QPolygonF(
-            [QPointF(18, 15), QPointF(23, 7), QPointF(23, 23)]))
+            [QPointF(18, 15), QPointF(23, 7), QPointF(23, 23)])
+        )
 
 class NextPushButton(PlayerPushButton):
     def __init__(self, parent = None):
         PlayerPushButton.__init__(self, parent)
         self.path.addPolygon(QtGui.QPolygonF(
-            [QPointF(7, 7), QPointF(7, 23), QPointF(12, 15)]))
+            [QPointF(7, 7), QPointF(7, 23), QPointF(12, 15)])
+        )
         self.path.addPolygon(QtGui.QPolygonF(
-            [QPointF(12, 7), QPointF(12, 23), QPointF(17, 15)]))
+            [QPointF(12, 7), QPointF(12, 23), QPointF(17, 15)])
+        )
         self.path.addRoundedRect(17, 7, 6, 16, 60, 20, Qt.RelativeSize)
 
 class Main(QtGui.QWidget):
@@ -246,8 +277,9 @@ class Main(QtGui.QWidget):
             item.path = self.__settings.value(unicode(i) + 'path').toString()
             self.playlist.addItem(item)
         self.__settings.endGroup()
-        #self.playlist.setDragDropMode(self.playlist.DragDrop)
+        self.playlist.setDragDropMode(self.playlist.DragDrop)
         self.playlist.itemActivated.connect(self.play)
+        self.playlist.activeRemoved.connect(self.stop)
         #self.playlist.dropped.connect(self.addItem)
         playlistShortcut = QtGui.QShortcut(
             QtGui.QKeySequence(Qt.Key_Delete), self.playlist)
@@ -323,6 +355,11 @@ class Main(QtGui.QWidget):
         self.mediaobject.enqueue(Phonon.MediaSource(item.path))
         self.mediaobject.play()
         self.playButton.setPlaying(True)
+
+    def goTo(self, i):
+        if type(i) == int:
+            self.play(self.playlist.item(i))
+
     def stop(self):
         self.playlist.activeItem = None
         self.playButton.setPlaying(False)
@@ -359,11 +396,11 @@ class Main(QtGui.QWidget):
         if not addItems(self.parent.tracks.selectedItems()):
             if not addItems(self.parent.albums.selectedItems()):
                 addItems(self.parent.artists.selectedItems())
+
     def removeByButton(self):
         for item in self.playlist.selectedItems():
-            if item == self.playlist.activeItem:
-                self.stop()
-            self.playlist.takeItem(self.playlist.row(item))
+            self.playlist.remove(item)
+
     def addItem(self, item, column = -1):
         if column != -1:
             self.stop()

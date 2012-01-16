@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2011
+# Karol "Kenji Takahashi" Wozniak (C) 2011 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -216,6 +216,7 @@ class MPRIS2Main(dbus.service.Object):
         super(type(self), self).__init__(name, self.__path)
         self.player.mediaobject.stateChanged.connect(self.__SetPlaybackStatus)
         self.player.audiooutput.volumeChanged.connect(self.__emitVolume)
+        self.player.trackChanged.connect(self.__emitMetadata)
 
     @dbus.service.method(__root, out_signature="b")
     def CanQuit(self):
@@ -331,14 +332,19 @@ class MPRIS2Main(dbus.service.Object):
     def LoopStatus(self):
         """Returns current loop status.
 
-        Should be 'None', 'Track' or 'Playlist', but returns 'NotSupported'
-        for now, because we have no loop support in the player.
+        Should be 'None', 'Track' or 'Playlist', but returns 'None'
+        for now, because there's no loop support in the player.
 
         """
-        return "NotSupported"  # that's temporary
+        return "None"  # that's temporary
 
     @dbus.service.method(__player, in_signature="s")
     def SetLoopStatus(self, loops):
+        """Sets looping type.
+
+        Does nothing for now as there's no loop support in the player.
+
+        """
         pass
 
     @dbus.service.method(__player, out_signature="d")
@@ -352,26 +358,63 @@ class MPRIS2Main(dbus.service.Object):
 
     @dbus.service.method(__player, in_signature="d")
     def SetRate(self, rate):
+        """Sets playback rate.
+
+        Does nothing, because rate cannot be changed in the player.
+
+        """
         pass
 
     @dbus.service.method(__player, out_signature="b")
     def Shuffle(self):
         """Returns if player is currently shuffling or not.
 
-        Returns False for now as we don't have shuffling support in the player.
+        Returns False for now as there's no shuffle support in the player.
 
         """
         return False
 
     @dbus.service.method(__player, in_signature="b")
     def SetShuffle(self, shuffle):
+        """Enables/disables shuffle.
+
+        Does nothing for now as there's not shuffle support in the player.
+
+        """
         pass
+
+    def __emitMetadata(self, artist, title, album, tracknumber):
+        metadata = dbus.Dictionary(signature="sv")
+        metadata.update({
+            'mpris:trackid': dbus.ObjectPath(
+                '/gayeogi/' + str(self.player.playlist.activeRow)
+            ),
+            'xesam:trackNumber': tracknumber,
+            'xesam:title': unicode(title),
+            'xesam:album': unicode(album),
+            'xesam:artist': [unicode(artist)]
+        })
+        self.PropertiesChanged(self.__player, metadata, [])
 
     @dbus.service.method(__player, out_signature="a{sv}")
     def Metadata(self):
+        """Returns current track's metadata.
+
+        See http://xmms2.org/wiki/MPRIS_Metadata#MPRIS_v2.0_metadata_guidelines
+        for more information about returned object.
+        """
         metadata = dbus.Dictionary(signature="sv")
-        metadata["artist"] = "Test"
-        metadata["title"] = "Lol"
+        try:
+            activeItem = self.player.playlist.activeItem
+        except AttributeError:
+            activeItem = None
+        if not activeItem:
+            metadata["mpris:trackid"] = dbus.ObjectPath(self.__path)
+            return metadata
+        metadata["mpris:trackid"] = dbus.ObjectPath(
+            '/gayeogi/' + str(self.player.playlist.activeRow)
+        )
+        metadata.update(self.player.playlist[self.player.playlist.activeRow])
         return metadata
 
     def __emitVolume(self, volume):
@@ -435,43 +478,85 @@ class MPRIS2Main(dbus.service.Object):
     @dbus.service.method(__tracklist, in_signature="ao",
         out_signature="aa{sv}")
     def GetTracksMetadata(self, ids):
-        pass
+        return [
+            m for i, m in enumerate(self.player.playlist)
+            if '/gayeogi/' + str(i) in ids
+        ]
 
     @dbus.service.method(__tracklist, in_signature="sob")
     def AddTrack(self, uri, aftertrack, setascurrent):
+        """Adds specified track to the playlist after the given position
+        and optionally sets it as current track.
+
+        Does nothing now, as we do not support adding tracks by Uri.
+        """
         pass
+
+    def __getId(self, id):
+        """Converts mpris-compliant id to number in the playlist.
+
+        Args:
+            id: mpris-compliant item id (looks like '/gayeogi/<number>')
+
+        Returns:
+            int -- Number in the playlist corresponding the supplied id.
+        """
+        try:
+            return int(id[9:])
+        except ValueError:
+            return None
 
     @dbus.service.method(__tracklist, in_signature="o")
     def RemoveTrack(self, id):
-        pass
+        """Removes track with specified id from the playlist.
+
+        Args:
+            id: An id unique in the context (which is the playlist,
+            looks like '/gayeogi/<number>')
+
+        """
+        self.player.playlist.remove(self.__getId(id))
 
     @dbus.service.method(__tracklist, in_signature="o")
     def GoTo(self, id):
-        pass
+        """Skips to the track with specified id.
+
+        Args:
+            id: An id unique in the context (which is the playlist,
+            looks liks '/gayeogi/<number>')
+
+        """
+        self.player.goTo(self.__getId(id))
 
     @dbus.service.signal(__tracklist, signature="aoo")
-    def TrackListReplaced(self, arg1, arg2):  # change names!
+    def TrackListReplaced(self, tracks, current):
         pass
 
     @dbus.service.signal(__tracklist, signature="a{sv}o")
-    def TrackAdded(self, arg1, arg2):
+    def TrackAdded(self, metadata, after):
         pass
 
     @dbus.service.signal(__tracklist, signature="o")
-    def TrackRemoved(self, arg1):
+    def TrackRemoved(self, id):
         pass
 
     @dbus.service.signal(__tracklist, signature="oa{sv}")
-    def TrackMetadataChanged(self, arg1, arg2):
+    def TrackMetadataChanged(self, id, metadata):
         pass
 
     @dbus.service.method(__tracklist, out_signature="ao")
-    def Tracks(self, arg1):
+    def Tracks(self):
         pass
 
     @dbus.service.method(__tracklist, out_signature="b")
-    def CanEditTracks(self, arg1):
-        pass
+    def CanEditTracks(self):
+        """Returns whether tracks in the playlist can be edited.
+
+        Note that it doesn't mean that all editing methods are always
+        available
+
+        """
+        return True
 
     @dbus.service.method(__propint, in_signature="ss", out_signature="v")
     def Get(self, interface, prop):
@@ -488,17 +573,6 @@ class MPRIS2Main(dbus.service.Object):
     @dbus.service.signal(__propint, signature="sa{sv}as")
     def PropertiesChanged(self, interface, chprops, invprops):
         pass
-
-
-#from PyQt4 import QtGui
-#import sys
-#app = QtGui.QApplication(sys.argv)
-#DBusQtMainLoop(set_as_default=True)
-##s = MPRIS1Main()
-##ss = MPRIS1Tracklist()
-##sss = MPRIS1Player()
-#s = MPRIS2Main()
-#sys.exit(app.exec_())
 
 
 class Main(object):

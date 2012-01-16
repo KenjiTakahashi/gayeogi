@@ -172,3 +172,6 @@ directly, but by specific distribution binary packages.
 
 ===LAST.FM:
 -Added proxy support.
+
+===PLAYER:
+-Fixed removing items from playlist.
