@@ -178,6 +178,14 @@ class MPRIS2Main(dbus.service.Object):
     __tracklist = 'org.mpris.MediaPlayer2.TrackList'
 
     def __init__(self, player):
+        """Constructs new MPRIS2Main instance.
+
+        Initializes all needed fields and mappings and a D-Bus session bus.
+
+        Args:
+            player: reference to the player instance
+
+        """
         bus = dbus.SessionBus()
         name = dbus.service.BusName(self.__busname, bus)
         self.__mapping = {
@@ -220,63 +228,130 @@ class MPRIS2Main(dbus.service.Object):
 
     @dbus.service.method(__root, out_signature="b")
     def CanQuit(self):
+        """Returns whether player can quit or not.
+
+        Returns:
+            bool -- can quit or not.
+
+        """
         return False
 
     @dbus.service.method(__root, out_signature="b")
     def CanRaise(self):
+        """Returns whether player can be raised* or not.
+
+        *It means the client can bring him "on top".
+
+        Returns:
+            bool -- can raise or not.
+
+        """
         return False
 
     @dbus.service.method(__root, out_signature="b")
     def HasTrackList(self):
+        """Returns whether player has tracklist support or not.
+
+        Returns:
+            bool -- has tracklist or not.
+
+        """
         return True
 
     @dbus.service.method(__root, out_signature="s")
     def Identity(self):
+        """Returns identity of the player.
+
+        Returns:
+            str -- identity.
+
+        """
         return "gayeogi"
 
     @dbus.service.method(__root, out_signature="s")
     def DesktopEntry(self):
+        """Returns desktop entry* of the player.
+
+        *Which is a human-readable identity.
+
+        Returns:
+            str -- desktop entry.
+
+        """
         return "gayeogi"
 
     @dbus.service.method(__root, out_signature="as")
     def SupportedUriSchemes(self):
+        """Returns array of a supported Uri schemes (nothing here).
+
+        Returns:
+            dbus.Array -- supported Uri schemes.
+
+        """
         return dbus.Array(signature="s")
 
     @dbus.service.method(__root, out_signature="as")
     def SupportedMimeTypes(self):
+        """Returns supported Mime types (nothing here).
+
+        Returns:
+            dbus.Array -- supported Mime types.
+
+        """
         return dbus.Array(signature="s")
 
     @dbus.service.method(__player)
     def Next(self):
+        """Causes the player to skip to the next track."""
         self.player.next_()
 
     @dbus.service.method(__player)
     def Previous(self):
+        """Causes the player to skip to the previous track."""
         self.player.previous()
 
     @dbus.service.method(__player)
     def Pause(self):
+        """Pauses the player."""
         self.player.mediaobject.pause()
 
     @dbus.service.method(__player)
     def PlayPause(self):
+        """Pauses the player if it's playing or starts playing when it's not."""
         self.player.playByButton()
 
     @dbus.service.method(__player)
     def Stop(self):
+        """Stops the player."""
         self.player.stop()
 
     @dbus.service.method(__player)
     def Play(self):
+        """Starts playing."""
         self.player.mediaobject.play()
 
     @dbus.service.method(__player, in_signature="x")
     def Seek(self, offset):
+        """Seeks currently playing track to the specified position.
+
+        Args:
+            offset: position to which to seek
+
+        """
         position = self.player.mediaobject.currentTime() * 1000 + offset
         self.SetPosition(self.player.playlist.activeRow, position)
 
     @dbus.service.method(__player, in_signature="ox")
     def SetPosition(self, id, position):
+        """Sets current playback to the specified position.
+
+        Also converts timings and checks for possible problems.
+
+        Args:
+            id: id of the track (to check whether it's really playing now
+            position: position to seek at
+
+        """
         if(id == self.player.playlist.activeRow and
            position >= 0 and
            position <= self.player.mediaobject.totalTime()
@@ -285,10 +360,24 @@ class MPRIS2Main(dbus.service.Object):
 
     @dbus.service.method(__player, in_signature="s")
     def OpenUri(self, uri):
+        """Opens specified Uri in the player.
+
+        Does nothing, as there's no such support in the player right now.
+
+        Args:
+            uri: Uri pointing at a track to play
+
+        """
         pass
 
     @dbus.service.signal(__player, signature="x")
     def Seeked(self, position):
+        """Emits new position when the current track was seeked.
+
+        Args:
+            position: new track's position
+
+        """
         pass
 
     __playbackStates = {
@@ -394,7 +483,7 @@ class MPRIS2Main(dbus.service.Object):
             'xesam:album': unicode(album),
             'xesam:artist': [unicode(artist)]
         })
-        self.PropertiesChanged(self.__player, metadata, [])
+        self.PropertiesChanged(self.__player, {"Metadata": metadata}, [])
 
     @dbus.service.method(__player, out_signature="a{sv}")
     def Metadata(self):
@@ -546,32 +635,70 @@ class MPRIS2Main(dbus.service.Object):
 
     @dbus.service.method(__tracklist, out_signature="ao")
     def Tracks(self):
-        pass
+        """Returns a list of identifiers for all items in the playlist in order.
+
+        Returns:
+            list -- list of unique identifiers in a form of '/gayeogi/<number>'.
+
+        """
+        return ['/gayeogi/' + str(i) for i in self.player.playlist.count()]
 
     @dbus.service.method(__tracklist, out_signature="b")
     def CanEditTracks(self):
         """Returns whether tracks in the playlist can be edited.
 
         Note that it doesn't mean that all editing methods are always
-        available
+        available.
 
         """
         return True
 
     @dbus.service.method(__propint, in_signature="ss", out_signature="v")
     def Get(self, interface, prop):
+        """Gets value of the specified property from the specified interface.
+
+        Args:
+            interface: name of the interface to get property from
+            prop: name of the property to get value of
+
+        Returns:
+            variant -- value of the given property.
+
+        """
         return getattr(self, prop)()
 
     @dbus.service.method(__propint, in_signature="ssv")
     def Set(self, interface, prop, value):
+        """Sets value of the specified property from the specified interface.
+
+        Args:
+            interface: name of the interface fo set property in
+            prop: name of the property to set
+            value: new value for the property
+
+        """
         getattr(self, "Set" + prop)(value)
 
     @dbus.service.method(__propint, in_signature="s", out_signature="a{sv}")
     def GetAll(self, interface):
+        """Gets values of all possible porperties in the specified interface.
+
+        Args:
+            interface: name of the interface to get properties from
+
+        """
         return {key: getattr(self, key)() for key in self.__mapping[interface]}
 
     @dbus.service.signal(__propint, signature="sa{sv}as")
     def PropertiesChanged(self, interface, chprops, invprops):
+        """Emits changes in the properties.
+
+        Args:
+            interface: name of the interface in which there were changes
+            chprops: dictionary of names:values of the changed properties
+            invprops: old values (usually empty)
+
+        """
         pass
 
 
