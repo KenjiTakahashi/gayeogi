@@ -225,6 +225,7 @@ class MPRIS2Main(dbus.service.Object):
         self.player.mediaobject.stateChanged.connect(self.__SetPlaybackStatus)
         self.player.audiooutput.volumeChanged.connect(self.__emitVolume)
         self.player.trackChanged.connect(self.__emitMetadata)
+        self.player.seeked.connect(self.__emitSeeked)
 
     @dbus.service.method(__root, out_signature="b")
     def CanQuit(self):
@@ -370,6 +371,17 @@ class MPRIS2Main(dbus.service.Object):
         """
         pass
 
+    def __emitSeeked(self, position):
+        """Emits new position when the current track was seeked.
+
+        A proxy method to convert from miliseconds to microseconds.
+
+        Args:
+            position: new track's position (in miliseconds)
+
+        """
+        self.Seeked(position * 1000)
+
     @dbus.service.signal(__player, signature="x")
     def Seeked(self, position):
         """Emits new position when the current track was seeked.
@@ -391,7 +403,7 @@ class MPRIS2Main(dbus.service.Object):
     __playbackStatus = "Stopped"
 
     def __SetPlaybackStatus(self, state):
-        """Changes current playback status as it changes in the player.
+        """Changes current playback status according to changes in the player.
 
         Args:
             state (int): One of possible Phonon playback states
@@ -473,6 +485,15 @@ class MPRIS2Main(dbus.service.Object):
         pass
 
     def __emitMetadata(self, artist, title, album, tracknumber):
+        """Emits new metadata on track changes.
+
+        Args:
+            artist: artist name
+            title: track title
+            album: album name
+            tracknumber: track number
+
+        """
         metadata = dbus.Dictionary(signature="sv")
         metadata.update({
             'mpris:trackid': dbus.ObjectPath(
@@ -507,19 +528,42 @@ class MPRIS2Main(dbus.service.Object):
         return metadata
 
     def __emitVolume(self, volume):
+        """Emits new volume value when it gets changed
+
+        Args:
+            volume: a number from 0.0 (mute) to 1.0 (100%)
+
+        """
         self.PropertiesChanged(self.__player, {"Volume": volume}, [])
 
     @dbus.service.method(__player, out_signature="d")
     def Volume(self):
+        """Gets current player's volume value.
+
+        It is a number from 0.0 (mute) to 1.0 (100%).
+
+        """
         return self.player.audiooutput.volume()
 
     @dbus.service.method(__player, in_signature="d")
     def SetVolume(self, volume):
+        """Sets player volume to the specified value.
+
+        Args:
+            volume: a number from 0.0 (mute) to 1.0 (100%)
+
+        """
         self.player.audiooutput.setVolume(volume)
         self.__emitVolume(volume)
 
     @dbus.service.method(__player, out_signature="x")
     def Position(self):
+        """Returns current position in the playing track.
+
+        Returns:
+            int -- current track's position in microseconds.
+
+        """
         return self.player.mediaobject.currentTime() * 1000
 
     @dbus.service.method(__player, out_signature="d")
@@ -542,31 +586,76 @@ class MPRIS2Main(dbus.service.Object):
 
     @dbus.service.method(__player, out_signature="b")
     def CanGoNext(self):
+        """Returns whether player can skip to the next track or not.
+
+        Returns:
+            bool -- can skip or not.
+
+        """
         return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanGoPrevious(self):
+        """Returns whether player can skip to the previous track or not.
+
+        Returns:
+            bool -- can skip or not.
+
+        """
         return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanPlay(self):
+        """Returns whether player can start playing or not.
+
+        Returns:
+            bool -- can start or not.
+
+        """
         return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanPause(self):
+        """Returns whether player can be paused or not.
+
+        Returns:
+            bool -- can pause or not.
+
+        """
         return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanSeek(self):
+        """Returns whether currently playing track can be seeked or not.
+
+        Returns:
+            bool - can seek or not.
+
+        """
         return True
 
     @dbus.service.method(__player, out_signature="b")
     def CanControl(self):
+        """Returns whether player can be controlled by MPRIS or not.
+
+        Returns:
+            bool -- can be controlled or not.
+
+        """
         return True
 
     @dbus.service.method(__tracklist, in_signature="ao",
         out_signature="aa{sv}")
     def GetTracksMetadata(self, ids):
+        """Returns a list of metadata for all specified ids in order.
+
+        Args:
+            ids: an array of track ids (in a form of '/gayeogi/<number>')
+
+        Returns:
+            list -- a list of metadata dictionaries.
+
+        """
         return [
             m for i, m in enumerate(self.player.playlist)
             if '/gayeogi/' + str(i) in ids
@@ -588,7 +677,7 @@ class MPRIS2Main(dbus.service.Object):
             id: mpris-compliant item id (looks like '/gayeogi/<number>')
 
         Returns:
-            int -- Number in the playlist corresponding the supplied id.
+            int -- number in the playlist corresponding the supplied id.
         """
         try:
             return int(id[9:])
@@ -619,18 +708,48 @@ class MPRIS2Main(dbus.service.Object):
 
     @dbus.service.signal(__tracklist, signature="aoo")
     def TrackListReplaced(self, tracks, current):
+        """Emits new contents of the playlist.
+
+        Used only to indicate the change of the WHOLE playlist.
+        So: never here now.
+
+        Args:
+            tracks: array of new tracks in the playlist
+            current: new current track id
+
+        """
         pass
 
     @dbus.service.signal(__tracklist, signature="a{sv}o")
     def TrackAdded(self, metadata, after):
+        """Emits newly added track metadata and position.
+
+        Args:
+            metadata: new track metadata
+            after: after which track the new one got added
+
+        """
         pass
 
     @dbus.service.signal(__tracklist, signature="o")
     def TrackRemoved(self, id):
+        """Emits id of the track when it gets removed.
+
+        Args:
+            id: id of the removed track
+
+        """
         pass
 
     @dbus.service.signal(__tracklist, signature="oa{sv}")
     def TrackMetadataChanged(self, id, metadata):
+        """Emits new metadata for the track when it gets changed.
+
+        Args:
+            id: id of the changed track
+            metadata: new metadata
+
+        """
         pass
 
     @dbus.service.method(__tracklist, out_signature="ao")

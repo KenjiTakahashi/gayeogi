@@ -95,7 +95,7 @@ class Playlist(QtGui.QListWidget, object):
 
     def __getitem__(self, id):
         # It will change with the future structure change,
-        # for now just give them what we got...
+        # for now just give them what we have...
         item = self.item(id)
         if item == None:
             raise IndexError
@@ -196,6 +196,7 @@ class Main(QtGui.QWidget):
     depends = []
     trackChanged = pyqtSignal(QString, QString, QString, int)
     errors = pyqtSignal(unicode, unicode, unicode, unicode)
+    seeked = pyqtSignal(int)
     __settings = QSettings('gayeogi', 'Player')
     def __init__(self, parent, library, addWidget, removeWidget):
         QtGui.QWidget.__init__(self, None)
@@ -372,8 +373,13 @@ class Main(QtGui.QWidget):
         index = self.playlist.activeRow + 1
         if index < self.playlist.count():
             self.play(self.playlist.item(index))
+    __interval = 0
     def tick(self, interval):
         if interval and self.playlist.activeItem:
+            interval_ = interval - self.__interval
+            if interval_ < 300 or interval_ > 500:
+                self.seeked.emit(interval)
+            self.__interval = interval
             self.playlist.activeItem.setData(670, self.__timeConvert(interval))
     def playByButton(self):
         if not self.playlist.activeItem:
