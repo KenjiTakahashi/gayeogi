@@ -15,251 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import dbus
-import dbus.service
-from dbus.mainloop.qt import DBusQtMainLoop
-from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, Qt
+from PyQt4 import QtGui, QtDBus
+from PyQt4.QtCore import QSettings, Qt, QObject, QStringList
+from PyQt4.QtCore import Q_CLASSINFO, pyqtSignal, pyqtSlot, pyqtProperty
 from PyQt4.phonon import Phonon
 
 
-class MPRIS1Main(dbus.service.Object):
-    __path = '/'
-    __busname = 'org.mpris.gayeogi'
-    __interface = 'org.freedesktop.MediaPlayer'
-
-    def __init__(self):
-        bus = dbus.SessionBus()
-        name = dbus.service.BusName(self.__busname, bus)
-        super(type(self), self).__init__(name, self.__path)
-
-    @dbus.service.method(dbus_interface=__interface, out_signature="s")
-    def Identity(self):
-        return "gayeogi"
-
-    @dbus.service.method(dbus_interface=__interface)
-    def Quit(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, out_signature="(qq)")
-    def MprisVersion(self):
-        return (1, 0)
-
-
-class MPRIS1Tracklist(dbus.service.Object):
-    __path = '/Tracklist'
-    __busname = 'org.mpris.gayeogi'
-    __interface = 'org.freedesktop.MediaPlayer'
-
-    def __init__(self):
-        bus = dbus.SessionBus()
-        name = dbus.sevice.BusName(self.__busname, bus)
-        super(type(self), self).__init__(name, self.__path)
-
-    @dbus.service.method(dbus_interface=__interface,
-        in_signature="i", out_signature="a{sv}")
-    def GetMetadata(self, index):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, out_signature="i")
-    def GetCurrentTrack(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, out_signature="i")
-    def GetLength(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface,
-        in_signature="sb", out_signature="i")
-    def AddTrack(self, uri, play):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, in_signature="i")
-    def DelTrack(self, index):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, in_signature="b")
-    def SetLoop(self, loop):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, in_signature="b")
-    def SetRandom(self, random):
-        pass
-
-    @dbus.service.signal(dbus_interface=__interface, signature="i")
-    def TrackListChange(self, i):
-        pass
-
-
-class MPRIS1Player(dbus.service.Object):
-    __path = '/Player'
-    __busname = 'org.mpris.gayeogi'
-    __interface = 'org.freedesktop.MediaPlayer'
-
-    def __init__(self):
-        bus = dbus.SessionBus()
-        name = dbus.service.BusName(self.__busname, bus)
-        super(type(self), self).__init__(name, self.__path)
-
-    @dbus.service.method(dbus_interface=__interface)
-    def Next(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface)
-    def Prev(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface)
-    def Pause(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface)
-    def Stop(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface)
-    def Play(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, in_signature="b")
-    def Repeat(self, repeat):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, out_signature="(iiii)")
-    def GetStatus(self):
-        return (0, 0, 0, 0)
-
-    @dbus.service.method(dbus_interface=__interface, out_signature="a{sv}")
-    def GetMetadata(self):
-        metadata = dbus.Dictionary(signature="sv")
-        metadata["artist"] = "Tst"
-        metadata["title"] = "LOL"
-        return metadata
-
-    @dbus.service.method(dbus_interface=__interface, out_signature="i")
-    def GetCaps(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, in_signature="i")
-    def VolumeSet(self, volume):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, out_signature="i")
-    def VolumeGet(self):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, in_signature="i")
-    def PositionSet(self, position):
-        pass
-
-    @dbus.service.method(dbus_interface=__interface, out_signature="i")
-    def PositionGet(self):
-        pass
-
-    @dbus.service.signal(__interface, signature="a{sv}")
-    def TrackChange(self, metadata):
-        pass
-
-    @dbus.service.signal(__interface, signature="(iiii)")
-    def StatusChange(self, iiii):
-        return (0, 0, 0, 0)
-
-    @dbus.service.signal(__interface, signature="i")
-    def CapsChange(self, i):
-        pass
-
-
-class MPRIS2Main(dbus.service.Object):
-    __path = '/org/mpris/MediaPlayer2'
-    __busname = 'org.mpris.MediaPlayer2.gayeogi'
-    __propint = 'org.freedesktop.DBus.Properties'
-    __root = 'org.mpris.MediaPlayer2'
-    __player = 'org.mpris.MediaPlayer2.Player'
-    __tracklist = 'org.mpris.MediaPlayer2.TrackList'
-
-    def __init__(self, player):
-        """Constructs new MPRIS2Main instance.
-
-        Initializes all needed fields and mappings and a D-Bus session bus.
-
-        Args:
-            player: reference to the player instance
-
-        """
-        bus = dbus.SessionBus()
-        name = dbus.service.BusName(self.__busname, bus)
-        self.__mapping = {
-            self.__root: [
-                "CanQuit",
-                "CanRaise",
-                "HasTrackList",
-                "Identity",
-                "DesktopEntry",
-                "SupportedUriSchemes",
-                "SupportedMimeTypes"
-            ],
-            self.__player: [
-                "PlaybackStatus",
-                "LoopStatus",
-                "Rate",
-                "Shuffle",
-                "Metadata",
-                "Volume",
-                "Position",
-                "MinimumRate",
-                "MaximumRate",
-                "CanGoNext",
-                "CanGoPrevious",
-                "CanPlay",
-                "CanPause",
-                "CanSeek",
-                "CanControl"
-            ],
-            self.__tracklist: [
-                "Tracks",
-                "CanEditTracks"
-            ]
-        }
+class MPRISMain(QtDBus.QDBusAbstractAdaptor):
+    def __init__(self, parent, player):
+        super(MPRISMain, self).__init__(parent)
+        self.setAutoRelaySignals(True)
         self.player = player
-        super(type(self), self).__init__(name, self.__path)
-        self.player.mediaobject.stateChanged.connect(self.__SetPlaybackStatus)
-        self.player.audiooutput.volumeChanged.connect(self.__emitVolume)
-        self.player.trackChanged.connect(self.__emitMetadata)
-        self.player.seeked.connect(self.__emitSeeked)
 
-    @dbus.service.method(__root, out_signature="b")
-    def CanQuit(self):
-        """Returns whether player can quit or not.
-
-        Returns:
-            bool -- can quit or not.
-
-        """
-        return False
-
-    @dbus.service.method(__root, out_signature="b")
-    def CanRaise(self):
-        """Returns whether player can be raised* or not.
-
-        *It means the client can bring him "on top".
-
-        Returns:
-            bool -- can raise or not.
-
-        """
-        return False
-
-    @dbus.service.method(__root, out_signature="b")
-    def HasTrackList(self):
-        """Returns whether player has tracklist support or not.
-
-        Returns:
-            bool -- has tracklist or not.
-
-        """
-        return True
-
-    @dbus.service.method(__root, out_signature="s")
+    @pyqtProperty(str)
     def Identity(self):
         """Returns identity of the player.
 
@@ -269,80 +37,39 @@ class MPRIS2Main(dbus.service.Object):
         """
         return "gayeogi"
 
-    @dbus.service.method(__root, out_signature="s")
-    def DesktopEntry(self):
-        """Returns desktop entry* of the player.
 
-        *Which is a human-readable identity.
+class MPRISPlayer(QtDBus.QDBusAbstractAdaptor):
+    def __init__(self, parent, player):
+        super(MPRISPlayer, self).__init__(parent)
+        self.setAutoRelaySignals(True)
+        self.player = player
 
-        Returns:
-            str -- desktop entry.
-
-        """
-        return "gayeogi"
-
-    @dbus.service.method(__root, out_signature="as")
-    def SupportedUriSchemes(self):
-        """Returns array of a supported Uri schemes (nothing here).
-
-        Returns:
-            dbus.Array -- supported Uri schemes.
-
-        """
-        return dbus.Array(signature="s")
-
-    @dbus.service.method(__root, out_signature="as")
-    def SupportedMimeTypes(self):
-        """Returns supported Mime types (nothing here).
-
-        Returns:
-            dbus.Array -- supported Mime types.
-
-        """
-        return dbus.Array(signature="s")
-
-    @dbus.service.method(__player)
+    @pyqtSlot()
     def Next(self):
         """Causes the player to skip to the next track."""
         self.player.next_()
 
-    @dbus.service.method(__player)
+    @pyqtSlot()
     def Previous(self):
         """Causes the player to skip to the previous track."""
         self.player.previous()
 
-    @dbus.service.method(__player)
+    @pyqtSlot()
     def Pause(self):
         """Pauses the player."""
         self.player.mediaobject.pause()
 
-    @dbus.service.method(__player)
-    def PlayPause(self):
-        """Pauses the player if it's playing or starts playing when it's not."""
-        self.player.playByButton()
-
-    @dbus.service.method(__player)
+    @pyqtSlot()
     def Stop(self):
         """Stops the player."""
         self.player.stop()
 
-    @dbus.service.method(__player)
+    @pyqtSlot()
     def Play(self):
         """Starts playing."""
         self.player.mediaobject.play()
 
-    @dbus.service.method(__player, in_signature="x")
-    def Seek(self, offset):
-        """Seeks currently playing track to the specified position.
-
-        Args:
-            offset: position to which to seek
-
-        """
-        position = self.player.mediaobject.currentTime() * 1000 + offset
-        self.SetPosition(self.player.playlist.activeRow, position)
-
-    @dbus.service.method(__player, in_signature="ox")
+    @pyqtSlot(str, "qlonglong")
     def SetPosition(self, id, position):
         """Sets current playback to the specified position.
 
@@ -359,132 +86,7 @@ class MPRIS2Main(dbus.service.Object):
         ):
             self.player.mediaobject.seek(position / 1000)
 
-    @dbus.service.method(__player, in_signature="s")
-    def OpenUri(self, uri):
-        """Opens specified Uri in the player.
-
-        Does nothing, as there's no such support in the player right now.
-
-        Args:
-            uri: Uri pointing at a track to play
-
-        """
-        pass
-
-    def __emitSeeked(self, position):
-        """Emits new position when the current track was seeked.
-
-        A proxy method to convert from miliseconds to microseconds.
-
-        Args:
-            position: new track's position (in miliseconds)
-
-        """
-        self.Seeked(position * 1000)
-
-    @dbus.service.signal(__player, signature="x")
-    def Seeked(self, position):
-        """Emits new position when the current track was seeked.
-
-        Args:
-            position: new track's position
-
-        """
-        pass
-
-    __playbackStates = {
-        Phonon.LoadingState: "Playing",
-        Phonon.StoppedState: "Stopped",
-        Phonon.PlayingState: "Playing",
-        Phonon.BufferingState: "Playing",
-        Phonon.PausedState: "Paused",
-        Phonon.ErrorState: "Stopped"
-    }
-    __playbackStatus = "Stopped"
-
-    def __SetPlaybackStatus(self, state):
-        """Changes current playback status according to changes in the player.
-
-        Args:
-            state (int): One of possible Phonon playback states
-
-        """
-        self.__playbackStatus = self.__playbackStates[state]
-        self.PropertiesChanged(
-            self.__player,
-            {"PlaybackStatus": self.__playbackStatus},
-            []
-        )
-
-    @dbus.service.method(__player, out_signature="s")
-    def PlaybackStatus(self):
-        """Returns current playback status.
-
-        Should be 'Playing', 'Paused' or 'Stopped'.
-        Set internally with __SetPlaybackStatus method.
-
-        Note: It might not be accurate as Phonon supports more states than
-        MPRIS standard.
-
-        """
-        return self.__playbackStatus
-
-    @dbus.service.method(__player, out_signature="s")
-    def LoopStatus(self):
-        """Returns current loop status.
-
-        Should be 'None', 'Track' or 'Playlist', but returns 'None'
-        for now, because there's no loop support in the player.
-
-        """
-        return "None"  # that's temporary
-
-    @dbus.service.method(__player, in_signature="s")
-    def SetLoopStatus(self, loops):
-        """Sets looping type.
-
-        Does nothing for now as there's no loop support in the player.
-
-        """
-        pass
-
-    @dbus.service.method(__player, out_signature="d")
-    def Rate(self):
-        """Returns current playback rate.
-
-        Always returns 1.0 as our player has no ability to change it.
-
-        """
-        return 1.0
-
-    @dbus.service.method(__player, in_signature="d")
-    def SetRate(self, rate):
-        """Sets playback rate.
-
-        Does nothing, because rate cannot be changed in the player.
-
-        """
-        pass
-
-    @dbus.service.method(__player, out_signature="b")
-    def Shuffle(self):
-        """Returns if player is currently shuffling or not.
-
-        Returns False for now as there's no shuffle support in the player.
-
-        """
-        return False
-
-    @dbus.service.method(__player, in_signature="b")
-    def SetShuffle(self, shuffle):
-        """Enables/disables shuffle.
-
-        Does nothing for now as there's not shuffle support in the player.
-
-        """
-        pass
-
-    def __emitMetadata(self, artist, title, album, tracknumber):
+    def _emitMetadata(self, artist, title, album, tracknumber):
         """Emits new metadata on track changes.
 
         Args:
@@ -494,40 +96,41 @@ class MPRIS2Main(dbus.service.Object):
             tracknumber: track number
 
         """
-        metadata = dbus.Dictionary(signature="sv")
-        metadata.update({
-            'mpris:trackid': dbus.ObjectPath(
+        metadata = {
+            'mpris:trackid': QtDBus.QDBusObjectPath(
                 '/gayeogi/' + str(self.player.playlist.activeRow)
             ),
             'xesam:trackNumber': tracknumber,
             'xesam:title': unicode(title),
             'xesam:album': unicode(album),
             'xesam:artist': [unicode(artist)]
-        })
+        }
         self.PropertiesChanged(self.__player, {"Metadata": metadata}, [])
 
-    @dbus.service.method(__player, out_signature="a{sv}")
+    @pyqtProperty("QMap<QString, QVariant>")
     def Metadata(self):
         """Returns current track's metadata.
 
         See http://xmms2.org/wiki/MPRIS_Metadata#MPRIS_v2.0_metadata_guidelines
         for more information about returned object.
         """
-        metadata = dbus.Dictionary(signature="sv")
+        metadata = dict()
         try:
             activeItem = self.player.playlist.activeItem
         except AttributeError:
             activeItem = None
         if not activeItem:
-            metadata["mpris:trackid"] = dbus.ObjectPath(self.__path)
+            metadata["mpris:trackid"] = QtDBus.QDBusObjectPath(
+                '/gayeogi/notrack'
+            )
             return metadata
-        metadata["mpris:trackid"] = dbus.ObjectPath(
+        metadata["mpris:trackid"] = QtDBus.QDBusObjectPath(
             '/gayeogi/' + str(self.player.playlist.activeRow)
         )
         metadata.update(self.player.playlist[self.player.playlist.activeRow])
         return metadata
 
-    def __emitVolume(self, volume):
+    def _emitVolume(self, volume):
         """Emits new volume value when it gets changed
 
         Args:
@@ -536,7 +139,7 @@ class MPRIS2Main(dbus.service.Object):
         """
         self.PropertiesChanged(self.__player, {"Volume": volume}, [])
 
-    @dbus.service.method(__player, out_signature="d")
+    @pyqtProperty(float)
     def Volume(self):
         """Gets current player's volume value.
 
@@ -545,8 +148,8 @@ class MPRIS2Main(dbus.service.Object):
         """
         return self.player.audiooutput.volume()
 
-    @dbus.service.method(__player, in_signature="d")
-    def SetVolume(self, volume):
+    @Volume.setter
+    def Volume(self, volume):
         """Sets player volume to the specified value.
 
         Args:
@@ -554,9 +157,9 @@ class MPRIS2Main(dbus.service.Object):
 
         """
         self.player.audiooutput.setVolume(volume)
-        self.__emitVolume(volume)
+        self._emitVolume(volume)
 
-    @dbus.service.method(__player, out_signature="x")
+    @pyqtProperty("qlonglong")
     def Position(self):
         """Returns current position in the playing track.
 
@@ -566,86 +169,15 @@ class MPRIS2Main(dbus.service.Object):
         """
         return self.player.mediaobject.currentTime() * 1000
 
-    @dbus.service.method(__player, out_signature="d")
-    def MinimumRate(self):
-        """Returns the lowest possible playback rate.
 
-        It's always 1.0 (see Rate).
+class MPRISTracklist(QtDBus.QDBusAbstractAdaptor):
+    def __init__(self, parent, player):
+        super(MPRISTracklist, self).__init__(parent)
+        self.setAutoRelaySignals(True)
+        self.player = player
 
-        """
-        return 1.0
-
-    @dbus.service.method(__player, out_signature="d")
-    def MaximumRate(self):
-        """Returns the highest possible playback rate.
-
-        It's always 1.0 (see Rate).
-
-        """
-        return 1.0
-
-    @dbus.service.method(__player, out_signature="b")
-    def CanGoNext(self):
-        """Returns whether player can skip to the next track or not.
-
-        Returns:
-            bool -- can skip or not.
-
-        """
-        return True
-
-    @dbus.service.method(__player, out_signature="b")
-    def CanGoPrevious(self):
-        """Returns whether player can skip to the previous track or not.
-
-        Returns:
-            bool -- can skip or not.
-
-        """
-        return True
-
-    @dbus.service.method(__player, out_signature="b")
-    def CanPlay(self):
-        """Returns whether player can start playing or not.
-
-        Returns:
-            bool -- can start or not.
-
-        """
-        return True
-
-    @dbus.service.method(__player, out_signature="b")
-    def CanPause(self):
-        """Returns whether player can be paused or not.
-
-        Returns:
-            bool -- can pause or not.
-
-        """
-        return True
-
-    @dbus.service.method(__player, out_signature="b")
-    def CanSeek(self):
-        """Returns whether currently playing track can be seeked or not.
-
-        Returns:
-            bool - can seek or not.
-
-        """
-        return True
-
-    @dbus.service.method(__player, out_signature="b")
-    def CanControl(self):
-        """Returns whether player can be controlled by MPRIS or not.
-
-        Returns:
-            bool -- can be controlled or not.
-
-        """
-        return True
-
-    @dbus.service.method(__tracklist, in_signature="ao",
-        out_signature="aa{sv}")
+    #@pyqtSlot(QStringList, result="QList<QMap<QString, QVariant>>")
+    # it doesn't want do work with the definition above :(
     def GetTracksMetadata(self, ids):
         """Returns a list of metadata for all specified ids in order.
 
@@ -656,12 +188,9 @@ class MPRIS2Main(dbus.service.Object):
             list -- a list of metadata dictionaries.
 
         """
-        return [
-            m for i, m in enumerate(self.player.playlist)
-            if '/gayeogi/' + str(i) in ids
-        ]
+        return [self.Metadata(id) for id in ids]
 
-    @dbus.service.method(__tracklist, in_signature="sob")
+    @pyqtSlot(str, QtDBus.QDBusObjectPath, bool)
     def AddTrack(self, uri, aftertrack, setascurrent):
         """Adds specified track to the playlist after the given position
         and optionally sets it as current track.
@@ -684,7 +213,7 @@ class MPRIS2Main(dbus.service.Object):
         except ValueError:
             return None
 
-    @dbus.service.method(__tracklist, in_signature="o")
+    @pyqtSlot(QtDBus.QDBusObjectPath)
     def RemoveTrack(self, id):
         """Removes track with specified id from the playlist.
 
@@ -695,7 +224,427 @@ class MPRIS2Main(dbus.service.Object):
         """
         self.player.playlist.remove(self.__getId(id))
 
-    @dbus.service.method(__tracklist, in_signature="o")
+
+class MPRIS1Main(MPRISMain):
+    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.MediaPlayer")
+
+    @pyqtSlot(result=tuple)
+    def MprisVersion(self):
+        return (1, 0)
+
+    @pyqtSlot(result=str)
+    def Identity(self):
+        return super(MPRIS1Main, self).Identity()
+
+
+class MPRIS1Player(MPRISPlayer):
+    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.MediaPlayer")
+
+    @pyqtSlot()
+    def Prev(self):
+        super(MPRISPlayer, self).Previous()
+
+    @pyqtSlot(bool)
+    def Repeat(self, onoff):
+        pass
+
+    @pyqtSlot(result=tuple)
+    def GetStatus(self):
+        pass
+
+    @pyqtSlot(result=int)
+    def GetCaps(self):
+        pass
+
+    @pyqtSlot(int)
+    def VolumeSet(self, volume):
+        super(MPRISPlayer, self).Volume = volume / 100.
+
+    @pyqtSlot(result=int)
+    def VolumeGet(self):
+        return super(MPRISPlayer, self).Volume * 100
+
+    @pyqtSlot(int)
+    def PositionSet(self, position):
+        super(MPRISPlayer, self).SetPosition(
+            self.player.playlist.activeItem, position * 1000
+        )
+
+    @pyqtSlot(result=int)
+    def PositionGet(self):
+        return super(MPRISPlayer, self).Position / 1000
+
+    TrackChange = pyqtSignal(list)
+    StatusChange = pyqtSignal(tuple)
+    CapsChange = pyqtSignal(int)
+
+
+class MPRIS1Tracklist(MPRISTracklist):
+    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.MediaPlayer")
+
+    @pyqtSlot(int, result="QMap<QString, QVariant>")
+    def GetMetadata(self, index):
+        return self.GetTracksMetadata([index])[0]
+
+    @pyqtSlot(result=int)
+    def GetCurrentTrack(self):
+        pass
+
+    @pyqtSlot(result=int)
+    def GetLength(self):
+        pass
+
+    @pyqtSlot(str, bool, result=int)
+    def AddTrack(self, uri, play):
+        self.AddTrack(uri, self.player.playlist.count(), play)
+
+    @pyqtSlot(int)
+    def DelTrack(self, index):
+        self.RemoveTrack(index)
+
+    @pyqtSlot(bool)
+    def SetLoop(self, loop):
+        pass
+
+    @pyqtSlot(bool)
+    def SetRandom(self, random):
+        pass
+
+    TrackListChange = pyqtSignal(int)
+
+
+class MPRIS1MainWrapper(QObject):
+    def __init__(self, player):
+        super(MPRIS1MainWrapper, self).__init__()
+        MPRIS1Main(self, player)
+        QtDBus.QDBusConnection.sessionBus().registerObject("/", self)
+
+
+class MPRIS1PlayerWrapper(QObject):
+    def __init__(self, player):
+        super(MPRIS1PlayerWrapper, self).__init__()
+        MPRIS1Player(self, player)
+        QtDBus.QDBusConnection.sessionBus().registerObject("/Player", self)
+
+
+class MPRIS1TracklistWrapper(QObject):
+    def __init__(self, player):
+        super(MPRIS1TracklistWrapper, self).__init__()
+        MPRIS1Tracklist(self, player)
+        QtDBus.QDBusConnection.sessionBus().registerObject("/TrackList", self)
+
+
+class MPRIS1(QObject):
+    def __init__(self, player):
+        super(MPRIS1, self).__init__()
+        MPRIS1MainWrapper(self, player)
+        MPRIS1PlayerWrapper(self, player)
+        MPRIS1TracklistWrapper(self, player)
+        self.conn = QtDBus.QDBusConnection.sessionBus()
+        self.conn.registerObject("/org/mpris/MediaPlayer2", self)
+        self.conn.registerService("org.mpris.gayeogi")
+
+
+class MPRIS2Main(MPRISMain):
+    Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2")
+
+    @pyqtProperty(bool)
+    def CanQuit(self):
+        """Returns whether player can quit or not.
+
+        Returns:
+            bool -- can quit or not.
+
+        """
+        return False
+
+    @pyqtProperty(bool)
+    def CanRaise(self):
+        """Returns whether player can be raised* or not.
+
+        *It means the client can bring him "on top".
+
+        Returns:
+            bool -- can raise or not.
+
+        """
+        return False
+
+    @pyqtProperty(bool)
+    def HasTrackList(self):
+        """Returns whether player has tracklist support or not.
+
+        Returns:
+            bool -- has tracklist or not.
+
+        """
+        return True
+
+    @pyqtProperty(str)
+    def DesktopEntry(self):
+        """Returns desktop entry* of the player.
+
+        *Which is a human-readable identity.
+
+        Returns:
+            str -- desktop entry.
+
+        """
+        return "gayeogi"
+
+    @pyqtProperty(QStringList)
+    def SupportedUriSchemes(self):
+        """Returns array of a supported Uri schemes (nothing here).
+
+        Returns:
+            QStringList -- supported Uri schemes.
+
+        """
+        return QStringList()
+
+    @pyqtProperty(QStringList)
+    def SupportedMimeTypes(self):
+        """Returns supported Mime types (nothing here).
+
+        Returns:
+            QStringList -- supported Mime types.
+
+        """
+        return QStringList()
+
+
+class MPRIS2Player(MPRISPlayer):
+    Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2.Player")
+
+    def __init__(self, parent, player):
+        super(MPRIS2Player, self).__init__(parent, player)
+        self.player.mediaobject.stateChanged.connect(self._SetPlaybackStatus)
+        self.player.audiooutput.volumeChanged.connect(self._emitVolume)
+        self.player.trackChanged.connect(self._emitMetadata)
+        self.player.seeked.connect(self.__emitSeeked)
+
+    @pyqtSlot()
+    def PlayPause(self):
+        """Pauses the player if it's playing or starts playing if it's not."""
+        self.player.playByButton()
+
+    @pyqtSlot("qlonglong")
+    def Seek(self, offset):
+        """Seeks currently playing track to the specified position.
+
+        Args:
+            offset: position to which to seek
+
+        """
+        position = self.player.mediaobject.currentTime() * 1000 + offset
+        self.SetPosition(self.player.playlist.activeRow, position)
+
+    @pyqtSlot(str)
+    def OpenUri(self, uri):
+        """Opens specified Uri in the player.
+
+        Does nothing, as there's no such support in the player right now.
+
+        Args:
+            uri: Uri pointing at a track to play
+
+        """
+        pass
+
+    def __emitSeeked(self, position):
+        """Emits new position when the current track was seeked.
+
+        A proxy method to convert from miliseconds to microseconds.
+
+        Args:
+            position: new track's position (in miliseconds)
+
+        """
+        self.Seeked(position * 1000)
+
+    Seeked = pyqtSignal(int)
+    """Emits new position when the current track was seeked.
+
+    Args:
+        position: new track's position
+
+    """
+
+    __playbackStates = {
+        Phonon.LoadingState: "Playing",
+        Phonon.StoppedState: "Stopped",
+        Phonon.PlayingState: "Playing",
+        Phonon.BufferingState: "Playing",
+        Phonon.PausedState: "Paused",
+        Phonon.ErrorState: "Stopped"
+    }
+    __playbackStatus = "Stopped"
+
+    def _SetPlaybackStatus(self, state):
+        """Changes current playback status according to changes in the player.
+
+        Args:
+            state (int): One of possible Phonon playback states
+
+        """
+        self.__playbackStatus = self.__playbackStates[state]
+        self.PropertiesChanged(
+            self.__player,
+            {"PlaybackStatus": self.__playbackStatus},
+            []
+        )
+
+    @pyqtProperty(str)
+    def PlaybackStatus(self):
+        """Returns current playback status.
+
+        Should be 'Playing', 'Paused' or 'Stopped'.
+        Set internally with _SetPlaybackStatus method.
+
+        Note: It might not be accurate as Phonon supports more states than
+        MPRIS standard.
+
+        """
+        return self.__playbackStatus
+
+    @pyqtProperty(str)
+    def LoopStatus(self):
+        """Returns current loop status.
+
+        Should be 'None', 'Track' or 'Playlist', but returns 'None'
+        for now, because there's no loop support in the player.
+
+        """
+        return "None"  # that's temporary
+
+    @LoopStatus.setter
+    def LoopStatus(self, loops):
+        """Sets looping type.
+
+        Does nothing for now as there's no loop support in the player.
+
+        """
+        pass
+
+    @pyqtProperty(float)
+    def Rate(self):
+        """Returns current playback rate.
+
+        Always returns 1.0 as our player has no ability to change it.
+
+        """
+        return 1.0
+
+    @Rate.setter
+    def Rate(self, rate):
+        """Sets playback rate.
+
+        Does nothing, because rate cannot be changed in the player.
+
+        """
+        pass
+
+    @pyqtProperty(bool)
+    def Shuffle(self):
+        """Returns if player is currently shuffling or not.
+
+        Returns False for now as there's no shuffle support in the player.
+
+        """
+        return False
+
+    @Shuffle.setter
+    def Shuffle(self, shuffle):
+        """Enables/disables shuffle.
+
+        Does nothing for now as there's not shuffle support in the player.
+
+        """
+        pass
+
+    @pyqtProperty(float)
+    def MinimumRate(self):
+        """Returns the lowest possible playback rate.
+
+        It's always 1.0 (see Rate).
+
+        """
+        return 1.0
+
+    @pyqtProperty(float)
+    def MaximumRate(self):
+        """Returns the highest possible playback rate.
+
+        It's always 1.0 (see Rate).
+
+        """
+        return 1.0
+
+    @pyqtProperty(bool)
+    def CanGoNext(self):
+        """Returns whether player can skip to the next track or not.
+
+        Returns:
+            bool -- can skip or not.
+
+        """
+        return True
+
+    @pyqtProperty(bool)
+    def CanGoPrevious(self):
+        """Returns whether player can skip to the previous track or not.
+
+        Returns:
+            bool -- can skip or not.
+
+        """
+        return True
+
+    @pyqtProperty(bool)
+    def CanPlay(self):
+        """Returns whether player can start playing or not.
+
+        Returns:
+            bool -- can start or not.
+
+        """
+        return True
+
+    @pyqtProperty(bool)
+    def CanPause(self):
+        """Returns whether player can be paused or not.
+
+        Returns:
+            bool -- can pause or not.
+
+        """
+        return True
+
+    @pyqtProperty(bool)
+    def CanSeek(self):
+        """Returns whether currently playing track can be seeked or not.
+
+        Returns:
+            bool - can seek or not.
+
+        """
+        return True
+
+    @pyqtProperty(bool)
+    def CanControl(self):
+        """Returns whether player can be controlled by MPRIS or not.
+
+        Returns:
+            bool -- can be controlled or not.
+
+        """
+        return True
+
+
+class MPRIS2Tracklist(MPRISTracklist):
+    Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2.TrackList")
+
+    @pyqtSlot(QtDBus.QDBusObjectPath)
     def GoTo(self, id):
         """Skips to the track with specified id.
 
@@ -706,63 +655,63 @@ class MPRIS2Main(dbus.service.Object):
         """
         self.player.goTo(self.__getId(id))
 
-    @dbus.service.signal(__tracklist, signature="aoo")
-    def TrackListReplaced(self, tracks, current):
-        """Emits new contents of the playlist.
+    TrackListReplaced = pyqtSignal(QStringList, QtDBus.QDBusObjectPath)
+    """Emits new contents of the playlist.
 
-        Used only to indicate the change of the WHOLE playlist.
-        So: never here now.
+    Used only to indicate the change of the WHOLE playlist.
+    So: never here now.
 
-        Args:
-            tracks: array of new tracks in the playlist
-            current: new current track id
+    Args:
+        tracks: array of new tracks in the playlist
+        current: new current track id
 
-        """
-        pass
+    """
 
-    @dbus.service.signal(__tracklist, signature="a{sv}o")
-    def TrackAdded(self, metadata, after):
-        """Emits newly added track metadata and position.
+    TrackAdded = pyqtSignal("QMap<QString, QVariant>", QtDBus.QDBusObjectPath)
+    """Emits newly added track metadata and position.
 
-        Args:
-            metadata: new track metadata
-            after: after which track the new one got added
+    NotImplemented
 
-        """
-        pass
+    Args:
+        metadata: new track metadata
+        after: after which track the new one got added
 
-    @dbus.service.signal(__tracklist, signature="o")
-    def TrackRemoved(self, id):
-        """Emits id of the track when it gets removed.
+    """
 
-        Args:
-            id: id of the removed track
+    TrackRemoved = pyqtSignal(QtDBus.QDBusObjectPath)
+    """Emits id of the track when it gets removed.
 
-        """
-        pass
+    NotImplemented
 
-    @dbus.service.signal(__tracklist, signature="oa{sv}")
-    def TrackMetadataChanged(self, id, metadata):
-        """Emits new metadata for the track when it gets changed.
+    Args:
+        id: id of the removed track
 
-        Args:
-            id: id of the changed track
-            metadata: new metadata
+    """
 
-        """
-        pass
+    TrackMetadataChanged = pyqtSignal(
+        QtDBus.QDBusObjectPath, "QMap<QString, QVariant>"
+    )
+    """Emits new metadata for the track when it gets changed.
 
-    @dbus.service.method(__tracklist, out_signature="ao")
+    NotImplemented
+
+    Args:
+        id: id of the changed track
+        metadata: new metadata
+
+    """
+
+    @pyqtProperty(QStringList)
     def Tracks(self):
-        """Returns a list of identifiers for all items in the playlist in order.
+        """Returns list of identifiers for all items in the playlist in order.
 
         Returns:
-            list -- list of unique identifiers in a form of '/gayeogi/<number>'.
+            list -- list of unique identifiers in form of '/gayeogi/<number>'.
 
         """
         return ['/gayeogi/' + str(i) for i in self.player.playlist.count()]
 
-    @dbus.service.method(__tracklist, out_signature="b")
+    @pyqtProperty(bool)
     def CanEditTracks(self):
         """Returns whether tracks in the playlist can be edited.
 
@@ -772,53 +721,16 @@ class MPRIS2Main(dbus.service.Object):
         """
         return True
 
-    @dbus.service.method(__propint, in_signature="ss", out_signature="v")
-    def Get(self, interface, prop):
-        """Gets value of the specified property from the specified interface.
 
-        Args:
-            interface: name of the interface to get property from
-            prop: name of the property to get value of
-
-        Returns:
-            variant -- value of the given property.
-
-        """
-        return getattr(self, prop)()
-
-    @dbus.service.method(__propint, in_signature="ssv")
-    def Set(self, interface, prop, value):
-        """Sets value of the specified property from the specified interface.
-
-        Args:
-            interface: name of the interface fo set property in
-            prop: name of the property to set
-            value: new value for the property
-
-        """
-        getattr(self, "Set" + prop)(value)
-
-    @dbus.service.method(__propint, in_signature="s", out_signature="a{sv}")
-    def GetAll(self, interface):
-        """Gets values of all possible porperties in the specified interface.
-
-        Args:
-            interface: name of the interface to get properties from
-
-        """
-        return {key: getattr(self, key)() for key in self.__mapping[interface]}
-
-    @dbus.service.signal(__propint, signature="sa{sv}as")
-    def PropertiesChanged(self, interface, chprops, invprops):
-        """Emits changes in the properties.
-
-        Args:
-            interface: name of the interface in which there were changes
-            chprops: dictionary of names:values of the changed properties
-            invprops: old values (usually empty)
-
-        """
-        pass
+class MPRIS2(QObject):
+    def __init__(self, player):
+        super(MPRIS2, self).__init__()
+        MPRIS2Main(self, player)
+        MPRIS2Player(self, player)
+        MPRIS2Tracklist(self, player)
+        self.conn = QtDBus.QDBusConnection.sessionBus()
+        self.conn.registerObject("/org/mpris/MediaPlayer2", self)
+        self.conn.registerService("org.mpris.MediaPlayer2.gayeogi")
 
 
 class Main(object):
@@ -841,16 +753,13 @@ class Main(object):
 
     def load(self):
         """Loads the plugin in."""
-        DBusQtMainLoop(set_as_default=True)
         if self.__settings.value(u'2.1').toBool():
-            self.__21 = MPRIS2Main(self.player)
+            self.__21 = MPRIS2(self.player)
         if self.__settings.value(u'1.0').toBool():
-            self.__10Main = MPRIS1Main()
-            self.__10Player = MPRIS1Player()
-            self.__10Tracklist = MPRIS1Tracklist()
+            self.__10 = MPRIS1(self.player)
         Main.loaded = True
 
-    def unload(self):  # should we do sth more here?
+    def unload(self):
         """Unloads the plugin."""
         Main.loaded = False
 
