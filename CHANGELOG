@@ -177,3 +177,6 @@ directly, but by specific distribution binary packages.
 -Fixed removing items from playlist.
 -Re-enabled drag & drop (within playlist for now).
 -Do not rely on totalTimeChanged signal.
+
+===MPRIS:
+-Initial release.

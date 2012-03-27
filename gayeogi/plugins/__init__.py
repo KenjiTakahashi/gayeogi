@@ -28,7 +28,6 @@ for _, name, _ in iter_modules([dir_]):
     try:
         __import__(u'gayeogi.plugins.' + name)
     except Exception, e:
-        print e.message
         pass
     else:
         __tmp__.append(name)
