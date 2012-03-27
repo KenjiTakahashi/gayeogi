@@ -21,6 +21,27 @@ from PyQt4.QtCore import Q_CLASSINFO, pyqtSignal, pyqtSlot, pyqtProperty
 from PyQt4.phonon import Phonon
 
 
+class MPRIS2Helper(object):
+    def __init__(self):
+        self.signal = QtDBus.QDBusMessage.createSignal(
+            "/org/mpris/MediaPlayer2",
+            "org.freedesktop.DBus.Properties",
+            "PropertiesChanged"
+        )
+
+    def PropertiesChanged(self, interface, property, values):
+        """Sends PropertiesChanged signal through sessionBus.
+
+        Args:
+            interface: interface name
+            property: property name
+            values: actual property value(s)
+
+        """
+        self.signal.setArguments([interface, {property: values}, QStringList()])
+        QtDBus.QDBusConnection.sessionBus().send(self.signal)
+
+
 class MPRIS2Main(QtDBus.QDBusAbstractAdaptor):
     Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2")
 
@@ -111,6 +132,11 @@ class MPRIS2Player(QtDBus.QDBusAbstractAdaptor):
         super(MPRIS2Player, self).__init__(parent)
         self.setAutoRelaySignals(True)
         self.player = player
+        self.helper = MPRIS2Helper()
+        self.player.mediaobject.stateChanged.connect(self._SetPlaybackStatus)
+        self.player.audiooutput.volumeChanged.connect(self._emitVolume)
+        self.player.trackChanged.connect(self._emitMetadata)
+        self.player.seeked.connect(self.__emitSeeked)
 
     @pyqtSlot()
     def Next(self):
@@ -171,9 +197,11 @@ class MPRIS2Player(QtDBus.QDBusAbstractAdaptor):
             'xesam:trackNumber': tracknumber,
             'xesam:title': unicode(title),
             'xesam:album': unicode(album),
-            'xesam:artist': [unicode(artist)]
+            'xesam:artist': QStringList(unicode(artist))
         }
-        self.PropertiesChanged(self.__player, {"Metadata": metadata}, [])
+        self.helper.PropertiesChanged(
+            "org.mpris.MediaPlayer2.Player", "Metadata", metadata
+        )
 
     @pyqtProperty("QMap<QString, QVariant>")
     def Metadata(self):
@@ -205,7 +233,9 @@ class MPRIS2Player(QtDBus.QDBusAbstractAdaptor):
             volume: a number from 0.0 (mute) to 1.0 (100%)
 
         """
-        self.PropertiesChanged(self.__player, {"Volume": volume}, [])
+        self.helper.PropertiesChanged(
+            "org.mpris.MediaPlayer2.Player", "Volume", volume
+        )
 
     @pyqtProperty(float)
     def Volume(self):
@@ -274,7 +304,7 @@ class MPRIS2Player(QtDBus.QDBusAbstractAdaptor):
             position: new track's position (in miliseconds)
 
         """
-        self.Seeked(position * 1000)
+        self.Seeked.emit(position * 1000)
 
     Seeked = pyqtSignal(int)
     """Emits new position when the current track was seeked.
@@ -302,10 +332,9 @@ class MPRIS2Player(QtDBus.QDBusAbstractAdaptor):
 
         """
         self.__playbackStatus = self.__playbackStates[state]
-        self.PropertiesChanged(
-            self.__player,
-            {"PlaybackStatus": self.__playbackStatus},
-            []
+        self.helper.PropertiesChanged(
+            "org.mpris.MediaPlayer2.Player",
+            "PlaybackStatus", self.__playbackStatus
         )
 
     @pyqtProperty(str)
@@ -555,9 +584,7 @@ class MPRIS2Tracklist(QtDBus.QDBusAbstractAdaptor):
 
     """
 
-    TrackMetadataChanged = pyqtSignal(
-        QtDBus.QDBusObjectPath, "QMap<QString, QVariant>"
-    )
+    TrackMetadataChanged = pyqtSignal(QtDBus.QDBusObjectPath, "QVariantMap")
     """Emits new metadata for the track when it gets changed.
 
     NotImplemented

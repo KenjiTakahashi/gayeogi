@@ -17,7 +17,7 @@
 
 from PyQt4.phonon import Phonon
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSize, Qt, QModelIndex
+from PyQt4.QtCore import QSize, Qt, QModelIndex, QStringList
 from PyQt4.QtCore import pyqtSignal, QSettings, QString, QPointF, QRect
 
 class PlayListItemDelegate(QtGui.QStyledItemDelegate):
@@ -103,7 +103,7 @@ class Playlist(QtGui.QListWidget, object):
             'xesam:trackNumber': item.data(666).toInt()[0],
             'xesam:title': unicode(item.data(667).toString()),
             'xesam:album': unicode(item.data(668).toString()),
-            'xesam:artist': [unicode(item.data(669).toString())]
+            'xesam:artist': QStringList(unicode(item.data(669).toString()))
         }
 
     def dropEvent(self, event):
