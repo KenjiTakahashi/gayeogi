@@ -38,7 +38,9 @@ class MPRIS2Helper(object):
             values: actual property value(s)
 
         """
-        self.signal.setArguments([interface, {property: values}, QStringList()])
+        self.signal.setArguments(
+            [interface, {property: values}, QStringList()]
+        )
         QtDBus.QDBusConnection.sessionBus().send(self.signal)
 
 

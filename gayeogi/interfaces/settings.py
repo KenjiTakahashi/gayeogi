@@ -16,11 +16,56 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, Qt, pyqtSignal, QString, QStringList
+from PyQt4.QtCore import (
+    QSettings, Qt, pyqtSignal, QString, QStringList, QObject
+)
 import gayeogi.plugins
 
-class QHoveringRadioButton(QtGui.QRadioButton):
-    """RadioButton with active hovering support.
+
+class QHovering(QObject):
+    """Class for buttons with active hovering support.
+    """
+    def enterEvent(self, _):
+        """Emits 'hovered' signal."""
+        self.hovered.emit(self.message)
+
+    def leaveEvent(self, _):
+        """Emits 'unhovered' signal."""
+        self.unhovered.emit(self.tab)
+
+
+class QHoveringRadioButton(QtGui.QRadioButton, QHovering):
+    """RadioButton with active hovering.
+
+    Signals:
+        hovered (unicode): emitted on hover on ('message' attribute)::
+            globalMessage text
+        unhovered (int): emitted on hover off (supplied 'tab' attribute)::
+            globalMessage number
+
+    """
+    hovered = pyqtSignal(unicode)
+    unhovered = pyqtSignal(int)
+
+    def __init__(self, tab, text, message=u'', parent=None):
+        """Constructs new QHoveringRadioButton instance.
+
+        Args:
+            tab (int): tab number
+            text (unicode): text to be displayed next to radio button
+
+        Kwargs:
+            message (unicode): message to be displayed
+            parent (QWidget): widget's parent
+
+        """
+        super(QHoveringRadioButton, self).__init__(text, parent)
+        self.message = message
+        self.tab = tab
+
+
+class QHoveringCheckBox(QtGui.QCheckBox, QHovering):
+    """CheckBox with active hovering.
 
     Signals:
         hovered (unicode): emitted on hover on ('message' attribute)
@@ -29,38 +74,36 @@ class QHoveringRadioButton(QtGui.QRadioButton):
     """
     hovered = pyqtSignal(unicode)
     unhovered = pyqtSignal(int)
-    def __init__(self, tab, message = u'', parent = None):
-        """Constructs new QHoveringRadioButton instance.
+
+    def __init__(self, tab, text, message=u'', parent=None):
+        """Constructs new QHoveringCheckBox instance.
 
         Args:
             tab (int): tab number
+            text (unicode): text to be displayed next to check box
 
         Kwargs:
             message (unicode): message to be displayed
             parent (QWidget): widget's parent
 
         """
-        QtGui.QRadioButton.__init__(self, parent)
+        super(QHoveringCheckBox, self).__init__(text, parent)
         self.message = message
         self.tab = tab
-    def enterEvent(self, _):
-        """Emits 'hovered' signal."""
-        self.hovered.emit(self.message)
-    def leaveEvent(self, _):
-        """Emits 'unhovered' signal."""
-        self.unhovered.emit(self.tab)
+
 
 class DatabasesTab(QtGui.QWidget):
     """Databases management widget.
 
     Signals:
-        hovered (unicode): emitted when behaviour is hovered (globalMessage text)
-        unhovered (int): emitted when behaviour is unhovered (globalMessage number)
+        hovered (unicode): emitted when behaviour gets hovered
+        unhovered (int): emitted when behaviour gets unhovered
 
     """
     hovered = pyqtSignal(unicode)
     unhovered = pyqtSignal(int)
-    def __init__(self, order, settings, parent = None):
+
+    def __init__(self, order, settings, parent=None):
         """Constructs new DatabasesTab instance.
 
         Args:
@@ -111,20 +154,26 @@ class DatabasesTab(QtGui.QWidget):
         down = QtGui.QPushButton(self.trUtf8('&Down'))
         down.clicked.connect(self.down)
         behaviour = QtGui.QGroupBox(self.trUtf8('Behaviour'))
-        self.crossed = QHoveringRadioButton(0,
-                self.trUtf8('Search for all bands in all enabled databases.'),
-                self.trUtf8('C&rossed'))
+        self.crossed = QHoveringRadioButton(0, self.trUtf8('C&rossed'),
+            self.trUtf8('Search for all bands in all enabled databases.')
+        )
         self.crossed.hovered.connect(self.hovered)
         self.crossed.unhovered.connect(self.unhovered)
-        oneByOne = QHoveringRadioButton(0,
-                self.trUtf8('Search databases in order and in every next database, search only for bands not yet found elsewhere.'),
-                self.trUtf8('O&ne-by-one'))
+        oneByOne = QHoveringRadioButton(0, self.trUtf8('O&ne-by-one'),
+            self.trUtf8('Search databases in order and in every next database, search only for bands not yet found elsewhere.')
+        )
         oneByOne.hovered.connect(self.hovered)
         oneByOne.unhovered.connect(self.unhovered)
         if not settings.value(u'behaviour', 0).toBool():
             oneByOne.setChecked(True)
         else:
             self.crossed.setChecked(True)
+        self.case = QHoveringCheckBox(0, self.trUtf8('Ignore case'),
+            self.trUtf8("Ignore the case of album names when merging remote with local. Note that it won't change anything until next Remote call.")
+        )
+        self.case.setCheckState(settings.value(u'case', 0).toInt()[0])
+        self.case.hovered.connect(self.hovered)
+        self.case.unhovered.connect(self.unhovered)
         behaviourL = QtGui.QVBoxLayout()
         behaviourL.addWidget(oneByOne)
         behaviourL.addWidget(self.crossed)
@@ -134,6 +183,7 @@ class DatabasesTab(QtGui.QWidget):
         arrowsL.addWidget(up)
         arrowsL.addWidget(down)
         arrowsL.addWidget(behaviour)
+        arrowsL.addWidget(self.case)
         arrowsL.addStretch()
         upperL = QtGui.QHBoxLayout()
         upperL.addWidget(self.dbs)
@@ -146,6 +196,7 @@ class DatabasesTab(QtGui.QWidget):
         layout.addLayout(upperL)
         layout.addWidget(self.options)
         self.setLayout(layout)
+
     def displayOptions(self, item, _):
         """Displays options available for selected database.
 
@@ -178,6 +229,7 @@ class DatabasesTab(QtGui.QWidget):
                             pass
                     self.optionsL.addWidget(widget, i, j)
                     self.options.setVisible(True)
+
     def up(self):
         """Shuffles selected database up."""
         current = self.dbs.currentItem()
@@ -191,6 +243,7 @@ class DatabasesTab(QtGui.QWidget):
                     self.dbs.takeTopLevelItem(oldindex))
             self.dbs.setItemWidget(current, 1, spin)
             self.dbs.setCurrentItem(current)
+
     def down(self):
         """Shuffles selected database down."""
         current = self.dbs.currentItem()
@@ -204,6 +257,7 @@ class DatabasesTab(QtGui.QWidget):
                     self.dbs.takeTopLevelItem(oldindex))
             self.dbs.setItemWidget(current, 1, spin)
             self.dbs.setCurrentItem(current)
+
     def changeState(self, state):
         """Changes current database's specific option state.
 
@@ -211,8 +265,10 @@ class DatabasesTab(QtGui.QWidget):
             state: new state
 
         """
-        self.__checkStates[unicode(self.dbs.currentItem().text(0))]\
-                [self.sender().text()] = state
+        self.__checkStates[
+            unicode(self.dbs.currentItem().text(0))
+        ][self.sender().text()] = state
+
     def values(self):
         """Gets appropriate values (for saving).
 
@@ -240,7 +296,11 @@ class DatabasesTab(QtGui.QWidget):
                 self.__checkStates[unicode(text)],
                 self.dbs.itemWidget(item, 1).value()
             )))
-        return (self.crossed.isChecked(), result, order)
+        return (
+            self.crossed.isChecked(), result,
+            order, self.case.checkState()
+        )
+
 
 class QValueWidget(QtGui.QWidget):
     """Widget used for adding values.
@@ -248,13 +308,16 @@ class QValueWidget(QtGui.QWidget):
     Consists of QLineEdit and 2/3 QPushButtons.
 
     Signals:
-        added (unicode, unicode): emitted when 'Add' button is clicked (widget's name, text to be added)
-        removed (unicode): emitted when 'Remove' button is clicked (widget's name)
+        added (unicode, unicode): emitted when 'Add' button is clicked::
+            widget's name, text to be added
+        removed (unicode): emitted when 'Remove' button is clicked::
+            widget's name
 
     """
     added = pyqtSignal(unicode, unicode)
     removed = pyqtSignal(unicode)
-    def __init__(self, name, browse = False, parent = None):
+
+    def __init__(self, name, browse=False, parent=None):
         """Constructs new QValueWidget instance.
 
         Args:
@@ -282,23 +345,27 @@ class QValueWidget(QtGui.QWidget):
         layout.addWidget(add)
         layout.addWidget(remove)
         self.setLayout(layout)
+
     def add(self):
         """If text is not empty, emits added signal and clears the box."""
         text = self.box.text()
         if text != '':
             self.added.emit(self.name, text)
             self.box.clear()
+
     def remove(self):
         """Emits remove signal."""
         self.removed.emit(self.name)
+
     def select(self):
         """Opens 'Browse' dialog and passed it's result to the box."""
         dialog = QtGui.QFileDialog()
         self.box.setText(dialog.getExistingDirectory())
 
+
 class LocalTab(QtGui.QWidget):
     """Local options management widget."""
-    def __init__(self, directories, ignores, parent = None):
+    def __init__(self, directories, ignores, parent=None):
         """Constructs new LocalTab instance.
 
         Args:
@@ -338,6 +405,7 @@ class LocalTab(QtGui.QWidget):
         value.removed.connect(self.remove)
         layout.addWidget(value)
         self.setLayout(layout)
+
     def add(self, name, text):
         """Adds new entry to directories/ignores list.
 
@@ -353,6 +421,7 @@ class LocalTab(QtGui.QWidget):
             self.directories.addItem(item)
         else:
             self.ignores.addItem(item)
+
     def remove(self, name):
         """Removes selected entries from directories/ignores list.
 
@@ -368,6 +437,7 @@ class LocalTab(QtGui.QWidget):
             row = widget.row(item)
             widget.takeItem(row)
             item = None
+
     def isEmpty(self):
         """Checks whether there are some directories present.
 
@@ -376,6 +446,7 @@ class LocalTab(QtGui.QWidget):
 
         """
         return not bool(self.directories.count())
+
     def values(self):
         """Gets appropriate values (for saving).
 
@@ -395,10 +466,12 @@ class LocalTab(QtGui.QWidget):
             ignores.append((unicode(item.text()), item.checkState()))
         return (directories, ignores)
 
+
 class PluginsTab(QtGui.QWidget):
     """Plugins management widget."""
     selected = pyqtSignal(unicode, QtGui.QWidget)
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):
         """Contructs new PluginsTab instance.
 
         Kwargs:
@@ -427,6 +500,7 @@ class PluginsTab(QtGui.QWidget):
             for d in ref.depends:
                 self.__depends.setdefault(d, set([ref.name])).add(ref.name)
         self.setLayout(self.layout)
+
     def checkDependencies(self, item):
         """Checks whether selected plugin's dependencies are available.
 
@@ -460,17 +534,20 @@ class PluginsTab(QtGui.QWidget):
                             self.__plugins[unicode(i.text())]))
             except KeyError:
                 pass
+
     def save(self):
         """Save plugins options.
 
-        It doesn't return anything, instead it just sets plugin enabled/disabled
-        and relies on specific plugin's internal saving methods.
+        It doesn't return anything, instead it just sets plugin
+        enabled/disabled and relies on specific plugin's internal
+        saving methods.
 
         """
         for i in range(self.plugins.count()):
             item = self.plugins.item(i)
             self.__plugins[unicode(item.text())].setSetting(
                 u'enabled', item.checkState())
+
 
 class Settings(QtGui.QDialog):
     """Main settings dialog window.
@@ -482,7 +559,8 @@ class Settings(QtGui.QDialog):
     """
     __settings = QSettings(u'gayeogi', u'gayeogi')
     __dbsettings = QSettings(u'gayeogi', u'Databases')
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):
         """Constructs new Settings instance.
 
         Kwargs:
@@ -529,6 +607,7 @@ class Settings(QtGui.QDialog):
         buttonsLayout.addWidget(cancel)
         layout.addLayout(buttonsLayout)
         self.setLayout(layout)
+
     def save(self):
         """Saves settings to file."""
         if self.directories.isEmpty():
@@ -539,15 +618,17 @@ class Settings(QtGui.QDialog):
             (directories, ignores) = self.directories.values()
             self.__settings.setValue(u'directory', directories)
             self.__settings.setValue(u'ignores', ignores)
-            (checked, data, order) = self.dbs.values()
+            (checked, data, order, case) = self.dbs.values()
             self.__dbsettings.setValue(u'behaviour', checked)
             self.__dbsettings.setValue(u'order', order)
+            self.__dbsettings.setValue(u'case', case)
             for (text, (checkState, __checkState, itemWidget)) in data:
                 self.__dbsettings.setValue(text + u'/Enabled', checkState)
                 self.__dbsettings.setValue(text + u'/types', __checkState)
                 self.__dbsettings.setValue(text + u'/size', itemWidget)
             self.plugins.save()
             self.close()
+
     def globalMessage(self, i):
         """Displays global help message.
 

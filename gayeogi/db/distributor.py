@@ -26,17 +26,18 @@ logger = logging.getLogger('gayeogi.remote')
 class Bee(QThread):
     """Worker thread used by Distributor."""
     def __init__(self, tasks, library, urls, avai,
-            modified, name, rlock, processed):
+            modified, name, rlock, processed, case):
         """Constructs new worker instance.
 
         Args:
-            tasks -- initial tasks queue (it will get tasks from here)
-            library -- main library part (library[1])
-            urls -- urls library part (library[3])
-            avai -- available library part (library[4])
-            name -- used database name
-            rlock -- RLock object used to provide thread-safety (should be the same for all instances of Bee!)
-            processed -- processed artists storage (used in ~behaviour mode)
+            tasks: initial tasks queue (it will get tasks from here)
+            library: main library part (library[1])
+            urls: urls library part (library[3])
+            avai: available library part (library[4])
+            name: used database name
+            rlock: RLock object used to provide thread-safety (should be the same for all instances of Bee!)
+            processed: processed artists storage (used in ~behaviour mode)
+            case: case sensitivity
 
         """
         QThread.__init__(self)
@@ -48,6 +49,7 @@ class Bee(QThread):
         self.name = name
         self.rlock = rlock
         self.processed = processed
+        self.case = case
         self.start()
     def run(self):
         """Starts worker thread, fetches given artist releases and appends them to the library.
@@ -86,6 +88,11 @@ class Bee(QThread):
                 for error in result[u'errors']:
                     logger.warning([artist, error])
                 for (album, year) in result[u'result']:
+                    if self.case and year in self.library[artist]:
+                        for alb in self.library[artist][year].iterkeys():
+                            if alb.lower() == album.lower():
+                                album = alb
+                                break
                     albums.setdefault(year, set([album])).add(album)
                     self.rlock.acquire()
                     partial = self.library[artist].setdefault(year, {})
@@ -139,7 +146,8 @@ class Bee(QThread):
                     self.modified[0] = True
                 elif not added:
                     logger.info(
-                        [artist, self.trUtf8('Nothing has been changed.')])
+                        [artist, self.trUtf8('Nothing has been changed.')]
+                    )
                 while __internal.torem:
                     (artist, year, album) = __internal.torem.pop()
                     del self.library[artist][year][album]
@@ -205,7 +213,8 @@ class Distributor(QThread):
                     locals(), [u'work', u'name', u'init'], -1)
             except ImportError: # it should not ever happen
                 logger.error(
-                    [name, self.trUtf8('No such module has been found!!!')])
+                    [name, self.trUtf8('No such module has been found!!!')]
+                )
             else:
                 tasks = Queue(threads)
                 threa = list()
@@ -215,8 +224,11 @@ class Distributor(QThread):
                 except AttributeError:
                     pass
                 for _ in range(threads):
-                    t = Bee(tasks, self.library, self.urls,
-                        self.avai, self.modified, db.name, rlock, processed)
+                    t = Bee(
+                        tasks, self.library, self.urls, self.avai,
+                        self.modified, db.name, rlock, processed,
+                        self.__settings.value(u'case').toBool()
+                    )
                     threa.append(t)
                 for entry in self.library.iteritems():
                     if not behaviour:
