@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt4 import QtGui, QtDBus
-from PyQt4.QtCore import QSettings, Qt, QObject, QStringList
+from PyQt4.QtCore import QSettings, QObject, QStringList
 from PyQt4.QtCore import Q_CLASSINFO, pyqtSignal, pyqtSlot, pyqtProperty
 from PyQt4.phonon import Phonon
 
@@ -198,150 +198,6 @@ class MPRISTracklist(QtDBus.QDBusAbstractAdaptor):
         Does nothing now, as we do not support adding tracks by Uri.
         """
         pass
-
-
-class MPRIS1Main(MPRISMain):
-    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.MediaPlayer")
-
-    @pyqtSlot(result=tuple)
-    def MprisVersion(self):
-        """Returns current MPRIS version (which is 1.0).
-
-        Returns:
-            tuple -- MPRIS version (major, minor) == (1, 0).
-
-        """
-        return (1, 0)
-
-    @pyqtSlot(result=str)
-    def Identity(self):
-        return super(MPRIS1Main, self).Identity()
-
-
-class MPRIS1Player(MPRISPlayer):
-    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.MediaPlayer")
-
-    @pyqtSlot()
-    def Prev(self):
-        super(MPRISPlayer, self).Previous()
-
-    @pyqtSlot(bool)
-    def Repeat(self, onoff):
-        pass
-
-    @pyqtSlot(result=tuple)
-    def GetStatus(self):
-        pass
-
-    @pyqtSlot(result=int)
-    def GetCaps(self):
-        pass
-
-    @pyqtSlot(int)
-    def VolumeSet(self, volume):
-        super(MPRISPlayer, self).Volume = volume / 100.
-
-    @pyqtSlot(result=int)
-    def VolumeGet(self):
-        return super(MPRISPlayer, self).Volume * 100
-
-    @pyqtSlot(int)
-    def PositionSet(self, position):
-        super(MPRISPlayer, self).SetPosition(
-            self.player.playlist.activeItem, position * 1000
-        )
-
-    @pyqtSlot(result=int)
-    def PositionGet(self):
-        return super(MPRISPlayer, self).Position / 1000
-
-    TrackChange = pyqtSignal(list)
-    StatusChange = pyqtSignal(tuple)
-    CapsChange = pyqtSignal(int)
-
-
-class MPRIS1Tracklist(MPRISTracklist):
-    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.MediaPlayer")
-
-    @pyqtSlot(int, result="QMap<QString, QVariant>")
-    def GetMetadata(self, index):
-        return self.GetTracksMetadata([index])[0]
-
-    @pyqtSlot(result=int)
-    def GetCurrentTrack(self):
-        """Returns currently playing track.
-
-        Returns:
-            int -- current track's indes.
-
-        """
-        return self.player.playlist.activeRow
-
-    @pyqtSlot(result=int)
-    def GetLength(self):
-        """Returns length of the playlist.
-
-        Returns:
-            int -- current playlist's length
-
-        """
-        return self.player.playlist.count()
-
-    @pyqtSlot(str, bool, result=int)
-    def AddTrack(self, uri, play):
-        pass # we'll trigger super()'s action, but it does nothing anyway...
-
-    @pyqtSlot(int)
-    def DelTrack(self, index):
-        """Removes track with specified index from the playlist.
-
-        Args:
-            index: index of an element in the playlist
-
-        """
-        self.player.playlist.remove(index)
-
-    @pyqtSlot(bool)
-    def SetLoop(self, loop):
-        pass
-
-    @pyqtSlot(bool)
-    def SetRandom(self, random):
-        pass
-
-    TrackListChange = pyqtSignal(int)
-
-
-class MPRIS1MainWrapper(QObject):
-    def __init__(self, player):
-        super(MPRIS1MainWrapper, self).__init__()
-        MPRIS1Main(self, player)
-        QtDBus.QDBusConnection.sessionBus().registerObject("/", self)
-
-
-class MPRIS1PlayerWrapper(QObject):
-    def __init__(self, player):
-        super(MPRIS1PlayerWrapper, self).__init__()
-        MPRIS1Player(self, player)
-        QtDBus.QDBusConnection.sessionBus().registerObject("/Player", self)
-
-
-class MPRIS1TracklistWrapper(QObject):
-    def __init__(self, player):
-        super(MPRIS1TracklistWrapper, self).__init__()
-        MPRIS1Tracklist(self, player)
-        QtDBus.QDBusConnection.sessionBus().registerObject("/TrackList", self)
-
-
-class MPRIS1(QObject):
-    def __init__(self, player):
-        super(MPRIS1, self).__init__()
-        MPRIS1MainWrapper(self, player)
-        MPRIS1PlayerWrapper(self, player)
-        MPRIS1TracklistWrapper(self, player)
-        self.conn = QtDBus.QDBusConnection.sessionBus()
-        self.conn.registerObject("/org/mpris/MediaPlayer2", self)
-        self.conn.registerService("org.mpris.gayeogi")
 
 
 class MPRIS2Main(MPRISMain):
@@ -783,8 +639,6 @@ class Main(object):
         """Loads the plugin in."""
         if self.__settings.value(u'2.1').toBool():
             self.__21 = MPRIS2(self.player)
-        if self.__settings.value(u'1.0').toBool():
-            self.__10 = MPRIS1(self.player)
         Main.loaded = True
 
     def unload(self):
@@ -799,24 +653,7 @@ class Main(object):
             QWidget -- config widget used in settings dialog.
 
         """
-        types = QtGui.QListWidget()
-        for type in [u'1.0', u'2.1']:
-            item = QtGui.QListWidgetItem(type)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Main.__settings.value(type, 0).toInt()[0])
-            types.addItem(item)
-        layout = QtGui.QHBoxLayout()
-        layout.addWidget(types)
         widget = QtGui.QWidget()
-        widget.setLayout(layout)
-        widget.enabled = Main.__settings.value('enabled', 0).toInt()[0]
-
-        def save(x, y):
-            Main.__settings.setValue(x, y)
-            for i in range(types.count()):
-                item = types.item(i)
-                type = unicode(item.text())
-                state = item.checkState()
-                Main.__settings.setValue(type, state)
-        widget.setSetting = lambda x, y: save(x, y)
+        widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
+        widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
