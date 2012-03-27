@@ -21,9 +21,11 @@ from PyQt4.QtCore import Q_CLASSINFO, pyqtSignal, pyqtSlot, pyqtProperty
 from PyQt4.phonon import Phonon
 
 
-class MPRISMain(QtDBus.QDBusAbstractAdaptor):
+class MPRIS2Main(QtDBus.QDBusAbstractAdaptor):
+    Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2")
+
     def __init__(self, parent, player):
-        super(MPRISMain, self).__init__(parent)
+        super(MPRIS2Main, self).__init__(parent)
         self.setAutoRelaySignals(True)
         self.player = player
 
@@ -37,10 +39,76 @@ class MPRISMain(QtDBus.QDBusAbstractAdaptor):
         """
         return "gayeogi"
 
+    @pyqtProperty(bool)
+    def CanQuit(self):
+        """Returns whether player can quit or not.
 
-class MPRISPlayer(QtDBus.QDBusAbstractAdaptor):
+        Returns:
+            bool -- can quit or not.
+
+        """
+        return False
+
+    @pyqtProperty(bool)
+    def CanRaise(self):
+        """Returns whether player can be raised* or not.
+
+        *It means the client can bring him "on top".
+
+        Returns:
+            bool -- can raise or not.
+
+        """
+        return False
+
+    @pyqtProperty(bool)
+    def HasTrackList(self):
+        """Returns whether player has tracklist support or not.
+
+        Returns:
+            bool -- has tracklist or not.
+
+        """
+        return True
+
+    @pyqtProperty(str)
+    def DesktopEntry(self):
+        """Returns desktop entry* of the player.
+
+        *Which is a human-readable identity.
+
+        Returns:
+            str -- desktop entry.
+
+        """
+        return "gayeogi"
+
+    @pyqtProperty(QStringList)
+    def SupportedUriSchemes(self):
+        """Returns array of a supported Uri schemes (nothing here).
+
+        Returns:
+            QStringList -- supported Uri schemes.
+
+        """
+        return QStringList()
+
+    @pyqtProperty(QStringList)
+    def SupportedMimeTypes(self):
+        """Returns supported Mime types (nothing here).
+
+        Returns:
+            QStringList -- supported Mime types.
+
+        """
+        return QStringList()
+
+
+class MPRIS2Player(QtDBus.QDBusAbstractAdaptor):
+    Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2.Player")
+
     def __init__(self, parent, player):
-        super(MPRISPlayer, self).__init__(parent)
+        super(MPRIS2Player, self).__init__(parent)
         self.setAutoRelaySignals(True)
         self.player = player
 
@@ -168,115 +236,6 @@ class MPRISPlayer(QtDBus.QDBusAbstractAdaptor):
 
         """
         return self.player.mediaobject.currentTime() * 1000
-
-
-class MPRISTracklist(QtDBus.QDBusAbstractAdaptor):
-    def __init__(self, parent, player):
-        super(MPRISTracklist, self).__init__(parent)
-        self.setAutoRelaySignals(True)
-        self.player = player
-
-    #@pyqtSlot(QStringList, result="QList<QVariantMap>")
-    # it doesn't want do work with the definition above :(
-    #def GetTracksMetadata(self, ids):
-        #"""Returns a list of metadata for all specified ids in order.
-
-        #Args:
-            #ids: an array of track ids (in a form of '/gayeogi/<number>')
-
-        #Returns:
-            #list -- a list of metadata dictionaries.
-
-        #"""
-        #pass
-
-    @pyqtSlot(str, QtDBus.QDBusObjectPath, bool)
-    def AddTrack(self, uri, aftertrack, setascurrent):
-        """Adds specified track to the playlist after the given position
-        and optionally sets it as current track.
-
-        Does nothing now, as we do not support adding tracks by Uri.
-        """
-        pass
-
-
-class MPRIS2Main(MPRISMain):
-    Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2")
-
-    @pyqtProperty(bool)
-    def CanQuit(self):
-        """Returns whether player can quit or not.
-
-        Returns:
-            bool -- can quit or not.
-
-        """
-        return False
-
-    @pyqtProperty(bool)
-    def CanRaise(self):
-        """Returns whether player can be raised* or not.
-
-        *It means the client can bring him "on top".
-
-        Returns:
-            bool -- can raise or not.
-
-        """
-        return False
-
-    @pyqtProperty(bool)
-    def HasTrackList(self):
-        """Returns whether player has tracklist support or not.
-
-        Returns:
-            bool -- has tracklist or not.
-
-        """
-        return True
-
-    @pyqtProperty(str)
-    def DesktopEntry(self):
-        """Returns desktop entry* of the player.
-
-        *Which is a human-readable identity.
-
-        Returns:
-            str -- desktop entry.
-
-        """
-        return "gayeogi"
-
-    @pyqtProperty(QStringList)
-    def SupportedUriSchemes(self):
-        """Returns array of a supported Uri schemes (nothing here).
-
-        Returns:
-            QStringList -- supported Uri schemes.
-
-        """
-        return QStringList()
-
-    @pyqtProperty(QStringList)
-    def SupportedMimeTypes(self):
-        """Returns supported Mime types (nothing here).
-
-        Returns:
-            QStringList -- supported Mime types.
-
-        """
-        return QStringList()
-
-
-class MPRIS2Player(MPRISPlayer):
-    Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2.Player")
-
-    def __init__(self, parent, player):
-        super(MPRIS2Player, self).__init__(parent, player)
-        self.player.mediaobject.stateChanged.connect(self._SetPlaybackStatus)
-        self.player.audiooutput.volumeChanged.connect(self._emitVolume)
-        self.player.trackChanged.connect(self._emitMetadata)
-        self.player.seeked.connect(self.__emitSeeked)
 
     @pyqtSlot()
     def PlayPause(self):
@@ -496,12 +455,36 @@ class MPRIS2Player(MPRISPlayer):
         return True
 
 
-class MPRIS2Tracklist(MPRISTracklist):
+class MPRIS2Tracklist(QtDBus.QDBusAbstractAdaptor):
     Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2.TrackList")
 
-    #@pyqtSlot("QStringList", result="QList<QVariantMap>")
-    #def GetTracksMetadata(self, as_):
+    def __init__(self, parent, player):
+        super(MPRIS2Tracklist, self).__init__(parent)
+        self.setAutoRelaySignals(True)
+        self.player = player
+
+    #@pyqtSlot(QStringList, result="QList<QVariantMap>")
+    # it doesn't want do work with the definition above :(
+    #def GetTracksMetadata(self, ids):
+        #"""Returns a list of metadata for all specified ids in order.
+
+        #Args:
+            #ids: an array of track ids (in a form of '/gayeogi/<number>')
+
+        #Returns:
+            #list -- a list of metadata dictionaries.
+
+        #"""
         #pass
+
+    @pyqtSlot(str, QtDBus.QDBusObjectPath, bool)
+    def AddTrack(self, uri, aftertrack, setascurrent):
+        """Adds specified track to the playlist after the given position
+        and optionally sets it as current track.
+
+        Does nothing now, as we do not support adding tracks by Uri.
+        """
+        pass
 
     def __getId(self, id):
         """Converts mpris-compliant id to number in the playlist.
@@ -599,8 +582,7 @@ class MPRIS2Tracklist(MPRISTracklist):
     def CanEditTracks(self):
         """Returns whether tracks in the playlist can be edited.
 
-        Note that it doesn't mean that all editing methods are always
-        available.
+        Note: It doesn't mean that all editing methods are always available.
 
         """
         return True
