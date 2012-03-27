@@ -299,7 +299,6 @@ class Main(QtGui.QWidget):
         self.mediaobject.tick.connect(self.tick)
         self.mediaobject.aboutToFinish.connect(self.nextTrack)
         self.mediaobject.currentSourceChanged.connect(self.updateView)
-        self.mediaobject.totalTimeChanged.connect(self.updateTotalTime)
         self.mediaobject.finished.connect(self.stop)
         self.mediaobject.stateChanged.connect(self.state)
         self.audiooutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
@@ -330,10 +329,12 @@ class Main(QtGui.QWidget):
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
         widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
         return widget
+
     def updateView(self, _):
         item = self.playlist.item(self.playlist.activeRow)
         self.playlist.activeItem = item
         item.setData(670, self.__timeConvert(0))
+        item.setData(671, self.__timeConvert(self.mediaobject.totalTime()))
         self.playlist.scrollToItem(item)
         self.trackChanged.emit(
             item.data(669).toString(),
@@ -341,9 +342,7 @@ class Main(QtGui.QWidget):
             item.data(668).toString(),
             item.data(666).toInt()[0]
         )
-    def updateTotalTime(self, time):
-        if time != -1:
-            self.playlist.activeItem.setData(671, self.__timeConvert(time))
+
     def nextTrack(self):
         self.playlist.activeRow = 1
         item = self.playlist.item(self.playlist.activeRow)

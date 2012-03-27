@@ -176,19 +176,19 @@ class MPRISTracklist(QtDBus.QDBusAbstractAdaptor):
         self.setAutoRelaySignals(True)
         self.player = player
 
-    #@pyqtSlot(QStringList, result="QList<QMap<QString, QVariant>>")
+    #@pyqtSlot(QStringList, result="QList<QVariantMap>")
     # it doesn't want do work with the definition above :(
-    def GetTracksMetadata(self, ids):
-        """Returns a list of metadata for all specified ids in order.
+    #def GetTracksMetadata(self, ids):
+        #"""Returns a list of metadata for all specified ids in order.
 
-        Args:
-            ids: an array of track ids (in a form of '/gayeogi/<number>')
+        #Args:
+            #ids: an array of track ids (in a form of '/gayeogi/<number>')
 
-        Returns:
-            list -- a list of metadata dictionaries.
+        #Returns:
+            #list -- a list of metadata dictionaries.
 
-        """
-        return [self.Metadata(id) for id in ids]
+        #"""
+        #pass
 
     @pyqtSlot(str, QtDBus.QDBusObjectPath, bool)
     def AddTrack(self, uri, aftertrack, setascurrent):
@@ -199,37 +199,18 @@ class MPRISTracklist(QtDBus.QDBusAbstractAdaptor):
         """
         pass
 
-    def __getId(self, id):
-        """Converts mpris-compliant id to number in the playlist.
-
-        Args:
-            id: mpris-compliant item id (looks like '/gayeogi/<number>')
-
-        Returns:
-            int -- number in the playlist corresponding the supplied id.
-        """
-        try:
-            return int(id[9:])
-        except ValueError:
-            return None
-
-    @pyqtSlot(QtDBus.QDBusObjectPath)
-    def RemoveTrack(self, id):
-        """Removes track with specified id from the playlist.
-
-        Args:
-            id: An id unique in the context (which is the playlist,
-            looks like '/gayeogi/<number>')
-
-        """
-        self.player.playlist.remove(self.__getId(id))
-
 
 class MPRIS1Main(MPRISMain):
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.MediaPlayer")
 
     @pyqtSlot(result=tuple)
     def MprisVersion(self):
+        """Returns current MPRIS version (which is 1.0).
+
+        Returns:
+            tuple -- MPRIS version (major, minor) == (1, 0).
+
+        """
         return (1, 0)
 
     @pyqtSlot(result=str)
@@ -288,19 +269,37 @@ class MPRIS1Tracklist(MPRISTracklist):
 
     @pyqtSlot(result=int)
     def GetCurrentTrack(self):
-        pass
+        """Returns currently playing track.
+
+        Returns:
+            int -- current track's indes.
+
+        """
+        return self.player.playlist.activeRow
 
     @pyqtSlot(result=int)
     def GetLength(self):
-        pass
+        """Returns length of the playlist.
+
+        Returns:
+            int -- current playlist's length
+
+        """
+        return self.player.playlist.count()
 
     @pyqtSlot(str, bool, result=int)
     def AddTrack(self, uri, play):
-        self.AddTrack(uri, self.player.playlist.count(), play)
+        pass # we'll trigger super()'s action, but it does nothing anyway...
 
     @pyqtSlot(int)
     def DelTrack(self, index):
-        self.RemoveTrack(index)
+        """Removes track with specified index from the playlist.
+
+        Args:
+            index: index of an element in the playlist
+
+        """
+        self.player.playlist.remove(index)
 
     @pyqtSlot(bool)
     def SetLoop(self, loop):
@@ -643,6 +642,35 @@ class MPRIS2Player(MPRISPlayer):
 
 class MPRIS2Tracklist(MPRISTracklist):
     Q_CLASSINFO("D-Bus Interface", "org.mpris.MediaPlayer2.TrackList")
+
+    #@pyqtSlot("QStringList", result="QList<QVariantMap>")
+    #def GetTracksMetadata(self, as_):
+        #pass
+
+    def __getId(self, id):
+        """Converts mpris-compliant id to number in the playlist.
+
+        Args:
+            id: mpris-compliant item id (looks like '/gayeogi/<number>')
+
+        Returns:
+            int -- number in the playlist corresponding the supplied id.
+        """
+        try:
+            return int(id[9:])
+        except ValueError:
+            return None
+
+    @pyqtSlot(QtDBus.QDBusObjectPath)
+    def RemoveTrack(self, id):
+        """Removes track with specified id from the playlist.
+
+        Args:
+            id: An id unique in the context (which is the playlist,
+            looks like '/gayeogi/<number>')
+
+        """
+        self.player.playlist.remove(self.__getId(id))
 
     @pyqtSlot(QtDBus.QDBusObjectPath)
     def GoTo(self, id):
