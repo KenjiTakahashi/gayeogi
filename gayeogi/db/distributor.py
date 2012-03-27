@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
+# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import logging
 
 logger = logging.getLogger('gayeogi.remote')
 
+
 class Bee(QThread):
     """Worker thread used by Distributor."""
     def __init__(self, tasks, library, urls, avai,
@@ -35,7 +36,8 @@ class Bee(QThread):
             urls: urls library part (library[3])
             avai: available library part (library[4])
             name: used database name
-            rlock: RLock object used to provide thread-safety (should be the same for all instances of Bee!)
+            rlock: RLock object used to provide thread-safety
+                (should be the same for all instances of Bee!)
             processed: processed artists storage (used in ~behaviour mode)
             case: case sensitivity
 
@@ -51,8 +53,10 @@ class Bee(QThread):
         self.processed = processed
         self.case = case
         self.start()
+
     def run(self):
-        """Starts worker thread, fetches given artist releases and appends them to the library.
+        """Starts worker thread, fetches given artist releases
+        and appends them to the library.
 
         Note: Use start() method to run it in a separate thread.
 
@@ -90,7 +94,12 @@ class Bee(QThread):
                 for (album, year) in result[u'result']:
                     if self.case and year in self.library[artist]:
                         for alb in self.library[artist][year].iterkeys():
-                            if alb.lower() == album.lower():
+                            key = artist + year + alb
+                            if(
+                                alb.lower() == album.lower()
+                                and key in self.avai
+                                and self.avai[key][u'digital']
+                            ):
                                 album = alb
                                 break
                     albums.setdefault(year, set([album])).add(album)
@@ -114,11 +123,14 @@ class Bee(QThread):
                     self.rlock.release()
             finally:
                 self.rlock.acquire()
+
                 def __internal(artist, year, album):
                     key = artist + year + album
-                    if (not self.avai[key][u'digital'] and
-                    not self.avai[key][u'analog'] and
-                    self.avai[key][u'remote'] == set([self.name])):
+                    if (
+                        not self.avai[key][u'digital'] and
+                        not self.avai[key][u'analog'] and
+                        self.avai[key][u'remote'] == set([self.name])
+                    ):
                         __internal.torem.add((artist, year, album))
                     else:
                         try:
@@ -138,11 +150,13 @@ class Bee(QThread):
                             __internal(artist, year, album)
                 if added:
                     logger.info(
-                        [artist, self.trUtf8('Something has been added.')])
+                        [artist, self.trUtf8('Something has been added.')]
+                    )
                     self.modified[0] = True
                 if __internal.torem or __internal.norem:
                     logger.info(
-                        [artist, self.trUtf8('Something has been removed.')])
+                        [artist, self.trUtf8('Something has been removed.')]
+                    )
                     self.modified[0] = True
                 elif not added:
                     logger.info(
@@ -166,6 +180,7 @@ class Bee(QThread):
                 self.rlock.release()
                 self.tasks.task_done()
 
+
 class Distributor(QThread):
     """Main db object to fetch all releases and append them to the library.
 
@@ -178,6 +193,7 @@ class Distributor(QThread):
     __settings = QSettings(u'gayeogi', u'Databases')
     updated = pyqtSignal()
     stepped = pyqtSignal(unicode)
+
     def __init__(self, library):
         """Constructs new Distributor instance.
 
@@ -190,6 +206,7 @@ class Distributor(QThread):
         self.urls = library[3]
         self.avai = library[4]
         self.modified = library[5]
+
     def run(self):
         """Starts Distributor and fetches releases for enabled dbs.
 
@@ -211,7 +228,7 @@ class Distributor(QThread):
             try:
                 db = __import__(u'gayeogi.db.bees.' + name, globals(),
                     locals(), [u'work', u'name', u'init'], -1)
-            except ImportError: # it should not ever happen
+            except ImportError:  # it should not ever happen
                 logger.error(
                     [name, self.trUtf8('No such module has been found!!!')]
                 )
