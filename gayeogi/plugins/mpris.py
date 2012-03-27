@@ -598,6 +598,10 @@ class MPRIS2(QObject):
         self.conn.registerObject("/org/mpris/MediaPlayer2", self)
         self.conn.registerService("org.mpris.MediaPlayer2.gayeogi")
 
+    def destroy(self):
+        self.conn.unregisterObject("/org/mpris/MediaPlayer2")
+        self.conn.unregisterService("org.mpris.MediaPlayer2.gayeogi")
+
 
 class Main(object):
     name = u'MPRIS'
@@ -619,12 +623,12 @@ class Main(object):
 
     def load(self):
         """Loads the plugin in."""
-        if self.__settings.value(u'2.1').toBool():
-            self.__21 = MPRIS2(self.player)
+        self.__21 = MPRIS2(self.player)
         Main.loaded = True
 
     def unload(self):
         """Unloads the plugin."""
+        self.__21.destroy()
         Main.loaded = False
 
     @staticmethod
@@ -637,5 +641,5 @@ class Main(object):
         """
         widget = QtGui.QWidget()
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
-        widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
+        widget.setSetting = lambda x, y: Main.__settings.setValue(x, y)
         return widget
