@@ -13,6 +13,7 @@ At the moment, these features are considered "working":
 - Playback
 
     - last.fm/libre.fm scrobbling
+    - MPRIS (2.1 without GetTracksMetadata method, not available on Windows)
 
 INSTALLATION
 ============
@@ -48,9 +49,10 @@ LINUX
 -----
 ARCHLINUX
 *********
-::
 
-    yaourt -S gayeogi (or any other AUR wrapper)
+There is a PKGBUILD available in `AUR`_.
+
+.. _AUR: https://aur.archlinux.org/packages.php?ID=50500
 
 .DEB/.RPM
 *********
@@ -58,6 +60,13 @@ ARCHLINUX
 There are binary packages (along with custom repositories) for some popular distributions available through `Novell's Open Build Service`_.
 
 .. _Novell's Open Build Service: https://build.opensuse.org/package/show?package=gayeogi&project=home%3AKenjiTakahashi
+
+GENTOO
+******
+
+There is an ebuild available in `overlays`_ thanks to <someone> (if you're the one, feel free to send me a message).
+
+.. _overlays: http://gpo.zugaina.org/media-sound/gayeogi
 
 GENERAL
 *******
