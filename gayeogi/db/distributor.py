@@ -97,7 +97,6 @@ class Bee(QThread):
                             key = artist + year + alb
                             if(
                                 alb.lower() == album.lower()
-                                and key in self.avai
                                 and self.avai[key][u'digital']
                             ):
                                 album = alb
