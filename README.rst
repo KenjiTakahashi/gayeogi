@@ -13,7 +13,7 @@ At the moment, these features are considered "working":
 - Playback
 
     - last.fm/libre.fm scrobbling
-    - MPRIS (2.1 without GetTracksMetadata method, not available on Windows)
+    - MPRIS (2.1 with partial TrackList support, not available on Windows)
 
 INSTALLATION
 ============
