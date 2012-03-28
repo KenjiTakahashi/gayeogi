@@ -266,6 +266,7 @@ class Main(QtGui.QWidget):
         buttons.setLayout(buttonsLayout)
         delegate = PlayListItemDelegate()
         self.playlist = Playlist()
+        self.playlist.activeItem = None
         self.playlist.setItemDelegate(delegate)
         self.playlist.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
         self.__settings.beginGroup('playlist')
@@ -384,7 +385,7 @@ class Main(QtGui.QWidget):
         if not self.playlist.activeItem:
             self.play(self.playlist.item(0))
         else:
-            button = self.sender()
+            button = self.playButton
             if not button.isPlaying():
                 button.setPlaying(True)
                 self.mediaobject.play()

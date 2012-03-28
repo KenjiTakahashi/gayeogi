@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/Fetcher/
-# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
+# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ from gayeogi.db.distributor import Distributor
 from gayeogi.interfaces.settings import Settings
 import gayeogi.plugins
 
-version = u'0.6.2'
+version = u'0.6.3'
 locale = QLocale.system().name()
 if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices
