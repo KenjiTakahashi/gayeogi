@@ -171,7 +171,7 @@ class Filesystem(QThread):
             dict -- a dictionary of tags
 
         """
-        ext = os.path.splitext(filepath)[1]
+        ext = os.path.splitext(filepath)[1].lower()
         try:
             if ext == u'.mp3':
                 self.stepped.emit(filepath)
