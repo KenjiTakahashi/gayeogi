@@ -4,17 +4,17 @@
 <context>
     <name>Bee</name>
     <message>
-        <location filename="../gayeogi/db/distributor.py" line="133"/>
+        <location filename="../gayeogi/db/distributor.py" line="151"/>
         <source>Something has been added.</source>
         <translation>Coś zostało dodane.</translation>
     </message>
     <message>
-        <location filename="../gayeogi/db/distributor.py" line="137"/>
+        <location filename="../gayeogi/db/distributor.py" line="156"/>
         <source>Something has been removed.</source>
         <translation>Coś zostało usunięte.</translation>
     </message>
     <message>
-        <location filename="../gayeogi/db/distributor.py" line="141"/>
+        <location filename="../gayeogi/db/distributor.py" line="161"/>
         <source>Nothing has been changed.</source>
         <translation>Nic się nie zmieniło.</translation>
     </message>
@@ -45,60 +45,70 @@
 <context>
     <name>DatabasesTab</name>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="79"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="122"/>
         <source>Name</source>
         <translation>Nazwa</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="79"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="122"/>
         <source>Threads</source>
         <translation>Wątki</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="109"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="152"/>
         <source>&amp;Up</source>
         <translation>&amp;Góra</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="111"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="154"/>
         <source>&amp;Down</source>
         <translation>&amp;Dół</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="113"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="156"/>
         <source>Behaviour</source>
         <translation>Zachowanie</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="114"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="157"/>
         <source>Search for all bands in all enabled databases.</source>
         <translation>Szukaj wszystkich wykonawców we wszytkich bazach.</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="114"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="157"/>
         <source>C&amp;rossed</source>
         <translation>Na k&amp;rzyż</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="119"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="162"/>
         <source>Search databases in order and in every next database, search only for bands not yet found elsewhere.</source>
         <translation>Przeszukuje bazy po kolei i w każdej kolejnej sprawdza tych wykonawców, których nie znalazł jeszcze w innej.</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="119"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="162"/>
         <source>O&amp;ne-by-one</source>
         <translation>Kolej&amp;no</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="141"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="191"/>
         <source>Releases</source>
         <translation>Wydawnictwa</translation>
+    </message>
+    <message>
+        <location filename="../gayeogi/interfaces/settings.py" line="171"/>
+        <source>Ignore case</source>
+        <translation>Ignoruj wielkość liter</translation>
+    </message>
+    <message>
+        <location filename="../gayeogi/interfaces/settings.py" line="171"/>
+        <source>Ignore the case of album names when merging remote with local. Note that it won&apos;t change anything until next Remote call.</source>
+        <translation>Ignoruj wielkość liter w nazwach albumów przy scalaniu wyników. Ustawienie tej opcji nie spowoduje żadnych do czasu odświeżenia Baz. </translation>
     </message>
 </context>
 <context>
     <name>Distributor</name>
     <message>
-        <location filename="../gayeogi/db/distributor.py" line="207"/>
+        <location filename="../gayeogi/db/distributor.py" line="231"/>
         <source>No such module has been found!!!</source>
         <translation>Nie znaleziono takiego modułu!!!</translation>
     </message>
@@ -139,12 +149,12 @@
 <context>
     <name>LocalTab</name>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="328"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="395"/>
         <source>Directories:</source>
         <translation>Katalogi:</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="334"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="401"/>
         <source>Ignores:</source>
         <translation>Ignorowane:</translation>
     </message>
@@ -208,17 +218,17 @@
 <context>
     <name>QValueWidget</name>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="271"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="334"/>
         <source>&amp;Add</source>
         <translation>Dod&amp;aj</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="273"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="336"/>
         <source>&amp;Remove</source>
         <translation>&amp;Usuń</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="279"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="342"/>
         <source>&amp;Browse</source>
         <translation>&amp;Szukaj</translation>
     </message>
@@ -279,7 +289,7 @@
         <translation type="obsolete">Wydawnictwa</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="504"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="582"/>
         <source>&amp;Databases</source>
         <translation>Bazy &amp;danych</translation>
     </message>
@@ -309,7 +319,7 @@
         <translation type="obsolete">&amp;Usuń</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="512"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="591"/>
         <source>&amp;Local</source>
         <translation>P&amp;liki</translation>
     </message>
@@ -319,17 +329,17 @@
         <translation type="obsolete">Lo&amp;gi</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="515"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="594"/>
         <source>&amp;Plugins</source>
         <translation>&amp;Dodatki</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="521"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="600"/>
         <source>&amp;OK</source>
         <translation>&amp;OK</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="523"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="602"/>
         <source>&amp;Cancel</source>
         <translation>&amp;Anuluj</translation>
     </message>
@@ -339,22 +349,22 @@
         <translation type="obsolete">Pole wyboru katalogu nie może być puste!</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="558"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="640"/>
         <source>Here you can choose which databases should be searched, what releases to search for and how the search should behave.</source>
         <translation>Tutaj można wybrać, które bazy będą przeszukiwane, jakich typów wydawnictw szukać oraz w jaki sposób to robić.</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="560"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="642"/>
         <source>Here you can choose in which directory you files lies and which files to ignore while searching (you can use wilcards, like &apos;*&apos; or &apos;?&apos;)</source>
         <translation>Tutaj możesz wybrać w jakim folderze znajdują się Twoje pliki i jakie pliki ignorować przy przeszukiwaniu (dozwolone znaki wieloznaczności, jak &apos;*&apos; lub &apos;?&apos;)</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="562"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="644"/>
         <source>Here you can choose what kind of log messages should be displayed in the main window.</source>
         <translation>Tutaj możesz wybrać jakie rodzaje logów będą wyświetlane w głownym oknie.</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="564"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="646"/>
         <source>Here you can choose and configure additional plugins.</source>
         <translation>Tutaj możesz wybrać i skonfigurować dodatki.</translation>
     </message>
@@ -364,7 +374,7 @@
         <translation type="obsolete">Kolej&amp;no</translation>
     </message>
     <message>
-        <location filename="../gayeogi/interfaces/settings.py" line="535"/>
+        <location filename="../gayeogi/interfaces/settings.py" line="615"/>
         <source>There should be at least one directory supplied!</source>
         <translation>Należy dodać do bazy przynajmniej jeden katalog!</translation>
     </message>

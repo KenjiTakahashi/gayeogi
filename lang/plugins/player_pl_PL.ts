@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="2.0" language="pl_PL" sourcelanguage="en_GB">
+<!DOCTYPE TS>
+<TS version="2.0" language="pl_PL" sourcelanguage="en_GB">
 <context>
     <name>Main</name>
     <message>
@@ -46,42 +47,42 @@
 <context>
     <name>Player</name>
     <message>
-        <location filename="../../gayeogi/plugins/player.py" line="177"/>
+        <location filename="../../gayeogi/plugins/player.py" line="209"/>
         <source>Add selected item(s) to the playlist.</source>
         <translation>Dodaj zaznaczone elementy to playlisty.</translation>
     </message>
     <message>
-        <location filename="../../gayeogi/plugins/player.py" line="184"/>
+        <location filename="../../gayeogi/plugins/player.py" line="216"/>
         <source>Remove selected item(s) from the playlist.</source>
         <translation>Usuń zaznaczone elementy z playlisty.</translation>
     </message>
     <message>
-        <location filename="../../gayeogi/plugins/player.py" line="191"/>
+        <location filename="../../gayeogi/plugins/player.py" line="223"/>
         <source>Jump to previous track.</source>
         <translation>Przeskocz do poprzedniej ścieżki.</translation>
     </message>
     <message>
-        <location filename="../../gayeogi/plugins/player.py" line="198"/>
+        <location filename="../../gayeogi/plugins/player.py" line="230"/>
         <source>Begin/Pause/Resume playback.</source>
         <translation>Rozpocznij/Zapauzuj/Kontynnuj odtwarzanie.</translation>
     </message>
     <message>
-        <location filename="../../gayeogi/plugins/player.py" line="205"/>
+        <location filename="../../gayeogi/plugins/player.py" line="237"/>
         <source>Stop playback.</source>
         <translation>Zatrzymaj odtwarzanie.</translation>
     </message>
     <message>
-        <location filename="../../gayeogi/plugins/player.py" line="212"/>
+        <location filename="../../gayeogi/plugins/player.py" line="244"/>
         <source>Jump to next track.</source>
         <translation>Przeskocz do następnej ścieżki.</translation>
     </message>
     <message>
-        <location filename="../../gayeogi/plugins/player.py" line="219"/>
+        <location filename="../../gayeogi/plugins/player.py" line="251"/>
         <source>Change volume.</source>
         <translation>Zmień głośność.</translation>
     </message>
     <message>
-        <location filename="../../gayeogi/plugins/player.py" line="232"/>
+        <location filename="../../gayeogi/plugins/player.py" line="264"/>
         <source>Seek the track.</source>
         <translation>Przewijaj ścieżkę.</translation>
     </message>
