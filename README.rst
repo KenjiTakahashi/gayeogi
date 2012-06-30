@@ -70,25 +70,19 @@ There is an ebuild available in `overlays`_ thanks to <someone> (if you're the o
 
 GENERAL
 *******
-In package main directory::
 
-    python2 setup.py install
-
-also available in PyPI_::
+Through PyPI_::
 
     pip install gayeogi
-    #or
-    easy_install gayeogi
+
+or directly from source::
+
+    python2 setup.py install
 
 .. _PyPI: http://pypi.python.org/pypi/gayeogi/
 
 WINDOWS
 -------
-You should have no problems with provided installer (just few clicks ;). If you want to build it on your own then... you're on your own.
+There is a binary installer provided in the downloads_ section.
 
-USAGE
-=====
-NOTES
------
-- Keep in mind that first time refresh could take quite some time, but then it should be much faster :).
-
+.. _downloads: https://github.com/KenjiTakahashi/gayeogi/downloads
