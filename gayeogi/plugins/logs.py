@@ -213,8 +213,8 @@ class Main(QtGui.QWidget):
         widget = QtGui.QWidget()
         widget.setLayout(layout)
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
-        def save(x, y):
-            Main.__settings.setValue(x, y)
+        def save(y):
+            Main.__settings.setValue(u'enabled', y)
             for i in range(levels.count()):
                 item = levels.item(i)
                 level = unicode(item.text())
@@ -224,7 +224,7 @@ class Main(QtGui.QWidget):
                     logfilter.addLevel(level)
                 else:
                     logfilter.removeLevel(level)
-        widget.setSetting = lambda x, y : save(x, y)
+        widget.save = lambda y: save(y)
         return widget
     def update(self, data):
         """Updates logs widget with new logs.

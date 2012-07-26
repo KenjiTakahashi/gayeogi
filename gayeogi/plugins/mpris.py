@@ -35,7 +35,7 @@ class MPRIS2Helper(object):
         Args:
             interface: interface name
             property: property name
-            values: actual property value(s)
+            values: current property value(s)
 
         """
         self.signal.setArguments(
@@ -670,5 +670,5 @@ class Main(object):
         """
         widget = QtGui.QWidget()
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
-        widget.setSetting = lambda x, y: Main.__settings.setValue(x, y)
+        widget.save = lambda y: Main.__settings.setValue(u'enabled', y)
         return widget

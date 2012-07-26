@@ -328,7 +328,7 @@ class Main(QtGui.QWidget):
     def QConfiguration():
         widget = QtGui.QWidget()
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
-        widget.setSetting = lambda x, y : Main.__settings.setValue(x, y)
+        widget.save = lambda y: Main.__settings.setValue(u'enabled', y)
         return widget
 
     def updateView(self, _):

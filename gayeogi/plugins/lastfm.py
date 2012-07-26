@@ -170,8 +170,8 @@ class Main(object):
         widget = QtGui.QWidget()
         widget.setLayout(layout)
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
-        def save(x, y):
-            Main.__settings.setValue(x, y)
+        def save(y):
+            Main.__settings.setValue(u'enabled', y)
             Main.__settings.setValue(u'kind', unicode(kind.currentText()))
             Main.__settings.setValue(u'username',unicode(username.text()))
             password_ = unicode(password.text())
@@ -179,7 +179,7 @@ class Main(object):
             Main.__settings.setValue(u'password_hash', pylast.md5(password_)) 
             Main.__settings.setValue(u'phost', unicode(proxyhost.text()))
             Main.__settings.setValue(u'pport', unicode(proxyport.text()))
-        widget.setSetting = lambda x, y : save(x, y)
+        widget.save = lambda y: save(y)
         return widget
     def scrobble(self, artist, title, album, track_number):
         """Send specified track to selected scrobbling service.
