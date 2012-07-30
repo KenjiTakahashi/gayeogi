@@ -50,6 +50,14 @@ class Node(object):
     def childCount(self):
         return len(self._children)
 
+    def child(self, row):
+        """Returns Node's child placed at specified @row.
+
+        :row: @todo
+        :returns: @todo
+        """
+        return self._children[row]
+
 
 class DB(QtCore.QAbstractItemModel):
     """Local filesystem watcher and DB holder/updater."""
@@ -65,6 +73,7 @@ class DB(QtCore.QAbstractItemModel):
         super(DB, self).__init__(parent)
         self._watcher = QtCore.QFileSystemWatcher(self)
         self._rootNode = Node()
+        Node(self._rootNode)
 
     def rowCount(self, parent):
         """Returns number of rows relative to @parent.
@@ -123,3 +132,46 @@ class DB(QtCore.QAbstractItemModel):
                 return "one"
             else:
                 return "two"
+
+    def parent(self, index):
+        """Returns parent index for given Node index.
+
+        Mandatory override.
+
+        :index: Specifies index for which to get parent
+        :returns: parent of the given index
+        """
+        parentNode = self.getNode(index).parent()
+        if parentNode == self._rootNode:
+            return QtCore.QModelIndex()
+        return self.createIndex(parentNode.row(), 0, parentNode)  # FIXME
+
+    def index(self, row, column, parent):
+        """Returns index positioned at specified row and column,
+        relatively to parent.
+
+        Mandatory override.
+
+        :row: Specifies orw at which to look for index
+        :column: Specifies column at which to look for index
+        :parent: Specifies parent index to which to relate
+        :returns: index placed at specified positions
+        """
+        child = self.getNode(parent).child(row)
+        if child:
+            return self.createIndex(row, column, child)
+        return QtCore.QModelIndex()
+
+    def getNode(self, index):
+        """Returns Node for specified index.
+
+        If no Node exists for such index, returns rootNode.
+
+        :index: Specifies index for which to get Node
+        :returns: Node for specified index, if exists, rootNode otherwise
+        """
+        if index.isValid():
+            node = index.internalPointer()
+            if node:
+                return node
+        return self._rootNode
