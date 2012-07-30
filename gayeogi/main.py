@@ -22,7 +22,7 @@ import re
 from PyQt4 import QtGui
 from PyQt4.QtCore import Qt, QSettings, QLocale, QTranslator, QSize
 from PyQt4.QtCore import pyqtSignal, QModelIndex
-from gayeogi.db.local import Filesystem
+from gayeogi.db.local import DB
 from gayeogi.db.distributor import Distributor
 from gayeogi.interfaces.settings import Settings
 import gayeogi.plugins
@@ -34,7 +34,7 @@ if sys.platform == 'win32':
     service = QDesktopServices()
     dbPath = os.path.join(unicode(service.storageLocation(9)), u'gayeogi')
     lnPath = u''
-else: # Most POSIX systems, there may be more elifs in future.
+else:  # Most POSIX systems, there may be more elifs in future.
     dbPath = os.path.expanduser(u'~/.config/gayeogi')
     lnPath = os.path.dirname(__file__)
 
@@ -154,117 +154,48 @@ class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
         else:
             return self.text(column) < qtreewidgetitem.text(column)
 
-class DB(object):
-    def __init__(self):
-        self.dbPath = os.path.join(dbPath, u'db.pkl')
-    def write(self, data):
-        handler = open(self.dbPath, u'wb')
-        cPickle.dump(data, handler, -1)
-        handler.close()
-        saved = False
-        while(not saved):
-            try:
-                handler = open(self.dbPath, u'rb')
-                cPickle.load(handler)
-            except:
-                handler = open(self.dbPath, u'wb')
-                cPickle.dump(data, handler, -1)
-            else:
-                saved = True
-            finally:
-                handler.close()
-    def read(self):
-        handler = open(self.dbPath, u'rb')
-        result = cPickle.load(handler)
-        handler.close()
-        if isinstance(result[0], list):
-            result = (self.convert(result[0]), result[1])
-        try:
-            result[2]
-        except IndexError:
-            return self.convert2(result[0])
-        else:
-            if result[0] == u'0.6':
-                self.convert3(result[3], result[4])
-                return (version,) + result[1:] + ([False],)
-            else:
-                return result
-    def convert(self, data):
-        def checkRemote(digital, analog):
-            if not digital and not analog:
-                return True
-            return False
-        results = {}
-        for artists in data:
-            results[artists[u'artist']] = {
-                    u'url': artists[u'url'],
-                    u'albums': {}
-                    }
-            for albums in artists[u'albums']:
-                results[artists[u'artist']][u'albums'][albums[u'album']] = {
-                        u'date': albums[u'date'],
-                        u'digital': albums[u'digital'],
-                        u'analog': albums[u'analog'],
-                        u'remote': checkRemote(albums[u'digital'], albums[u'analog']),
-                        u'tracks': {}
-                        }
-                for tracks in albums[u'tracks']:
-                    results[artists[u'artist']][u'albums'][albums[u'album']] \
-                            [u'tracks'][tracks[u'title']] = {
-                            u'tracknumber': tracks[u'tracknumber'],
-                            u'path': tracks[u'path'],
-                            u'modified': tracks[u'modified']
-                            }
-        return results
-    def convert2(self, data):
-        main = dict()
-        path = dict()
-        urls = dict()
-        avai = dict()
-        for artist, albums in data.iteritems():
-            main[artist] = dict()
-            avai[artist] = dict()
-            for album, tracks in albums[u'albums'].iteritems():
-                try:
-                    main[artist][tracks[u'date']]
-                except KeyError:
-                    main[artist][tracks[u'date']] = dict()
-                avai[artist + tracks[u'date'] + album] = {
-                        u'digital': tracks[u'digital'],
-                        u'analog': tracks[u'analog'],
-                        u'remote': tracks[u'remote']
-                        }
-                main[artist][tracks[u'date']][album] = dict()
-                for track, deepest in tracks[u'tracks'].iteritems():
-                    main[artist][tracks[u'date']][album] \
-                            [deepest[u'tracknumber']] = {
-                                    track: {
-                                        u'path': deepest[u'path']
-                                        }
-                                    }
-                    path[deepest[u'path']] = {
-                        u'artist': artist,
-                        u'date': tracks[u'date'],
-                        u'album': album,
-                        u'tracknumber': deepest[u'tracknumber'],
-                        u'title': track,
-                        u'modified': deepest[u'modified']
-                    }
-        return (version, main, path, urls, avai, [False])
-    def convert3(self, urls, avai):
-        for key in avai.keys():
-            if avai[key][u'remote']:
-                avai[key][u'remote'] = set()
-                artist = re.findall(u'\d*\D+', key)[0]
-                try:
-                    u = urls[artist]
-                except KeyError:
-                    pass
-                else:
-                    for uu in u.keys():
-                        avai[key][u'remote'].add(uu)
-            else:
-                avai[key][u'remote'] = set()
+#class DB(object):
+    #def __init__(self):
+        #self.dbPath = os.path.join(dbPath, u'db.pkl')
+    #def write(self, data):
+        #handler = open(self.dbPath, u'wb')
+        #cPickle.dump(data, handler, -1)
+        #handler.close()
+        #saved = False
+        #while(not saved):
+            #try:
+                #handler = open(self.dbPath, u'rb')
+                #cPickle.load(handler)
+            #except:
+                #handler = open(self.dbPath, u'wb')
+                #cPickle.dump(data, handler, -1)
+            #else:
+                #saved = True
+            #finally:
+                #handler.close()
+    #def read(self):
+        #handler = open(self.dbPath, u'rb')
+        #result = cPickle.load(handler)
+        #handler.close()
+        #if result[0] == u'0.6':
+            #self.convert3(result[3], result[4])
+            #return (version,) + result[1:] + ([False],)
+        #else:
+            #return result
+    #def convert3(self, urls, avai):
+        #for key in avai.keys():
+            #if avai[key][u'remote']:
+                #avai[key][u'remote'] = set()
+                #artist = re.findall(u'\d*\D+', key)[0]
+                #try:
+                    #u = urls[artist]
+                #except KeyError:
+                    #pass
+                #else:
+                    #for uu in u.keys():
+                        #avai[key][u'remote'].add(uu)
+            #else:
+                #avai[key][u'remote'] = set()
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'gayeogi', u'gayeogi')
@@ -278,8 +209,8 @@ class Main(QtGui.QMainWindow):
         self.ui = Ui_main()
         widget = QtGui.QWidget()
         self.ui.setupUi(widget)
-        self.ui.artists.setHeaderLabels([u'Artist'])
-        self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
+        self.ui.artists.setModel(self.db)
+        #self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
         delegate = ADRItemDelegate()
         self.ui.artists.setItemDelegateForColumn(0, delegate)
         self.ui.albums = ADRTreeWidget()
@@ -287,7 +218,6 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.buttonClicked.connect(self.setAnalog)
         self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
         self.ui.verticalLayout_4.addWidget(self.ui.albums)
-        self.ui.tracks.setHeaderLabels(['#', u'Title'])
         self.ui.plugins = {}
         self.ui.splitter.restoreState(
                 self.__settings.value(u'splitters').toByteArray())
@@ -296,18 +226,15 @@ class Main(QtGui.QMainWindow):
         self.ignores = self.__settings.value(u'ignores', []).toPyObject()
         if self.ignores == None:
             self.ignores = []
-        if not os.path.exists(os.path.join(dbPath, u'db.pkl')):
-            dialog = Settings()
-            dialog.exec_()
-        else:
-            self.library = self.db.read()
-            self.update()
+        #if not os.path.exists(os.path.join(dbPath, u'db.pkl')):
+            #dialog = Settings()
+            #dialog.exec_()
+        #else:
+            #self.library = self.db.read()
+            #self.update()
         directory = self.__settings.value(u'directory', []).toPyObject()
         if type(directory) != list:
             directory = [(unicode(directory), 2)]
-        self.fs = Filesystem(directory, self.library, self.ignores)
-        self.fs.stepped.connect(self.statusBar().showMessage)
-        self.fs.updated.connect(self.update)
         self.rt = Distributor(self.library)
         self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
@@ -322,8 +249,8 @@ class Main(QtGui.QMainWindow):
         self.statusBar()
         self.setWindowTitle(u'gayeogi ' + version)
         self.translators = list()
-        self.loadPluginsTranslators()
-        self.loadPlugins()
+        #self.loadPluginsTranslators()
+        #self.loadPlugins()
     def disableButtons(self):
         u"""Disable some buttons one mustn't use during the update.
 
