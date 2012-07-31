@@ -31,7 +31,9 @@ locale = QLocale.system().name()
 if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices
     service = QDesktopServices()
-    dbPath = os.path.join(unicode(service.storageLocation(9)), u'gayeogi')
+    dbPath = os.path.join(
+        unicode(service.storageLocation(9)), u'gayeogi', u'db'
+    )
     lnPath = u''
 else:  # Most POSIX systems, there may be more elifs in future.
     dbPath = os.path.expanduser(u'~/.config/gayeogi')
@@ -167,49 +169,6 @@ class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
         else:
             return self.text(column) < qtreewidgetitem.text(column)
 
-#class DB(object):
-    #def __init__(self):
-        #self.dbPath = os.path.join(dbPath, u'db.pkl')
-    #def write(self, data):
-        #handler = open(self.dbPath, u'wb')
-        #cPickle.dump(data, handler, -1)
-        #handler.close()
-        #saved = False
-        #while(not saved):
-            #try:
-                #handler = open(self.dbPath, u'rb')
-                #cPickle.load(handler)
-            #except:
-                #handler = open(self.dbPath, u'wb')
-                #cPickle.dump(data, handler, -1)
-            #else:
-                #saved = True
-            #finally:
-                #handler.close()
-    #def read(self):
-        #handler = open(self.dbPath, u'rb')
-        #result = cPickle.load(handler)
-        #handler.close()
-        #if result[0] == u'0.6':
-            #self.convert3(result[3], result[4])
-            #return (__version__,) + result[1:] + ([False],)
-        #else:
-            #return result
-    #def convert3(self, urls, avai):
-        #for key in avai.keys():
-            #if avai[key][u'remote']:
-                #avai[key][u'remote'] = set()
-                #artist = re.findall(u'\d*\D+', key)[0]
-                #try:
-                    #u = urls[artist]
-                #except KeyError:
-                    #pass
-                #else:
-                    #for uu in u.keys():
-                        #avai[key][u'remote'].add(uu)
-            #else:
-                #avai[key][u'remote'] = set()
-
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'gayeogi', u'gayeogi')
@@ -219,8 +178,11 @@ class Main(QtGui.QMainWindow):
         self.statistics = None
         if not os.path.exists(dbPath):
             os.mkdir(dbPath)
-            dialog = Settings()
-            dialog.exec_()
+            if os.path.exists(os.path.join(dbPath[:-3], u'db.pkl')):
+                pass  # TODO: convert old db to new
+            else:
+                dialog = Settings()
+                dialog.exec_()
         self.db = DB()
         from interfaces.main import Ui_main
         self.ui = Ui_main()
@@ -231,11 +193,11 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.setSelectionModel(selection)
         #selection.selectionChanged.connect(self.db.albums.setSelection)
         delegate = ADRItemDelegate()
-        self.ui.artists.setItemDelegateForColumn(0, delegate)
+        #self.ui.artists.setItemDelegateForColumn(0, delegate)
         self.ui.albums = ADRTreeView()
         self.ui.albums.setItemsExpandable(True)
         self.ui.albums.setIndentation(10)
-        #self.ui.albums.setModel(self.db.albums)
+        self.ui.albums.setModel(self.db.albums)
         self.ui.albums.buttonClicked.connect(self.setAnalog)
         self.ui.verticalLayout_4.addWidget(self.ui.albums)
         #self.ui.tracks.setModel(self.db)

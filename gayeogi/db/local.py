@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from copy import deepcopy
 from fnmatch import fnmatch
 from PyQt4 import QtCore, QtGui
 from mutagen.id3 import ID3
@@ -79,6 +78,13 @@ class _Node(object):
     def row(self):
         return self._parent._children.index(self)
 
+    def column(self):
+        """@todo: Docstring for column
+
+        :returns: @todo
+        """
+        return 0  # FIXME
+
     def childCount(self):
         return len(self._children)
 
@@ -92,8 +98,9 @@ class _Node(object):
 
 
 class ArtistNode(_Node):
-    def __init__(self, parent=None):
+    def __init__(self, name, parent=None):
         super(ArtistNode, self).__init__(parent)
+        self.name = name
 
 
 class AlbumNode(_Node):
@@ -104,7 +111,16 @@ class AlbumNode(_Node):
         :parent: @todo
         """
         super(AlbumNode, self).__init__(parent)
-        self._parent = parent
+
+
+class TrackNode(_Node):
+    """Track node."""
+    def __init__(self, parent=None):
+        """@todo: to be defined
+
+        :parent: @todo
+        """
+        super(TrackNode, self).__init__()
 
 
 class _Model(QtCore.QAbstractItemModel):
@@ -117,11 +133,11 @@ class _Model(QtCore.QAbstractItemModel):
         super(_Model, self).__init__(parent)
         self._rootNode = _Node()
         # FIXME : remove things below
-        node = ArtistNode(self._rootNode)
-        node2 = ArtistNode(self._rootNode)
+        node = ArtistNode("b", self._rootNode)
+        ArtistNode("a", self._rootNode)
         AlbumNode(node)
         node3 = AlbumNode(node)
-        AlbumNode(node3)
+        TrackNode(node3)
 
     def rowCount(self, parent):
         """Returns number of rows relative to @parent.
@@ -160,10 +176,14 @@ class _Model(QtCore.QAbstractItemModel):
             return None
         node = index.internalPointer()
         if role == QtCore.Qt.DisplayRole:
+            # FIXME: whole if
             if index.column() == 0:
-                return "TEst"  # FIXME
+                if isinstance(node, ArtistNode):
+                    return node.name
+                else:
+                    return "alaow"
             else:
-                return "tsET"  # FIXME
+                return "tsET"
 
     def headerData(self, section, orientation, role):
         """Function used by view to get appropriate header names.
@@ -189,11 +209,10 @@ class _Model(QtCore.QAbstractItemModel):
         :index: Specifies index for which to get parent
         :returns: parent of the given index
         """
-        return QtCore.QModelIndex()
-        #parentNode = self.getNode(index).parent()
-        #if parentNode == self._rootNode:
-            #return QtCore.QModelIndex()
-        #return self.createIndex(parentNode.row(), 0, parentNode)  # FIXME
+        parent = self.getNode(index).parent()
+        if parent == self._rootNode:
+            return QtCore.QModelIndex()
+        return self.createIndex(parent.row(), parent.column(), parent)
 
     def index(self, row, column, parent):
         """Returns index placed at specified row and column,
@@ -201,26 +220,15 @@ class _Model(QtCore.QAbstractItemModel):
 
         Mandatory override.
 
-        :row: Specifies orw at which to look for index
+        :row: Specifies row at which to look for index
         :column: Specifies column at which to look for index
         :parent: Specifies parent index to which to relate
         :returns: index placed at specified positions
         """
-        parent = self.getNode(parent)
-        if parent == self._rootNode:
-            child = parent.child(row)
+        child = self.getNode(parent).child(row)
+        if child:
             return self.createIndex(row, column, child)
         return QtCore.QModelIndex()
-
-    def hasChildren(self, parent):
-        """@todo: Docstring for hasChildren
-
-        :parent: @todo
-        :returns: @todo
-        """
-        if self.getNode(parent) == self._rootNode:
-            return True
-        return False
 
     def getNode(self, index):
         """Returns Node for specified index.
@@ -237,63 +245,28 @@ class _Model(QtCore.QAbstractItemModel):
         return self._rootNode
 
 
-#class ArtistsModel(QtGui.QSortFilterProxyModel):
-    #"""Artists model."""
-    #def filterAcceptsRow(self, sourceRow, sourceParent):
-        #"""@todo: Docstring for filterAcceptsRow
-
-        #:sourceRow: @todo
-        #:sourceParent: @todo
-        #:returns: @todo
-        #"""
-        #index = self.sourceModel().index(sourceRow, 0, sourceParent)
-        #return isinstance(index.internalPointer(), ArtistNode)
-
-
 class ArtistsModel(_Model):
     """Docstring for ArtistsModel """
     def __init__(self):
         """@todo: to be defined """
         super(ArtistsModel, self).__init__()
 
-    def rowCount(self, parent):
-        """@todo: Docstring for rowCount
+    def hasChildren(self, parent):
+        """@todo: Docstring for hasChildren
 
         :parent: @todo
         :returns: @todo
         """
-        return self._rootNode.childCount()
+        if self.getNode(parent) == self._rootNode:
+            return True
+        return False
 
 
-class AlbumsModel(QtGui.QSortFilterProxyModel):
-    """Albums model."""
+class AlbumsModel(_Model):
+    """Docstring for AlbumsModel """
     def __init__(self):
-        """@todo: Docstring for __init__
-
-        :returns: @todo
-        """
+        """@todo: to be defined """
         super(AlbumsModel, self).__init__()
-        self._selection = list()
-
-    def filterAcceptsRow(self, sourceRow, sourceParent):
-        """@todo: Docstring for filterAcceptsRow
-
-        :sourceRow: @todo
-        :sourceParent: @todo
-        :returns: @todo
-        """
-        index = self.sourceModel().index(sourceRow, 0, sourceParent)
-        index = index.parent()
-        return index in self._selection
-
-    def setSelection(self, selection):
-        """@todo: Docstring for setSelection
-
-        :selection: @todo
-        :returns: @todo
-        """
-        self._selection = selection.indexes()
-        self.invalidateFilter()
 
 
 class DB(object):
@@ -303,5 +276,4 @@ class DB(object):
         self._model = _Model()
         self.artists = ArtistsModel()
         #self.artists.setSourceModel(self._model)
-        #self.albums = AlbumsModel()
-        #self.albums.setSourceModel(self._model)
+        self.albums = AlbumsModel()
