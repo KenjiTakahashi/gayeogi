@@ -262,11 +262,75 @@ class ArtistsModel(_Model):
         return False
 
 
-class AlbumsModel(_Model):
+class AlbumsModel(QtGui.QAbstractProxyModel):
     """Docstring for AlbumsModel """
     def __init__(self):
         """@todo: to be defined """
         super(AlbumsModel, self).__init__()
+
+    def index(self, row, column, parent):
+        """@todo: Docstring for index
+
+        :row: @todo
+        :column: @todo
+        :parent: @todo
+        :returns: @todo
+        """
+        if not self.hasIndex(row, column, parent):
+            return QtCore.QModelIndex()
+        source = self.mapToSource(parent)
+        return self.mapFromSource(
+            self.sourceModel().index(row, column, source)
+        )
+
+    def parent(self, child):
+        """@todo: Docstring for parent
+
+        :child: @todo
+        :returns: @todo
+        """
+        return self.mapFromSource(self.mapToSource(child).parent())
+
+    def rowCount(self, parent):
+        """@todo: Docstring for rowCount
+
+        :parent: @todo
+        :returns: @todo
+        """
+        source = self.sourceModel()
+        return source.rowCount(parent)
+
+    def columnCount(self, parent):
+        """@todo: Docstring for columnCount
+
+        :parent: @todo
+        :returns: @todo
+        """
+        return self.sourceModel().columnCount(parent)
+
+    def mapFromSource(self, source):
+        """@todo: Docstring for mapFromSource
+
+        :source: @todo
+        :returns: @todo
+        """
+        if not source.isValid():
+            return QtCore.QModelIndex()
+        return self.createIndex(
+            source.row(), source.column(), source.internalPointer()
+        )
+
+    def mapToSource(self, proxy):
+        """@todo: Docstring for mapToSource
+
+        :proxy: @todo
+        :returns: @todo
+        """
+        if not proxy.isValid():
+            return QtCore.QModelIndex()
+        return self.sourceModel().createIndex(
+            proxy.row(), proxy.column(), proxy.internalPointer()
+        )
 
 
 class DB(object):
@@ -277,3 +341,4 @@ class DB(object):
         self.artists = ArtistsModel()
         #self.artists.setSourceModel(self._model)
         self.albums = AlbumsModel()
+        self.albums.setSourceModel(self._model)
