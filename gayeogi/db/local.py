@@ -18,7 +18,7 @@
 import os
 from copy import deepcopy
 from fnmatch import fnmatch
-from PyQt4 import QtCore
+from PyQt4 import QtCore, QtGui
 from mutagen.id3 import ID3
 from mutagen.flac import FLAC
 from mutagen.asf import ASF
@@ -31,7 +31,39 @@ import logging
 logger = logging.getLogger('gayeogi.local')
 
 
-class Node(object):
+class LegacyDB(object):
+    def __init__(self, dbPath):
+        self.dbPath = os.path.join(dbPath, u'db.pkl')
+
+    def read(self):
+        import cPickle
+        handler = open(self.dbPath, u'rb')
+        result = cPickle.load(handler)
+        handler.close()
+        if result[0] == u'0.6':
+            self.convert3(result[3], result[4])
+            return (u'0.6.1',) + result[1:] + ([False],)
+        else:
+            return result
+
+    def convert3(self, urls, avai):
+        import re
+        for key in avai.keys():
+            if avai[key][u'remote']:
+                avai[key][u'remote'] = set()
+                artist = re.findall(u'\d*\D+', key)[0]
+                try:
+                    u = urls[artist]
+                except KeyError:
+                    pass
+                else:
+                    for uu in u.keys():
+                        avai[key][u'remote'].add(uu)
+            else:
+                avai[key][u'remote'] = set()
+
+
+class _Node(object):
     def __init__(self, parent=None):
         self._parent = parent
         self._children = list()
@@ -59,21 +91,37 @@ class Node(object):
         return self._children[row]
 
 
-class DB(QtCore.QAbstractItemModel):
-    """Local filesystem watcher and DB holder/updater."""
+class ArtistNode(_Node):
     def __init__(self, parent=None):
-        """Constructs new DB instance.
+        super(ArtistNode, self).__init__(parent)
 
-        Also sets up directories watcher.
 
-        Note: Although not explicitly enforced, it's meant to be singleton.
+class AlbumNode(_Node):
+    """Album node."""
+    def __init__(self, parent=None):
+        """@todo: to be defined
+
+        :parent: @todo
+        """
+        super(AlbumNode, self).__init__(parent)
+        self._parent = parent
+
+
+class _Model(QtCore.QAbstractItemModel):
+    """General model class, meant to implement basic funcionality."""
+    def __init__(self, parent=None):
+        """Constructs new _Model instance.
 
         :parent: parent widget/object
         """
-        super(DB, self).__init__(parent)
-        self._watcher = QtCore.QFileSystemWatcher(self)
-        self._rootNode = Node()
-        Node(self._rootNode)
+        super(_Model, self).__init__(parent)
+        self._rootNode = _Node()
+        # FIXME : remove things below
+        node = ArtistNode(self._rootNode)
+        node2 = ArtistNode(self._rootNode)
+        AlbumNode(node)
+        node3 = AlbumNode(node)
+        AlbumNode(node3)
 
     def rowCount(self, parent):
         """Returns number of rows relative to @parent.
@@ -141,13 +189,14 @@ class DB(QtCore.QAbstractItemModel):
         :index: Specifies index for which to get parent
         :returns: parent of the given index
         """
-        parentNode = self.getNode(index).parent()
-        if parentNode == self._rootNode:
-            return QtCore.QModelIndex()
-        return self.createIndex(parentNode.row(), 0, parentNode)  # FIXME
+        return QtCore.QModelIndex()
+        #parentNode = self.getNode(index).parent()
+        #if parentNode == self._rootNode:
+            #return QtCore.QModelIndex()
+        #return self.createIndex(parentNode.row(), 0, parentNode)  # FIXME
 
     def index(self, row, column, parent):
-        """Returns index positioned at specified row and column,
+        """Returns index placed at specified row and column,
         relatively to parent.
 
         Mandatory override.
@@ -157,10 +206,21 @@ class DB(QtCore.QAbstractItemModel):
         :parent: Specifies parent index to which to relate
         :returns: index placed at specified positions
         """
-        child = self.getNode(parent).child(row)
-        if child:
+        parent = self.getNode(parent)
+        if parent == self._rootNode:
+            child = parent.child(row)
             return self.createIndex(row, column, child)
         return QtCore.QModelIndex()
+
+    def hasChildren(self, parent):
+        """@todo: Docstring for hasChildren
+
+        :parent: @todo
+        :returns: @todo
+        """
+        if self.getNode(parent) == self._rootNode:
+            return True
+        return False
 
     def getNode(self, index):
         """Returns Node for specified index.
@@ -175,3 +235,73 @@ class DB(QtCore.QAbstractItemModel):
             if node:
                 return node
         return self._rootNode
+
+
+#class ArtistsModel(QtGui.QSortFilterProxyModel):
+    #"""Artists model."""
+    #def filterAcceptsRow(self, sourceRow, sourceParent):
+        #"""@todo: Docstring for filterAcceptsRow
+
+        #:sourceRow: @todo
+        #:sourceParent: @todo
+        #:returns: @todo
+        #"""
+        #index = self.sourceModel().index(sourceRow, 0, sourceParent)
+        #return isinstance(index.internalPointer(), ArtistNode)
+
+
+class ArtistsModel(_Model):
+    """Docstring for ArtistsModel """
+    def __init__(self):
+        """@todo: to be defined """
+        super(ArtistsModel, self).__init__()
+
+    def rowCount(self, parent):
+        """@todo: Docstring for rowCount
+
+        :parent: @todo
+        :returns: @todo
+        """
+        return self._rootNode.childCount()
+
+
+class AlbumsModel(QtGui.QSortFilterProxyModel):
+    """Albums model."""
+    def __init__(self):
+        """@todo: Docstring for __init__
+
+        :returns: @todo
+        """
+        super(AlbumsModel, self).__init__()
+        self._selection = list()
+
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        """@todo: Docstring for filterAcceptsRow
+
+        :sourceRow: @todo
+        :sourceParent: @todo
+        :returns: @todo
+        """
+        index = self.sourceModel().index(sourceRow, 0, sourceParent)
+        index = index.parent()
+        return index in self._selection
+
+    def setSelection(self, selection):
+        """@todo: Docstring for setSelection
+
+        :selection: @todo
+        :returns: @todo
+        """
+        self._selection = selection.indexes()
+        self.invalidateFilter()
+
+
+class DB(object):
+    """Local filesystem watcher and DB holder/updater."""
+    def __init__(self):
+        """@todo: to be defined """
+        self._model = _Model()
+        self.artists = ArtistsModel()
+        #self.artists.setSourceModel(self._model)
+        #self.albums = AlbumsModel()
+        #self.albums.setSourceModel(self._model)

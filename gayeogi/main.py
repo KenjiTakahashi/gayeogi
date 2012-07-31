@@ -4,8 +4,8 @@
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# the Free Software Foundation, either __version__ 3 of the License, or
+# (at your option) any later __version__.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -17,7 +17,6 @@
 
 import sys
 import os
-import cPickle
 import re
 from PyQt4 import QtGui
 from PyQt4.QtCore import Qt, QSettings, QLocale, QTranslator, QSize
@@ -27,7 +26,7 @@ from gayeogi.db.distributor import Distributor
 from gayeogi.interfaces.settings import Settings
 import gayeogi.plugins
 
-version = u'0.6.3'
+__version__ = '0.6.3'
 locale = QLocale.system().name()
 if sys.platform == 'win32':
     from PyQt4.QtGui import QDesktopServices
@@ -38,9 +37,11 @@ else:  # Most POSIX systems, there may be more elifs in future.
     dbPath = os.path.expanduser(u'~/.config/gayeogi')
     lnPath = os.path.dirname(__file__)
 
+
 class ADRItemDelegate(QtGui.QStyledItemDelegate):
     buttonClicked = pyqtSignal(QModelIndex)
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):
         QtGui.QStyledItemDelegate.__init__(self, parent)
         self.palette = QtGui.QPalette()
         self.buttoned = False
@@ -50,6 +51,7 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         self.rry = -1
         self.rx = 0
         self.ht = 0
+
     def paint(self, painter, option, index):
         QtGui.QStyledItemDelegate.paint(self, painter, option, QModelIndex())
         painter.save()
@@ -99,32 +101,40 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
                 painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
         painter.drawText(rx + 39, ry + pSize, index.data(987).toString())
         painter.restore()
+
     def buttonOver(self, mo, x):
         return self.mx >= x + 1 and self.mx <= x + 36 and mo
+
     def sizeHint(self, option, index):
         return QSize(39 + option.fontMetrics.width(
             index.data(987).toString()), option.fontMetrics.height() + 2)
 
-class ADRTreeWidget(QtGui.QTreeWidget):
+
+class ADRTreeView(QtGui.QTreeView):
     buttonClicked = pyqtSignal(QtGui.QTreeWidgetItem)
-    def __init__(self, parent = None):
-        QtGui.QTreeWidget.__init__(self, parent)
+
+    def __init__(self, parent=None):
+        super(ADRTreeView, self).__init__(parent)
         self.setIndentation(0)
         self.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
         self.setMouseTracking(True)
         self.delegate = ADRItemDelegate()
         self.delegate.buttonClicked.connect(self.callback)
         self.setItemDelegateForColumn(1, self.delegate)
+
     def buttoned(self, mx, rx):
         return mx >= rx + 1 and mx <= rx + 36
+
     def callback(self, index):
         self.buttonClicked.emit(self.itemFromIndex(index))
+
     def mouseMoveEvent(self, event):
         if event.y() == 0 or self.delegate.rry + self.delegate.ht < event.y():
             self.delegate.rry = -1
         self.delegate.mx = event.x()
         self.delegate.my = event.y()
         self.viewport().update()
+
     def mouseReleaseEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
             QtGui.QTreeWidget.mouseReleaseEvent(self, event)
@@ -132,12 +142,15 @@ class ADRTreeWidget(QtGui.QTreeWidget):
             self.delegate.buttoned = True
             self.delegate.my = event.y()
             self.viewport().update()
+
     def mousePressEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
             QtGui.QTreeWidget.mousePressEvent(self, event)
+
     def mouseDoubleClickEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
             QtGui.QTreeWidget.mouseDoubleClickEvent(self, event)
+
 
 class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __lt__(self, qtreewidgetitem):
@@ -179,7 +192,7 @@ class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
         #handler.close()
         #if result[0] == u'0.6':
             #self.convert3(result[3], result[4])
-            #return (version,) + result[1:] + ([False],)
+            #return (__version__,) + result[1:] + ([False],)
         #else:
             #return result
     #def convert3(self, urls, avai):
@@ -197,41 +210,49 @@ class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
             #else:
                 #avai[key][u'remote'] = set()
 
+
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'gayeogi', u'gayeogi')
+
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         self.statistics = None
         if not os.path.exists(dbPath):
             os.mkdir(dbPath)
+            dialog = Settings()
+            dialog.exec_()
         self.db = DB()
         from interfaces.main import Ui_main
         self.ui = Ui_main()
         widget = QtGui.QWidget()
         self.ui.setupUi(widget)
-        self.ui.artists.setModel(self.db)
-        #self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
+        self.ui.artists.setModel(self.db.artists)
+        selection = QtGui.QItemSelectionModel(self.db.artists)
+        self.ui.artists.setSelectionModel(selection)
+        #selection.selectionChanged.connect(self.db.albums.setSelection)
         delegate = ADRItemDelegate()
         self.ui.artists.setItemDelegateForColumn(0, delegate)
-        self.ui.albums = ADRTreeWidget()
-        self.ui.albums.setHeaderLabels([u'Year', u'Album'])
+        self.ui.albums = ADRTreeView()
+        self.ui.albums.setItemsExpandable(True)
+        self.ui.albums.setIndentation(10)
+        #self.ui.albums.setModel(self.db.albums)
         self.ui.albums.buttonClicked.connect(self.setAnalog)
-        self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
         self.ui.verticalLayout_4.addWidget(self.ui.albums)
+        #self.ui.tracks.setModel(self.db)
+        #self.ui.tracks.setItemsExpandable(True)
+        #self.ui.tracks.setIndentation(10)
+        #self.ui.artists.itemSelectionChanged.connect(self.fillAlbums)
+        #self.ui.albums.setHeaderLabels([u'Year', u'Album'])
+        #self.ui.albums.itemSelectionChanged.connect(self.fillTracks)
         self.ui.plugins = {}
         self.ui.splitter.restoreState(
-                self.__settings.value(u'splitters').toByteArray())
+            self.__settings.value(u'splitters').toByteArray()
+        )
         self.setCentralWidget(widget)
-        self.library = (version, {}, {}, {}, {}, [False])
+        self.library = (__version__, {}, {}, {}, {}, [False])
         self.ignores = self.__settings.value(u'ignores', []).toPyObject()
         if self.ignores == None:
             self.ignores = []
-        #if not os.path.exists(os.path.join(dbPath, u'db.pkl')):
-            #dialog = Settings()
-            #dialog.exec_()
-        #else:
-            #self.library = self.db.read()
-            #self.update()
         directory = self.__settings.value(u'directory', []).toPyObject()
         if type(directory) != list:
             directory = [(unicode(directory), 2)]
@@ -247,7 +268,7 @@ class Main(QtGui.QMainWindow):
         self.ui.albumFilter.textEdited.connect(self.filter_)
         self.ui.trackFilter.textEdited.connect(self.filter_)
         self.statusBar()
-        self.setWindowTitle(u'gayeogi ' + version)
+        self.setWindowTitle(u'gayeogi ' + __version__)
         self.translators = list()
         #self.loadPluginsTranslators()
         #self.loadPlugins()
