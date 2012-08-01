@@ -191,7 +191,7 @@ class Main(QtGui.QMainWindow):
         self.ui.artists.setModel(self.db.artists)
         selection = QtGui.QItemSelectionModel(self.db.artists)
         self.ui.artists.setSelectionModel(selection)
-        #selection.selectionChanged.connect(self.db.albums.setSelection)
+        selection.selectionChanged.connect(self.db.albums.setSelection)
         delegate = ADRItemDelegate()
         #self.ui.artists.setItemDelegateForColumn(0, delegate)
         self.ui.albums = ADRTreeView()

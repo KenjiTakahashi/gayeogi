@@ -128,6 +128,16 @@ class _Model(QtCore.QAbstractItemModel):
         AlbumNode("e", node2)
         AlbumNode("f", node2)
 
+    def hasChildren(self, parent):
+        """@todo: Docstring for hasChildren
+
+        :parent: @todo
+        :returns: @todo
+        """
+        if not parent.isValid():
+            return True
+        return False
+
     def rowCount(self, parent):
         """Returns number of rows relative to @parent.
 
@@ -231,29 +241,13 @@ class _Model(QtCore.QAbstractItemModel):
         return self._rootNode
 
 
-class ArtistsModel(_Model):
-    """Docstring for ArtistsModel """
-    def __init__(self):
-        """@todo: to be defined """
-        super(ArtistsModel, self).__init__()
-
-    def hasChildren(self, parent):
-        """@todo: Docstring for hasChildren
-
-        :parent: @todo
-        :returns: @todo
-        """
-        if self.getNode(parent) == self._rootNode:
-            return True
-        return False
-
-
 class AlbumsModel(QtGui.QAbstractProxyModel):
     """Docstring for AlbumsModel """
     def __init__(self):
         """@todo: to be defined """
         super(AlbumsModel, self).__init__()
         self._mapper = list()
+        self._selection = list()
 
     def setSourceModel(self, model):
         """@todo: Docstring for setSourceModel
@@ -262,18 +256,41 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         :returns: @todo
         """
         super(AlbumsModel, self).setSourceModel(model)
+        self.flatten()
 
-        def recur(root):
-            """@todo: Docstring for recur
+    def flatten(self, root=None):
+        """@todo: Docstring for flatten
 
-            :root: @todo
-            :returns: @todo
-            """
-            for i in xrange(model.rowCount(root)):
-                child = model.index(i, 0, root)
-                self._mapper.append(QtCore.QPersistentModelIndex(child))
-                recur(child)
-        recur(model.index(-1, -1))
+        :root: @todo
+        :returns: @todo
+        """
+        self._mapper = list()
+        model = self.sourceModel()
+        if not root:
+            root = model.index(-1, -1)
+
+        def _flatten(_root):
+            if _root.isValid() and _root in self._selection:
+                for i in xrange(model.rowCount(_root)):
+                    child = model.index(i, 0, _root)
+                    self._mapper.append(QtCore.QPersistentModelIndex(child))
+                    _flatten(child)
+            else:
+                for i in xrange(model.rowCount(_root)):
+                    child = model.index(i, 0, _root)
+                    _flatten(child)
+        _flatten(root)
+
+    def setSelection(self, selected, deselected):
+        """@todo: Docstring for setSelection
+
+        :selected: @todo
+        :deselected: @todo
+        :returns: @todo
+        """
+        self._selection = selected.indexes()
+        self.flatten()
+        self.reset()
 
     def hasChildren(self, parent):
         """@todo: Docstring for hasChildren
@@ -281,9 +298,7 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         :parent: @todo
         :returns: @todo
         """
-        if not parent.isValid():
-            return True
-        return False
+        return self.sourceModel().hasChildren(parent)
 
     def index(self, row, column, parent):
         """@todo: Docstring for index
@@ -307,8 +322,6 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         :returns: @todo
         """
         return QtCore.QModelIndex()
-        source = self.mapToSource(child)
-        return self.mapFromSource(source.parent())
 
     def rowCount(self, parent):
         """@todo: Docstring for rowCount
@@ -317,8 +330,6 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         :returns: @todo
         """
         return len(self._mapper)
-        source = self.sourceModel()
-        return source.rowCount(parent)
 
     def columnCount(self, parent):
         """@todo: Docstring for columnCount
@@ -365,7 +376,7 @@ class DB(object):
     def __init__(self):
         """@todo: to be defined """
         self._model = _Model()
-        self.artists = ArtistsModel()
+        self.artists = self._model
         #self.artists.setSourceModel(self._model)
         self.albums = AlbumsModel()
         self.albums.setSourceModel(self._model)
