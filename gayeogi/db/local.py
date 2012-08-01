@@ -150,7 +150,7 @@ class _Model(QtCore.QAbstractItemModel):
         :parent: index, not used
         :returns: number of columns in the model
         """
-        return 1  # FIXME
+        return 2  # FIXME
 
     def data(self, index, role):
         """Function used by view to get appropriate data to display.
@@ -336,10 +336,11 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         """
         if not source.isValid():
             return QtCore.QModelIndex()
-        i = self._mapper.index(source)
-        index = self.createIndex(
-            i, source.column(), source.internalPointer()
+        source0 = self.sourceModel().createIndex(
+            source.row(), 0, source.internalPointer()
         )
+        i = self._mapper.index(source0)
+        index = self.createIndex(i, source.column(), source.internalPointer())
         return index
         return self.createIndex(
             source.row(), source.column(), source.internalPointer()
