@@ -63,9 +63,10 @@ class LegacyDB(object):
 
 
 class _Node(object):
-    def __init__(self, parent=None):
+    def __init__(self, name="", parent=None):
         self._parent = parent
         self._children = list()
+        self.name = name
         if parent != None:
             parent.addChild(self)
 
@@ -98,29 +99,15 @@ class _Node(object):
 
 
 class ArtistNode(_Node):
-    def __init__(self, name, parent=None):
-        super(ArtistNode, self).__init__(parent)
-        self.name = name
+    """Artist node."""
 
 
 class AlbumNode(_Node):
     """Album node."""
-    def __init__(self, parent=None):
-        """@todo: to be defined
-
-        :parent: @todo
-        """
-        super(AlbumNode, self).__init__(parent)
 
 
 class TrackNode(_Node):
     """Track node."""
-    def __init__(self, parent=None):
-        """@todo: to be defined
-
-        :parent: @todo
-        """
-        super(TrackNode, self).__init__()
 
 
 class _Model(QtCore.QAbstractItemModel):
@@ -133,11 +120,13 @@ class _Model(QtCore.QAbstractItemModel):
         super(_Model, self).__init__(parent)
         self._rootNode = _Node()
         # FIXME : remove things below
-        node = ArtistNode("b", self._rootNode)
-        ArtistNode("a", self._rootNode)
-        AlbumNode(node)
-        node3 = AlbumNode(node)
-        TrackNode(node3)
+        node = ArtistNode("a", self._rootNode)
+        AlbumNode("b", node)
+        anode = AlbumNode("c", node)
+        TrackNode("g", anode)
+        node2 = ArtistNode("d", self._rootNode)
+        AlbumNode("e", node2)
+        AlbumNode("f", node2)
 
     def rowCount(self, parent):
         """Returns number of rows relative to @parent.
@@ -161,7 +150,7 @@ class _Model(QtCore.QAbstractItemModel):
         :parent: index, not used
         :returns: number of columns in the model
         """
-        return 2  # FIXME
+        return 1  # FIXME
 
     def data(self, index, role):
         """Function used by view to get appropriate data to display.
@@ -178,10 +167,7 @@ class _Model(QtCore.QAbstractItemModel):
         if role == QtCore.Qt.DisplayRole:
             # FIXME: whole if
             if index.column() == 0:
-                if isinstance(node, ArtistNode):
-                    return node.name
-                else:
-                    return "alaow"
+                return node.name
             else:
                 return "tsET"
 
@@ -214,7 +200,7 @@ class _Model(QtCore.QAbstractItemModel):
             return QtCore.QModelIndex()
         return self.createIndex(parent.row(), parent.column(), parent)
 
-    def index(self, row, column, parent):
+    def index(self, row, column, parent=QtCore.QModelIndex()):
         """Returns index placed at specified row and column,
         relatively to parent.
 
@@ -267,6 +253,37 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
     def __init__(self):
         """@todo: to be defined """
         super(AlbumsModel, self).__init__()
+        self._mapper = list()
+
+    def setSourceModel(self, model):
+        """@todo: Docstring for setSourceModel
+
+        :model: @todo
+        :returns: @todo
+        """
+        super(AlbumsModel, self).setSourceModel(model)
+
+        def recur(root):
+            """@todo: Docstring for recur
+
+            :root: @todo
+            :returns: @todo
+            """
+            for i in xrange(model.rowCount(root)):
+                child = model.index(i, 0, root)
+                self._mapper.append(QtCore.QPersistentModelIndex(child))
+                recur(child)
+        recur(model.index(-1, -1))
+
+    def hasChildren(self, parent):
+        """@todo: Docstring for hasChildren
+
+        :parent: @todo
+        :returns: @todo
+        """
+        if not parent.isValid():
+            return True
+        return False
 
     def index(self, row, column, parent):
         """@todo: Docstring for index
@@ -278,9 +295,9 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         """
         if not self.hasIndex(row, column, parent):
             return QtCore.QModelIndex()
-        source = self.mapToSource(parent)
+        source = QtCore.QModelIndex(self._mapper[row])
         return self.mapFromSource(
-            self.sourceModel().index(row, column, source)
+            self.sourceModel().index(source.row(), column, source.parent())
         )
 
     def parent(self, child):
@@ -289,7 +306,9 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         :child: @todo
         :returns: @todo
         """
-        return self.mapFromSource(self.mapToSource(child).parent())
+        return QtCore.QModelIndex()
+        source = self.mapToSource(child)
+        return self.mapFromSource(source.parent())
 
     def rowCount(self, parent):
         """@todo: Docstring for rowCount
@@ -297,6 +316,7 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         :parent: @todo
         :returns: @todo
         """
+        return len(self._mapper)
         source = self.sourceModel()
         return source.rowCount(parent)
 
@@ -316,6 +336,11 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         """
         if not source.isValid():
             return QtCore.QModelIndex()
+        i = self._mapper.index(source)
+        index = self.createIndex(
+            i, source.column(), source.internalPointer()
+        )
+        return index
         return self.createIndex(
             source.row(), source.column(), source.internalPointer()
         )
@@ -328,8 +353,9 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         """
         if not proxy.isValid():
             return QtCore.QModelIndex()
+        sourceIndex = self._mapper[proxy.row()]
         return self.sourceModel().createIndex(
-            proxy.row(), proxy.column(), proxy.internalPointer()
+            sourceIndex.row(), proxy.column(), proxy.internalPointer()
         )
 
 
