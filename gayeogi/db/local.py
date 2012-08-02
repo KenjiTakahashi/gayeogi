@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import os
+import glob
 from fnmatch import fnmatch
 from PyQt4 import QtCore, QtGui
 from mutagen.id3 import ID3
@@ -26,8 +28,6 @@ from mutagen.wavpack import WavPack
 from mutagen.mp4 import MP4
 from mutagen import File
 import logging
-
-logger = logging.getLogger('gayeogi.local')
 
 
 class LegacyDB(object):
@@ -61,14 +61,22 @@ class LegacyDB(object):
             else:
                 avai[key][u'remote'] = set()
 
+logger = logging.getLogger('gayeogi.local')
+
 
 class _Node(object):
-    def __init__(self, name="", parent=None):
+    def __init__(self, parent=None):
         self._parent = parent
         self._children = list()
-        self.name = name
+        self.name = "aaa"  # FIXME: remove this
+        self.metadata = dict()
+        self._columns = ["antag", "second", "meta", "__albums__"]  # FIXME
         if parent != None:
             parent.addChild(self)
+
+    def fetch(self, dbpath):
+        for d in glob.iglob(os.path.join(dbpath, u'*')):
+            ArtistNode(d, self)
 
     def addChild(self, child):
         self._children.append(child)
@@ -79,12 +87,20 @@ class _Node(object):
     def row(self):
         return self._parent._children.index(self)
 
-    def column(self):
-        """@todo: Docstring for column
+    def columnCount(self):
+        """@todo: Docstring for columnCount
 
         :returns: @todo
         """
-        return 0  # FIXME
+        return len(self._columns)
+
+    def column(self, section):
+        """@todo: Docstring for column
+
+        :section: @todo
+        :returns: @todo
+        """
+        return self._columns[section]
 
     def childCount(self):
         return len(self._children)
@@ -97,9 +113,49 @@ class _Node(object):
         """
         return self._children[row]
 
+    def fn_encode(self, fn):
+        """Encodes filename into format passable by filesystem(s).
+
+        :fn: Human-readable filename string.
+        :returns: Encoded :fn:.
+        """
+        return u'&'.join([unicode(ord(c)) for c in fn])
+
+    def fn_decode(self, fn):
+        """Decodes filename into human-readable string.
+
+        :fn: Encoded filename string.
+        :returns: Human-readable form of :fn:.
+        """
+        fn = os.path.basename(fn)
+        return u''.join([unichr(int(n)) for n in fn.split(u'&')])
+
 
 class ArtistNode(_Node):
     """Artist node."""
+    def __init__(self, path, parent=None):
+        """@todo: Docstring for __init__
+
+        :filename: @todo
+        :parent: @todo
+        :returns: @todo
+        """
+        super(ArtistNode, self).__init__(parent)
+        self._path = path
+
+    def fetch(self):
+        """@todo: Docstring for fetch
+
+        :returns: @todo
+        """
+        try:
+            path = os.path.join(self._path, '.meta')
+            self.metadata = json.loads(open(path, 'r').read())
+            self.metadata[u"artist"] = self.fn_decode(self._path)
+            # TODO: fetch albums
+            return True
+        except:
+            return False
 
 
 class AlbumNode(_Node):
@@ -115,21 +171,14 @@ class BaseModel(QtCore.QAbstractItemModel):
 
     Used directly by Artists view and as a source by Albums/Tracks views.
     """
-    def __init__(self, parent=None):
+    def __init__(self, dbpath, parent=None):
         """Constructs new BaseModel instance.
 
         :parent: parent object
         """
         super(BaseModel, self).__init__(parent)
         self._rootNode = _Node()
-        # FIXME : remove things below
-        node = ArtistNode("a", self._rootNode)
-        AlbumNode("b", node)
-        anode = AlbumNode("c", node)
-        TrackNode("g", anode)
-        node2 = ArtistNode("d", self._rootNode)
-        AlbumNode("e", node2)
-        AlbumNode("f", node2)
+        self._rootNode.fetch(dbpath)
 
     def hasChildren(self, parent):
         """Tells if given :parent: has children.
@@ -167,7 +216,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         :parent: index, not used
         :returns: number of columns in the model
         """
-        return 2  # FIXME
+        return self._rootNode.columnCount()
 
     def data(self, index, role):
         """Function used by view to get appropriate data to display.
@@ -182,27 +231,24 @@ class BaseModel(QtCore.QAbstractItemModel):
             return None
         node = index.internalPointer()
         if role == QtCore.Qt.DisplayRole:
-            # FIXME: whole if
-            if index.column() == 0:
-                return node.name
+            if node.fetch():
+                return node.metadata[self._rootNode.column(index.column())]
             else:
-                return "tsET"
+                return "<error>"  # TODO: send logging.error
 
-    def headerData(self, section, orientation, role):
+    def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
         """Function used by view to get appropriate header names.
 
         Override.
 
-        :section: Specifies for which section (e.g. column) to return data
-        :orientation: horizontal/vertical, not used
-        :role: Specifies for which role to return data
-        :returns: Appropriate column header data (e.g. name string)
+        :section: Specifies for which section (e.g. column) to return data.
+        :_: Normally used for orientation, but there's no use for it here.
+        :role: Specifies for which role to return data.
+        :returns: Appropriate column header data (e.g. name string).
         """
         if role == QtCore.Qt.DisplayRole:
-            if section == 0:  # FIXME, whole if
-                return "one"
-            else:
-                return "two"
+            if section >= 0:
+                return self._rootNode.column(section)
 
     def parent(self, index):
         """Returns parent index for given Node index.
@@ -228,6 +274,8 @@ class BaseModel(QtCore.QAbstractItemModel):
         :parent: Specifies parent index to which to relate
         :returns: index placed at specified positions
         """
+        if row < 0 or column < 0:
+            return QtCore.QModelIndex()
         child = self.getNode(parent).child(row)
         if child:
             return self.createIndex(row, column, child)
@@ -262,7 +310,6 @@ class Model(QtGui.QAbstractProxyModel):
         """@todo: Docstring for flatten
 
         :root: @todo
-        :returns: @todo
         """
         self._mapper = list()
         model = self.sourceModel()
@@ -286,7 +333,6 @@ class Model(QtGui.QAbstractProxyModel):
 
         :selected: @todo
         :deselected: @todo
-        :returns: @todo
         """
         model = self.sourceModel()
         for s in selected.indexes():
@@ -385,8 +431,12 @@ class Model(QtGui.QAbstractProxyModel):
 
 class DB(object):
     """Local filesystem watcher and DB holder/updater."""
+    __settings = QtCore.QSettings(u'gayeogi', u'db')
+
     def __init__(self):
         """@todo: to be defined """
-        self.artists = BaseModel()
+        self.artists = BaseModel(unicode(
+            DB.__settings.value(u'path').toString()
+        ))
         self.albums = Model(self.artists)
         self.tracks = Model(self.artists)
