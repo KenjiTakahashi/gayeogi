@@ -243,19 +243,12 @@ class _Model(QtCore.QAbstractItemModel):
 
 class AlbumsModel(QtGui.QAbstractProxyModel):
     """Docstring for AlbumsModel """
-    def __init__(self):
+    def __init__(self, sourceModel, parent=None):
         """@todo: to be defined """
-        super(AlbumsModel, self).__init__()
+        super(AlbumsModel, self).__init__(parent)
         self._mapper = list()
         self._selection = list()
-
-    def setSourceModel(self, model):
-        """@todo: Docstring for setSourceModel
-
-        :model: @todo
-        :returns: @todo
-        """
-        super(AlbumsModel, self).setSourceModel(model)
+        self.setSourceModel(sourceModel)
         self.flatten()
 
     def flatten(self, root=None):
@@ -288,7 +281,13 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         :deselected: @todo
         :returns: @todo
         """
-        self._selection = selected.indexes()
+        model = self.sourceModel()
+        for s in selected.indexes():
+            index = model.createIndex(s.row(), s.column(), s.internalPointer())
+            self._selection.append(index)
+        for d in deselected.indexes():
+            index = model.createIndex(d.row(), d.column(), d.internalPointer())
+            self._selection.remove(index)
         self.flatten()
         self.reset()
 
@@ -300,7 +299,7 @@ class AlbumsModel(QtGui.QAbstractProxyModel):
         """
         return self.sourceModel().hasChildren(parent)
 
-    def index(self, row, column, parent):
+    def index(self, row, column, parent=QtCore.QModelIndex()):
         """@todo: Docstring for index
 
         :row: @todo
@@ -377,6 +376,5 @@ class DB(object):
         """@todo: to be defined """
         self._model = _Model()
         self.artists = self._model
-        #self.artists.setSourceModel(self._model)
-        self.albums = AlbumsModel()
-        self.albums.setSourceModel(self._model)
+        self.albums = AlbumsModel(self._model)
+        self.tracks = AlbumsModel(self._model)
