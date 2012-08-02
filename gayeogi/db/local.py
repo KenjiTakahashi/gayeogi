@@ -290,11 +290,17 @@ class Model(QtGui.QAbstractProxyModel):
         """
         model = self.sourceModel()
         for s in selected.indexes():
-            index = model.createIndex(s.row(), s.column(), s.internalPointer())
-            self._selection.append(index)
+            if s.column() == 0:
+                index = model.createIndex(
+                    s.row(), s.column(), s.internalPointer()
+                )
+                self._selection.append(index)
         for d in deselected.indexes():
-            index = model.createIndex(d.row(), d.column(), d.internalPointer())
-            self._selection.remove(index)
+            if d.column() == 0:
+                index = model.createIndex(
+                    d.row(), d.column(), d.internalPointer()
+                )
+                self._selection.remove(index)
         self.flatten()
         self.reset()
 
