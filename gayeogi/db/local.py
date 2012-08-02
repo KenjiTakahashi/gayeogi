@@ -110,14 +110,17 @@ class TrackNode(_Node):
     """Track node."""
 
 
-class _Model(QtCore.QAbstractItemModel):
-    """General model class, meant to implement basic funcionality."""
-    def __init__(self, parent=None):
-        """Constructs new _Model instance.
+class BaseModel(QtCore.QAbstractItemModel):
+    """General model class, meant to implement basic funcionality.
 
-        :parent: parent widget/object
+    Used directly by Artists view and as a source by Albums/Tracks views.
+    """
+    def __init__(self, parent=None):
+        """Constructs new BaseModel instance.
+
+        :parent: parent object
         """
-        super(_Model, self).__init__(parent)
+        super(BaseModel, self).__init__(parent)
         self._rootNode = _Node()
         # FIXME : remove things below
         node = ArtistNode("a", self._rootNode)
@@ -129,10 +132,14 @@ class _Model(QtCore.QAbstractItemModel):
         AlbumNode("f", node2)
 
     def hasChildren(self, parent):
-        """@todo: Docstring for hasChildren
+        """Tells if given :parent: has children.
 
-        :parent: @todo
-        :returns: @todo
+        Returns true only for top-level node as our views are flat.
+
+        @note: Override.
+
+        :parent: Parent node.
+        :returns: Boolean value, depending on children availability.
         """
         if not parent.isValid():
             return True
@@ -141,7 +148,7 @@ class _Model(QtCore.QAbstractItemModel):
     def rowCount(self, parent):
         """Returns number of rows relative to @parent.
 
-        Mandatory override.
+        @note: Mandatory override.
 
         :parent: index, relative to which the rows will be counted
         :returns: number of rows relative to @parent
@@ -241,11 +248,11 @@ class _Model(QtCore.QAbstractItemModel):
         return self._rootNode
 
 
-class AlbumsModel(QtGui.QAbstractProxyModel):
-    """Docstring for AlbumsModel """
+class Model(QtGui.QAbstractProxyModel):
+    """Docstring for Model """
     def __init__(self, sourceModel, parent=None):
         """@todo: to be defined """
-        super(AlbumsModel, self).__init__(parent)
+        super(Model, self).__init__(parent)
         self._mapper = list()
         self._selection = list()
         self.setSourceModel(sourceModel)
@@ -374,7 +381,6 @@ class DB(object):
     """Local filesystem watcher and DB holder/updater."""
     def __init__(self):
         """@todo: to be defined """
-        self._model = _Model()
-        self.artists = self._model
-        self.albums = AlbumsModel(self._model)
-        self.tracks = AlbumsModel(self._model)
+        self.artists = BaseModel()
+        self.albums = Model(self.artists)
+        self.tracks = Model(self.artists)
