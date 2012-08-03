@@ -64,36 +64,12 @@ class LegacyDB(object):
 logger = logging.getLogger('gayeogi.local')
 
 
-class Columner(object):
-    """Docstring for Columner """
-
-    artists = set()
-    albums = set(["album", "year", "__a__", "comment"])  # FIXME
-
-    @staticmethod
-    def artist(index):
-        """@todo: Docstring for artist
-
-        :index: @todo
-        :returns: @todo
-        """
-        return list(Columner.artists)[index]
-
-    @staticmethod
-    def album(index):
-        """@todo: Docstring for album
-
-        :index: @todo
-        :returns: @todo
-        """
-        return list(Columner.albums)[index]
-
-
 class _Node(object):
     def __init__(self, parent=None):
         self._parent = parent
         self._children = list()
         self.metadata = dict()
+        self.headers = set()
         if parent != None:
             parent.addChild(self)
 
@@ -118,6 +94,14 @@ class _Node(object):
     def addChild(self, child):
         self._children.append(child)
 
+    def header(self, section):
+        """@todo: Docstring for header
+
+        :section: @todo
+        :returns: @todo
+        """
+        return list(self.headers)[section]
+
     def parent(self):
         return self._parent
 
@@ -125,7 +109,7 @@ class _Node(object):
         return self._parent._children.index(self)
 
     def column(self):
-        return 0
+        return 0  # FIXME
 
     def childCount(self):
         return len(self._children)
@@ -172,7 +156,7 @@ class ArtistNode(_Node):
         path = os.path.join(self._path, u'.meta')
         self.metadata = json.loads(open(path, 'r').read())
         self.metadata[u"artist"] = self.fn_decode(self._path)
-        Columner.artists |= set(self.metadata.keys())
+        parent.headers |= set(self.metadata.keys())
         self._data = glob.glob(os.path.join(self._path, u'*'))
         # TODO: deal with __urls__
 
@@ -203,9 +187,9 @@ class AlbumNode(_Node):
         self.metadata = json.loads(open(path, 'r').read())
         (self.metadata[u"year"],
         self.metadata[u"album"]) = self.fn_decode(self._path)
-        # TODO: deal with a/d/r
-        # TODO: deal with columns
+        parent.headers |= set(self.metadata.keys())
         self._data = glob.glob(os.path.join(self._path, u'*'))
+        # TODO: deal with a/d/r
 
     def fetch(self):
         TrackNode(self._data.pop(), self)
@@ -238,6 +222,7 @@ class TrackNode(_Node):
         self.metadata = json.loads(open(path, 'r').read())
         (self.metadata[u"tracknumber"],
         self.metadata[u"title"]) = self.fn_decode(self._path)
+        parent.headers |= set(self.metadata.keys())
         # TODO: is there something else? filename?
 
     def fn_encode(self, fn):
@@ -303,7 +288,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         :parent: Index, not used.
         :returns: Number of columns in the model.
         """
-        return len(Columner.artists)
+        return len(self._rootNode.headers)
 
     def canFetchMore(self, parent):
         """@todo: Docstring for canFetchMore
@@ -344,7 +329,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         """
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
-                return Columner.artist(section)
+                return self._rootNode.header(section)
 
     def parent(self, index):
         """Returns parent index for given Node index.
@@ -511,7 +496,10 @@ class Model(QtGui.QAbstractProxyModel):
         """
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
-                return Columner.album(section)
+                tmp = list()
+                for s in self._selection:  # FIXME: not very optimal :/
+                    tmp.extend(s.internalPointer().headers)
+                return tmp[section]
 
     def parent(self, _):
         """Reimplemented from QAbstractProxyModel.parent().
@@ -534,7 +522,9 @@ class Model(QtGui.QAbstractProxyModel):
         :parent: @todo
         :returns: @todo
         """
-        return len(Columner.albums)  # FIXME
+        return sum([
+            len(s.internalPointer().headers) for s in self._selection
+        ])
 
     def mapFromSource(self, source):
         """Reimplemented from QAbstractProxyModel.mapFromSource().
