@@ -112,7 +112,7 @@ class _Node(object):
         """
         return bool(len(self._data))
 
-    def fetch(self, dbpath=None):
+    def fetch(self):
         ArtistNode(self._data.pop(), self)
 
     def addChild(self, child):
@@ -201,12 +201,14 @@ class AlbumNode(_Node):
         self._path = path
         path = os.path.join(self._path, u'.meta')
         self.metadata = json.loads(open(path, 'r').read())
-        self.metadata[u"year"], self.metadata[u"album"] = self.fn_decode(
-            self._path
-        )
+        (self.metadata[u"year"],
+        self.metadata[u"album"]) = self.fn_decode(self._path)
         # TODO: deal with a/d/r
-        # TODO: fetch tracks
         # TODO: deal with columns
+        self._data = glob.glob(os.path.join(self._path, u'*'))
+
+    def fetch(self):
+        TrackNode(self._data.pop(), self)
 
     def fn_encode(self, fn):
         fn1, fn2 = fn
@@ -223,6 +225,32 @@ class AlbumNode(_Node):
 
 class TrackNode(_Node):
     """Track node."""
+
+    def __init__(self, path, parent=None):
+        """@todo: Docstring for __init__
+
+        :path: @todo
+        :parent: @todo
+        :returns: @todo
+        """
+        super(TrackNode, self).__init__(parent)
+        self._path = path
+        self.metadata = json.loads(open(path, 'r').read())
+        (self.metadata[u"tracknumber"],
+        self.metadata[u"title"]) = self.fn_decode(self._path)
+        # TODO: is there something else? filename?
+
+    def fn_encode(self, fn):
+        fn1, fn2 = fn
+        n = u'&'.join([unicode(ord(c)) for c in fn1])
+        t = u'&'.join([unicode(ord(c)) for c in fn2])
+        return (n, t)
+
+    def fn_decode(self, fn):
+        fn = os.path.basename(fn).split(u'.')
+        n = u''.join([unichr(int(n)) for n in fn[0].split(u'&')])
+        t = u''.join([unichr(int(n)) for n in fn[1].split(u'&')])
+        return (n, t)
 
 
 class BaseModel(QtCore.QAbstractItemModel):
