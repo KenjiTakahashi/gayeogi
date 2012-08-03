@@ -64,19 +64,49 @@ class LegacyDB(object):
 logger = logging.getLogger('gayeogi.local')
 
 
+class Columner(object):
+    """Docstring for Columner """
+
+    artists = set()
+
+    @staticmethod
+    def artist(index):
+        """@todo: Docstring for artist
+
+        :index: @todo
+        :returns: @todo
+        """
+        return list(Columner.artists)[index]
+
+
 class _Node(object):
     def __init__(self, parent=None):
         self._parent = parent
         self._children = list()
-        self.name = "aaa"  # FIXME: remove this
         self.metadata = dict()
         self._columns = ["antag", "second", "meta", "__albums__"]  # FIXME
         if parent != None:
             parent.addChild(self)
 
-    def fetch(self, dbpath):
-        for d in glob.iglob(os.path.join(dbpath, u'*')):
-            ArtistNode(d, self)
+    def setPath(self, dbPath):
+        """@todo: Docstring for setPath
+
+        :dbPath: @todo
+        :returns: @todo
+        """
+        self._data = glob.glob(os.path.join(dbPath, u'*'))
+
+    def canFetchMore(self):
+        """@todo: Docstring for canFetchMore
+
+        :returns: @todo
+        """
+        return bool(len(self._data))
+
+    def fetch(self, dbpath=None):
+        ArtistNode(self._data.pop(), self)
+        #for d in glob.iglob(os.path.join(dbpath, u'*')):
+            #ArtistNode(d, self)
 
     def addChild(self, child):
         self._children.append(child)
@@ -106,10 +136,10 @@ class _Node(object):
         return len(self._children)
 
     def child(self, row):
-        """Returns Node's child placed at specified @row.
+        """Returns Node's child placed at specified :row:.
 
-        :row: @todo
-        :returns: @todo
+        :row: Row at which to get child.
+        :returns: Child at given :row:.
         """
         return self._children[row]
 
@@ -142,20 +172,12 @@ class ArtistNode(_Node):
         """
         super(ArtistNode, self).__init__(parent)
         self._path = path
-
-    def fetch(self):
-        """@todo: Docstring for fetch
-
-        :returns: @todo
-        """
-        try:
-            path = os.path.join(self._path, '.meta')
-            self.metadata = json.loads(open(path, 'r').read())
-            self.metadata[u"artist"] = self.fn_decode(self._path)
-            # TODO: fetch albums
-            return True
-        except:
-            return False
+        path = os.path.join(self._path, '.meta')
+        self.metadata = json.loads(open(path, 'r').read())
+        self.metadata[u"artist"] = self.fn_decode(self._path)
+        Columner.artists |= set(self.metadata.keys())
+        # TODO: deal with __urls__
+        # TODO: fetch albums
 
 
 class AlbumNode(_Node):
@@ -178,7 +200,8 @@ class BaseModel(QtCore.QAbstractItemModel):
         """
         super(BaseModel, self).__init__(parent)
         self._rootNode = _Node()
-        self._rootNode.fetch(dbpath)
+        #self._rootNode.fetch(dbpath)
+        self._rootNode.setPath(dbpath)
 
     def hasChildren(self, parent):
         """Tells if given :parent: has children.
@@ -213,10 +236,30 @@ class BaseModel(QtCore.QAbstractItemModel):
 
         Mandatory override.
 
-        :parent: index, not used
-        :returns: number of columns in the model
+        :parent: Index, not used.
+        :returns: Number of columns in the model.
         """
-        return self._rootNode.columnCount()
+        return len(Columner.artists)
+
+    def canFetchMore(self, parent):
+        """@todo: Docstring for canFetchMore
+
+        :parent: @todo
+        :returns: @todo
+        """
+        return self._rootNode.canFetchMore()
+
+    def fetchMore(self, parent):
+        """@todo: Docstring for fetchMore
+
+        :parent: @todo
+        :returns: @todo
+        """
+        if not parent.isValid():
+            node = self._rootNode
+        else:
+            node = parent.internalPointer()
+        node.fetch()
 
     def data(self, index, role):
         """Function used by view to get appropriate data to display.
@@ -229,12 +272,9 @@ class BaseModel(QtCore.QAbstractItemModel):
         """
         if not index.isValid():
             return None
-        node = index.internalPointer()
         if role == QtCore.Qt.DisplayRole:
-            if node.fetch():
-                return node.metadata[self._rootNode.column(index.column())]
-            else:
-                return "<error>"  # TODO: send logging.error
+            node = index.internalPointer()
+            return node.metadata[self.headerData(index.column())]
 
     def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
         """Function used by view to get appropriate header names.
@@ -248,7 +288,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         """
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
-                return self._rootNode.column(section)
+                return Columner.artist(section)
 
     def parent(self, index):
         """Returns parent index for given Node index.

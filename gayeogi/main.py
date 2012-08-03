@@ -36,7 +36,7 @@ if sys.platform == 'win32':
     )
     lnPath = u''
 else:  # Most POSIX systems, there may be more elifs in future.
-    dbPath = os.path.expanduser(u'~/.config/gayeogi')
+    dbPath = os.path.expanduser(u'~/.config/gayeogi/db')
     lnPath = os.path.dirname(__file__)
 
 
@@ -202,12 +202,12 @@ class Main(QtGui.QMainWindow):
         self.ui.albums.buttonClicked.connect(self.setAnalog)
         self.ui.verticalLayout_4.addWidget(self.ui.albums)
         self.ui.tracks.setModel(self.db.tracks)
-        ###
         self.ui.plugins = {}
         self.ui.splitter.restoreState(
             self.__settings.value(u'splitters').toByteArray()
         )
         self.setCentralWidget(widget)
+        ###
         self.library = (__version__, {}, {}, {}, {}, [False])
         self.ignores = self.__settings.value(u'ignores', []).toPyObject()
         if self.ignores == None:
@@ -583,6 +583,7 @@ class Main(QtGui.QMainWindow):
             dialog.exec_()
         else:
             unload()
+
 
 def run():
     app = QtGui.QApplication(sys.argv)
