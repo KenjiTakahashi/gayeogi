@@ -68,6 +68,7 @@ class Columner(object):
     """Docstring for Columner """
 
     artists = set()
+    albums = set(["artist", "album", "__a__", "comment"])  # FIXME
 
     @staticmethod
     def artist(index):
@@ -78,13 +79,21 @@ class Columner(object):
         """
         return list(Columner.artists)[index]
 
+    @staticmethod
+    def album(index):
+        """@todo: Docstring for album
+
+        :index: @todo
+        :returns: @todo
+        """
+        return list(Columner.album)[index]
+
 
 class _Node(object):
     def __init__(self, parent=None):
         self._parent = parent
         self._children = list()
         self.metadata = dict()
-        self._columns = ["antag", "second", "meta", "__albums__"]  # FIXME
         if parent != None:
             parent.addChild(self)
 
@@ -105,8 +114,6 @@ class _Node(object):
 
     def fetch(self, dbpath=None):
         ArtistNode(self._data.pop(), self)
-        #for d in glob.iglob(os.path.join(dbpath, u'*')):
-            #ArtistNode(d, self)
 
     def addChild(self, child):
         self._children.append(child)
@@ -116,21 +123,6 @@ class _Node(object):
 
     def row(self):
         return self._parent._children.index(self)
-
-    def columnCount(self):
-        """@todo: Docstring for columnCount
-
-        :returns: @todo
-        """
-        return len(self._columns)
-
-    def column(self, section):
-        """@todo: Docstring for column
-
-        :section: @todo
-        :returns: @todo
-        """
-        return self._columns[section]
 
     def childCount(self):
         return len(self._children)
@@ -146,10 +138,12 @@ class _Node(object):
     def fn_encode(self, fn):
         """Encodes filename into format passable by filesystem(s).
 
+        @note: Implemented in specific Node types.
+
         :fn: Human-readable filename string.
         :returns: Encoded :fn:.
         """
-        return u'&'.join([unicode(ord(c)) for c in fn])
+        raise NotImplemented
 
     def fn_decode(self, fn):
         """Decodes filename into human-readable string.
@@ -157,12 +151,12 @@ class _Node(object):
         :fn: Encoded filename string.
         :returns: Human-readable form of :fn:.
         """
-        fn = os.path.basename(fn)
-        return u''.join([unichr(int(n)) for n in fn.split(u'&')])
+        raise NotImplemented
 
 
 class ArtistNode(_Node):
     """Artist node."""
+
     def __init__(self, path, parent=None):
         """@todo: Docstring for __init__
 
@@ -172,16 +166,56 @@ class ArtistNode(_Node):
         """
         super(ArtistNode, self).__init__(parent)
         self._path = path
-        path = os.path.join(self._path, '.meta')
+        path = os.path.join(self._path, u'.meta')
         self.metadata = json.loads(open(path, 'r').read())
         self.metadata[u"artist"] = self.fn_decode(self._path)
         Columner.artists |= set(self.metadata.keys())
+        self._data = glob.glob(os.path.join(self._path, u'*'))
         # TODO: deal with __urls__
-        # TODO: fetch albums
+
+    def fetch(self):
+        AlbumNode(self._data.pop(), self)
+
+    def fn_encode(self, fn):
+        return u'&'.join([unicode(ord(c)) for c in fn])
+
+    def fn_decode(self, fn):
+        fn = os.path.basename(fn)
+        return u''.join([unichr(int(n)) for n in fn.split(u'&')])
 
 
 class AlbumNode(_Node):
     """Album node."""
+
+    def __init__(self, path, parent=None):
+        """@todo: Docstring for __init__
+
+        :path: @todo
+        :parent: @todo
+        :returns: @todo
+        """
+        super(AlbumNode, self).__init__(parent)
+        self._path = path
+        path = os.path.join(self._path, u'.meta')
+        self.metadata = json.loads(open(path, 'r').read())
+        self.metadata[u"album"], self.metadata[u"year"] = self.fn_decode(
+            self._path
+        )
+        # TODO: deal with a/d/r
+        # TODO: fetch tracks
+        # TODO: deal with columns
+
+    def fn_encode(self, fn):
+        fn1, fn2 = fn
+        y = u'&'.join([unicode(ord(c)) for c in fn1])
+        a = u'&'.join([unicode(ord(c)) for c in fn2])
+        return "{0}.{1}".format(y, a)
+
+    def fn_decode(self, fn):
+        fn = os.path.basename(fn).split(u'.')
+        y = u''.join([unichr(int(n)) for n in fn[0].split(u'&')])
+        a = u''.join([unichr(int(n)) for n in fn[1].split(u'&')])
+        return (y, a)
 
 
 class TrackNode(_Node):
@@ -200,7 +234,6 @@ class BaseModel(QtCore.QAbstractItemModel):
         """
         super(BaseModel, self).__init__(parent)
         self._rootNode = _Node()
-        #self._rootNode.fetch(dbpath)
         self._rootNode.setPath(dbpath)
 
     def hasChildren(self, parent):
@@ -338,6 +371,7 @@ class BaseModel(QtCore.QAbstractItemModel):
 
 class Model(QtGui.QAbstractProxyModel):
     """Docstring for Model """
+
     def __init__(self, sourceModel, parent=None):
         """@todo: to be defined """
         super(Model, self).__init__(parent)
@@ -391,21 +425,14 @@ class Model(QtGui.QAbstractProxyModel):
         self.reset()
 
     def hasChildren(self, parent):
-        """@todo: Docstring for hasChildren
+        """Reimplemented from QAbstractProxyModel.hasChildren().
 
-        :parent: @todo
-        :returns: @todo
+        Calls source implementation from BaseModel.
         """
         return self.sourceModel().hasChildren(parent)
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
-        """@todo: Docstring for index
-
-        :row: @todo
-        :column: @todo
-        :parent: @todo
-        :returns: @todo
-        """
+        """Reimplemented from QAbstractProxyModel.index()."""
         if not self.hasIndex(row, column, parent):
             return QtCore.QModelIndex()
         source = QtCore.QModelIndex(self._mapper[row])
@@ -413,11 +440,10 @@ class Model(QtGui.QAbstractProxyModel):
             self.sourceModel().index(source.row(), column, source.parent())
         )
 
-    def parent(self, child):
-        """@todo: Docstring for parent
+    def parent(self, _):
+        """Reimplemented from QAbstractProxyModel.parent().
 
-        :child: @todo
-        :returns: @todo
+        Merely returns empty index, because the proxy model is flat.
         """
         return QtCore.QModelIndex()
 
@@ -435,13 +461,13 @@ class Model(QtGui.QAbstractProxyModel):
         :parent: @todo
         :returns: @todo
         """
-        return self.sourceModel().columnCount(parent)
+        return len(Columner.albums)  # FIXME
 
     def mapFromSource(self, source):
-        """@todo: Docstring for mapFromSource
+        """Reimplemented from QAbstractProxyModel.mapFromSource().
 
-        :source: @todo
-        :returns: @todo
+        Uses _mapper object created with Model.flatten() method to map
+        tree-like source model to a flat one.
         """
         if not source.isValid():
             return QtCore.QModelIndex()
@@ -456,10 +482,10 @@ class Model(QtGui.QAbstractProxyModel):
         )
 
     def mapToSource(self, proxy):
-        """@todo: Docstring for mapToSource
+        """Reimplemented from QAbstractProxyModel.mapToSource().
 
-        :proxy: @todo
-        :returns: @todo
+        Uses _mapper object created with Model.flatten() method to map
+        flat proxy model back to tree-like source one.
         """
         if not proxy.isValid():
             return QtCore.QModelIndex()
