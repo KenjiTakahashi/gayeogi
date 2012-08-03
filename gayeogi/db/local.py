@@ -68,7 +68,7 @@ class Columner(object):
     """Docstring for Columner """
 
     artists = set()
-    albums = set(["artist", "album", "__a__", "comment"])  # FIXME
+    albums = set(["album", "year", "__a__", "comment"])  # FIXME
 
     @staticmethod
     def artist(index):
@@ -86,7 +86,7 @@ class Columner(object):
         :index: @todo
         :returns: @todo
         """
-        return list(Columner.album)[index]
+        return list(Columner.albums)[index]
 
 
 class _Node(object):
@@ -123,6 +123,9 @@ class _Node(object):
 
     def row(self):
         return self._parent._children.index(self)
+
+    def column(self):
+        return 0
 
     def childCount(self):
         return len(self._children)
@@ -198,7 +201,7 @@ class AlbumNode(_Node):
         self._path = path
         path = os.path.join(self._path, u'.meta')
         self.metadata = json.loads(open(path, 'r').read())
-        self.metadata[u"album"], self.metadata[u"year"] = self.fn_decode(
+        self.metadata[u"year"], self.metadata[u"album"] = self.fn_decode(
             self._path
         )
         # TODO: deal with a/d/r
@@ -288,20 +291,14 @@ class BaseModel(QtCore.QAbstractItemModel):
         :parent: @todo
         :returns: @todo
         """
-        if not parent.isValid():
-            node = self._rootNode
-        else:
-            node = parent.internalPointer()
-        node.fetch()
+        self._rootNode.fetch()
 
     def data(self, index, role):
-        """Function used by view to get appropriate data to display.
+        """Reimplemented from QAbstractItemModel.data().
 
-        Mandatory override.
-
-        :index: Specifies index for which to return data
-        :role: Specifies role for which the data should be returned
-        :returns: data for appropriate index and role
+        :index: Specifies index for which to return data.
+        :role: Specifies role for which the data should be returned.
+        :returns: Data for appropriate index and role.
         """
         if not index.isValid():
             return None
@@ -310,9 +307,7 @@ class BaseModel(QtCore.QAbstractItemModel):
             return node.metadata[self.headerData(index.column())]
 
     def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
-        """Function used by view to get appropriate header names.
-
-        Override.
+        """Reimplemented from QAbstractItemModel.headerData().
 
         :section: Specifies for which section (e.g. column) to return data.
         :_: Normally used for orientation, but there's no use for it here.
@@ -424,6 +419,31 @@ class Model(QtGui.QAbstractProxyModel):
         self.flatten()
         self.reset()
 
+    def canFetchMore(self, parent):
+        """@todo: Docstring for canFetchMore
+
+        :parent: @todo
+        :returns: @todo
+        """
+        for s in self._selection:
+            node = s.internalPointer()
+            if node.canFetchMore():
+                return True
+        return False
+
+    def fetchMore(self, parent):
+        """@todo: Docstring for fetchMore
+
+        :parent: @todo
+        :returns: @todo
+        """
+        for s in self._selection:
+            node = s.internalPointer()
+            if node.canFetchMore():
+                node.fetch()
+                break
+        self.flatten()
+
     def hasChildren(self, parent):
         """Reimplemented from QAbstractProxyModel.hasChildren().
 
@@ -439,6 +459,31 @@ class Model(QtGui.QAbstractProxyModel):
         return self.mapFromSource(
             self.sourceModel().index(source.row(), column, source.parent())
         )
+
+    def data(self, index, role):
+        """Reimplemented from QAbstractProxyModel.data().
+
+        :index: Specifies index for which to return data.
+        :role: Specifies role for which the data should be returned.
+        :returns: Data for appropriate index and role.
+        """
+        if not index.isValid():
+            return None
+        if role == QtCore.Qt.DisplayRole:
+            node = index.internalPointer()
+            return node.metadata[self.headerData(index.column())]
+
+    def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
+        """Reimplemented from QAbstractProxyModel.headerData().
+
+        :section: Specifies for which section (e.g. column) to return data.
+        :_: Normally used for orientation, but there's no use for it here.
+        :role: Specifies for which role to return data.
+        :returns: Appropriate column header data (e.g. name string).
+        """
+        if role == QtCore.Qt.DisplayRole:
+            if section >= 0:
+                return Columner.album(section)
 
     def parent(self, _):
         """Reimplemented from QAbstractProxyModel.parent().
@@ -477,9 +522,6 @@ class Model(QtGui.QAbstractProxyModel):
         i = self._mapper.index(source0)
         index = self.createIndex(i, source.column(), source.internalPointer())
         return index
-        return self.createIndex(
-            source.row(), source.column(), source.internalPointer()
-        )
 
     def mapToSource(self, proxy):
         """Reimplemented from QAbstractProxyModel.mapToSource().
