@@ -156,9 +156,17 @@ class ArtistNode(_Node):
         path = os.path.join(self._path, u'.meta')
         self.metadata = json.loads(open(path, 'r').read())
         self.metadata[u"artist"] = self.fn_decode(self._path)
+        try:
+            urls = self.metadata[u"__urls__"]
+            if len(urls) > 1:
+                self.metadata[u"__urls__"] = urls[1]
+            else:
+                del self.metadata[u"__urls__"]
+            self.urls = urls[0]
+        except KeyError:
+            self.urls = dict()
         parent.headers |= set(self.metadata.keys())
         self._data = glob.glob(os.path.join(self._path, u'*'))
-        # TODO: deal with __urls__
 
     def fetch(self):
         AlbumNode(self._data.pop(), self)
@@ -187,9 +195,19 @@ class AlbumNode(_Node):
         self.metadata = json.loads(open(path, 'r').read())
         (self.metadata[u"year"],
         self.metadata[u"album"]) = self.fn_decode(self._path)
+        self.adr = dict()
+        for adr in [u"__a__", u"__d__", u"__r__"]:
+            try:
+                _ = self.metadata[adr]
+                if len(_) > 1:
+                    self.metadata[adr] = _[1]
+                else:
+                    del self.metadata[adr]
+                self.adr[adr] = _[0]
+            except KeyError:
+                self.adr[adr] = False
         parent.headers |= set(self.metadata.keys())
         self._data = glob.glob(os.path.join(self._path, u'*'))
-        # TODO: deal with a/d/r
 
     def fetch(self):
         TrackNode(self._data.pop(), self)
