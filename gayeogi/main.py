@@ -183,7 +183,7 @@ class Main(QtGui.QMainWindow):
             else:
                 dialog = Settings()
                 dialog.exec_()
-        self.db = DB()
+        self.db = DB(dbPath)
         from interfaces.main import Ui_main
         self.ui = Ui_main()
         widget = QtGui.QWidget()

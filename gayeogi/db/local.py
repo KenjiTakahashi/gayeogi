@@ -577,10 +577,8 @@ class DB(object):
     """Local filesystem watcher and DB holder/updater."""
     __settings = QtCore.QSettings(u'gayeogi', u'db')
 
-    def __init__(self):
+    def __init__(self, path):
         """@todo: to be defined """
-        self.artists = BaseModel(unicode(
-            DB.__settings.value(u'path').toString()
-        ))
+        self.artists = BaseModel(path)
         self.albums = Model(self.artists)
         self.tracks = Model(self.artists)
