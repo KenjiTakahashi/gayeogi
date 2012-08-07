@@ -72,16 +72,25 @@ class _Node(object):
         self.headers = set()
         if parent != None:
             parent.addChild(self)
-        self._data = glob.glob(os.path.join(path, u'*'))
+        if not isinstance(self, TrackNode):
+            self._data = glob.glob(os.path.join(path, u'*'))
 
     def canFetchMore(self):
-        """@todo: Docstring for canFetchMore
+        """Indicates if there is still some data to read from
+        persistent storage.
 
-        :returns: @todo
+        :returns: True or False.
         """
         return bool(len(self._data))
 
     def fetch(self):
+        """Fetches next chunk of data from presistent storage
+        and wraps it into appropriate Node type.
+
+        @see: _Node.canFetchMore
+
+        @note: Usually reimplemented in specific type Nodes.
+        """
         ArtistNode(self._data.pop(), self)
 
     def addChild(self, child):
@@ -140,9 +149,8 @@ class ArtistNode(_Node):
     def __init__(self, path, parent=None):
         """@todo: Docstring for __init__
 
-        :filename: @todo
+        :path: @todo
         :parent: @todo
-        :returns: @todo
         """
         super(ArtistNode, self).__init__(path, parent)
         self._path = path
@@ -179,7 +187,6 @@ class AlbumNode(_Node):
 
         :path: @todo
         :parent: @todo
-        :returns: @todo
         """
         super(AlbumNode, self).__init__(path, parent)
         self._path = path
@@ -224,7 +231,6 @@ class TrackNode(_Node):
 
         :path: @todo
         :parent: @todo
-        :returns: @todo
         """
         super(TrackNode, self).__init__(path, parent)
         self._path = path
@@ -254,7 +260,7 @@ class BaseModel(QtCore.QAbstractItemModel):
     def __init__(self, dbpath, parent=None):
         """Constructs new BaseModel instance.
 
-        :parent: parent object
+        :parent: Parent object.
         """
         super(BaseModel, self).__init__(parent)
         self._rootNode = _Node(dbpath)
@@ -269,7 +275,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         return False
 
     def rowCount(self, parent):
-        """Reimplemente from QAbstractItemModel.rowCount."""
+        """Reimplemented from QAbstractItemModel.rowCount."""
         if parent.isValid():
             parentNode = parent.internalPointer()
         else:
@@ -281,19 +287,11 @@ class BaseModel(QtCore.QAbstractItemModel):
         return len(self._rootNode.headers)
 
     def canFetchMore(self, parent):
-        """@todo: Docstring for canFetchMore
-
-        :parent: @todo
-        :returns: @todo
-        """
+        """Reimplemented from QAbstractItemModel.canFetchMore."""
         return self._rootNode.canFetchMore()
 
     def fetchMore(self, parent):
-        """@todo: Docstring for fetchMore
-
-        :parent: @todo
-        :returns: @todo
-        """
+        """Reimplemented from QAbstractItemModel.fetchMore."""
         self._rootNode.fetch()
 
     def data(self, index, role):
@@ -322,13 +320,7 @@ class BaseModel(QtCore.QAbstractItemModel):
                 return self._rootNode.header(section)
 
     def parent(self, index):
-        """Returns parent index for given Node index.
-
-        Mandatory override.
-
-        :index: Specifies index for which to get parent
-        :returns: parent of the given index
-        """
+        """Reimplemented from QAbstractItemModel.parent."""
         parent = self.getNode(index).parent()
         if parent == self._rootNode:
             return QtCore.QModelIndex()
@@ -337,8 +329,6 @@ class BaseModel(QtCore.QAbstractItemModel):
     def index(self, row, column, parent=QtCore.QModelIndex()):
         """Returns index placed at specified row and column,
         relatively to parent.
-
-        Mandatory override.
 
         :row: Specifies row at which to look for index
         :column: Specifies column at which to look for index
@@ -365,6 +355,14 @@ class BaseModel(QtCore.QAbstractItemModel):
             if node:
                 return node
         return self._rootNode
+
+    def upsert(self, data):
+        """@todo: Docstring for upsert
+
+        :data: @todo
+        :returns: @todo
+        """
+        raise NotImplemented
 
 
 class Model(QtGui.QAbstractProxyModel):
