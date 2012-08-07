@@ -65,21 +65,14 @@ logger = logging.getLogger('gayeogi.local')
 
 
 class _Node(object):
-    def __init__(self, parent=None):
+    def __init__(self, path, parent=None):
         self._parent = parent
         self._children = list()
         self.metadata = dict()
         self.headers = set()
         if parent != None:
             parent.addChild(self)
-
-    def setPath(self, dbPath):
-        """@todo: Docstring for setPath
-
-        :dbPath: @todo
-        :returns: @todo
-        """
-        self._data = glob.glob(os.path.join(dbPath, u'*'))
+        self._data = glob.glob(os.path.join(path, u'*'))
 
     def canFetchMore(self):
         """@todo: Docstring for canFetchMore
@@ -151,7 +144,7 @@ class ArtistNode(_Node):
         :parent: @todo
         :returns: @todo
         """
-        super(ArtistNode, self).__init__(parent)
+        super(ArtistNode, self).__init__(path, parent)
         self._path = path
         path = os.path.join(self._path, u'.meta')
         self.metadata = json.loads(open(path, 'r').read())
@@ -166,7 +159,6 @@ class ArtistNode(_Node):
         except KeyError:
             self.urls = dict()
         parent.headers |= set(self.metadata.keys())
-        self._data = glob.glob(os.path.join(self._path, u'*'))
 
     def fetch(self):
         AlbumNode(self._data.pop(), self)
@@ -189,7 +181,7 @@ class AlbumNode(_Node):
         :parent: @todo
         :returns: @todo
         """
-        super(AlbumNode, self).__init__(parent)
+        super(AlbumNode, self).__init__(path, parent)
         self._path = path
         path = os.path.join(self._path, u'.meta')
         self.metadata = json.loads(open(path, 'r').read())
@@ -207,7 +199,6 @@ class AlbumNode(_Node):
             except KeyError:
                 self.adr[adr] = False
         parent.headers |= set(self.metadata.keys())
-        self._data = glob.glob(os.path.join(self._path, u'*'))
 
     def fetch(self):
         TrackNode(self._data.pop(), self)
@@ -235,13 +226,12 @@ class TrackNode(_Node):
         :parent: @todo
         :returns: @todo
         """
-        super(TrackNode, self).__init__(parent)
+        super(TrackNode, self).__init__(path, parent)
         self._path = path
         self.metadata = json.loads(open(path, 'r').read())
         (self.metadata[u"tracknumber"],
         self.metadata[u"title"]) = self.fn_decode(self._path)
         parent.headers |= set(self.metadata.keys())
-        # TODO: is there something else? filename?
 
     def fn_encode(self, fn):
         fn1, fn2 = fn
@@ -267,31 +257,19 @@ class BaseModel(QtCore.QAbstractItemModel):
         :parent: parent object
         """
         super(BaseModel, self).__init__(parent)
-        self._rootNode = _Node()
-        self._rootNode.setPath(dbpath)
+        self._rootNode = _Node(dbpath)
 
     def hasChildren(self, parent):
-        """Tells if given :parent: has children.
+        """Reimplemented from QAbstractItemModel.hasChildren.
 
         Returns true only for top-level node as our views are flat.
-
-        @note: Override.
-
-        :parent: Parent node.
-        :returns: Boolean value, depending on children availability.
         """
         if not parent.isValid():
             return True
         return False
 
     def rowCount(self, parent):
-        """Returns number of rows relative to @parent.
-
-        @note: Mandatory override.
-
-        :parent: index, relative to which the rows will be counted
-        :returns: number of rows relative to @parent
-        """
+        """Reimplemente from QAbstractItemModel.rowCount."""
         if parent.isValid():
             parentNode = parent.internalPointer()
         else:
@@ -299,13 +277,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         return parentNode.childCount()
 
     def columnCount(self, parent):
-        """Returns number of columns.
-
-        Mandatory override.
-
-        :parent: Index, not used.
-        :returns: Number of columns in the model.
-        """
+        """Reimplemented from QAbstractItemModel.columnCount."""
         return len(self._rootNode.headers)
 
     def canFetchMore(self, parent):
@@ -582,3 +554,30 @@ class DB(object):
         self.artists = BaseModel(path)
         self.albums = Model(self.artists)
         self.tracks = Model(self.artists)
+        self.index = dict()
+
+    def isIgnored(self, path):
+        """Checks if specified folder is to be ignored.
+
+        :path: Folder to check.
+        :returns: True if :path: should be ignored, False otherwise.
+        """
+        for (ignore, enabled) in self.ignores:
+            if enabled and fnmatch(path, u'*' + ignore + u'*'):
+                return True
+        return False
+
+    def run(self):
+        """@todo: Docstring for run
+
+        :returns: @todo
+        """
+        directories = DB.__settings.value(u'directories', []).toPyObject()
+        for directory, enabled in directories:
+            if enabled:
+                for root, _, filenames in os.walk(directory):
+                    if not self.isIgnored(root):
+                        for filename in filenames:
+                            path = os.path.join(root, filename)
+                            if not self.isIgnored:
+                                self.index[path] = self.artists.upsert(path)
