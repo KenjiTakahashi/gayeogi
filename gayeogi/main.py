@@ -189,16 +189,16 @@ class Main(QtGui.QMainWindow):
         widget = QtGui.QWidget()
         self.ui.setupUi(widget)
         self.ui.artists.setModel(self.db.artists)
-        artists_selection = QtGui.QItemSelectionModel(self.db.artists)
-        self.ui.artists.setSelectionModel(artists_selection)
-        artists_selection.selectionChanged.connect(self.db.albums.setSelection)
+        self.ui.artists.selectionModel().selectionChanged.connect(
+            self.db.albums.setSelection
+        )
         delegate = ADRItemDelegate()
         #self.ui.artists.setItemDelegateForColumn(0, delegate)
         self.ui.albums = ADRTreeView()
         self.ui.albums.setModel(self.db.albums)
-        albums_selection = QtGui.QItemSelectionModel(self.db.albums)
-        self.ui.albums.setSelectionModel(albums_selection)
-        albums_selection.selectionChanged.connect(self.db.tracks.setSelection)
+        self.ui.albums.selectionModel().selectionChanged.connect(
+            self.db.tracks.setSelection
+        )
         self.ui.albums.buttonClicked.connect(self.setAnalog)
         self.ui.verticalLayout_4.addWidget(self.ui.albums)
         self.ui.tracks.setModel(self.db.tracks)

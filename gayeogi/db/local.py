@@ -374,13 +374,13 @@ class Model(QtGui.QAbstractProxyModel):
         self._mapper = list()
         self._selection = list()
         self.setSourceModel(sourceModel)
-        self.flatten()
 
     def flatten(self, root=None):
         """@todo: Docstring for flatten
 
         :root: @todo
         """
+        self.layoutAboutToBeChanged.emit()
         self._mapper = list()
         model = self.sourceModel()
         if not root:
@@ -397,6 +397,7 @@ class Model(QtGui.QAbstractProxyModel):
                     child = model.index(i, 0, _root)
                     _flatten(child)
         _flatten(root)
+        self.layoutChanged.emit()
 
     def setSelection(self, selected, deselected):
         """@todo: Docstring for setSelection
@@ -418,13 +419,11 @@ class Model(QtGui.QAbstractProxyModel):
                 )
                 self._selection.remove(index)
         self.flatten()
-        self.reset()
 
     def canFetchMore(self, parent):
-        """@todo: Docstring for canFetchMore
+        """Reimplemented from QAbstractProxyModel.canFetchMore.
 
-        :parent: @todo
-        :returns: @todo
+        :returns: True if any of the active Nodes can still fetch more.
         """
         for s in self._selection:
             node = s.internalPointer()
@@ -433,9 +432,8 @@ class Model(QtGui.QAbstractProxyModel):
         return False
 
     def fetchMore(self, parent):
-        """@todo: Docstring for fetchMore
+        """Reimplemented from QAbstractProxyModel.fetchMore.
 
-        :parent: @todo
         :returns: @todo
         """
         for s in self._selection:
@@ -472,7 +470,10 @@ class Model(QtGui.QAbstractProxyModel):
             return None
         if role == QtCore.Qt.DisplayRole:
             node = index.internalPointer()
-            return node.metadata[self.headerData(index.column())]
+            try:
+                return node.metadata[self.headerData(index.column())]
+            except KeyError:
+                return ""
 
     def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
         """Reimplemented from QAbstractProxyModel.headerData().
@@ -485,30 +486,34 @@ class Model(QtGui.QAbstractProxyModel):
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
                 tmp = list()
-                for s in self._selection:  # FIXME: not very optimal :/
+                for s in self._selection:
                     tmp.extend(s.internalPointer().headers)
-                return tmp[section]
+                if tmp:
+                    return tmp[section]
+                return 0
 
     def parent(self, _):
         """Reimplemented from QAbstractProxyModel.parent().
 
-        Merely returns empty index, because the proxy model is flat.
+        :returns: Merely an empty index, because the proxy model is flat.
         """
         return QtCore.QModelIndex()
 
-    def rowCount(self, parent):
-        """@todo: Docstring for rowCount
+    def rowCount(self, _=QtCore.QModelIndex()):
+        """Reimplemented from QAbstractProxyModel.rowCount.
 
-        :parent: @todo
-        :returns: @todo
+        @note: _ (parent) parameter is not used.
+
+        :returns: Length of the Model._mapper mapping.
         """
         return len(self._mapper)
 
-    def columnCount(self, parent):
-        """@todo: Docstring for columnCount
+    def columnCount(self, _=QtCore.QModelIndex()):
+        """Reimplemented from QAbstractProxyModel.columnCount.
 
-        :parent: @todo
-        :returns: @todo
+        @note: _ (parent) parameter is not used.
+
+        :returns: Sum of the length of all rows headers data.
         """
         return sum([
             len(s.internalPointer().headers) for s in self._selection
