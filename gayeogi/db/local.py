@@ -375,29 +375,36 @@ class Model(QtGui.QAbstractProxyModel):
         self._selection = list()
         self.setSourceModel(sourceModel)
 
-    def flatten(self, root=None):
-        """@todo: Docstring for flatten
+    def insertRows(self, parent):
+        """@todo: Docstring for insertRows
 
-        :root: @todo
+        :parent: @todo
+        :returns: @todo
         """
-        self.layoutAboutToBeChanged.emit()
-        self._mapper = list()
         model = self.sourceModel()
-        if not root:
-            root = model.index(-1, -1)
+        while self.canFetchMore():
+            self.fetchMore()
+        count = model.rowCount(parent)
+        self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), count)
+        for i in xrange(count):
+            child = model.index(i, 0, parent)
+            self._mapper.append(QtCore.QPersistentModelIndex(child))
+        self.endInsertRows()
 
-        def _flatten(_root):
-            if _root.isValid() and _root in self._selection:
-                for i in xrange(model.rowCount(_root)):
-                    child = model.index(i, 0, _root)
-                    self._mapper.append(QtCore.QPersistentModelIndex(child))
-                    _flatten(child)
-            else:
-                for i in xrange(model.rowCount(_root)):
-                    child = model.index(i, 0, _root)
-                    _flatten(child)
-        _flatten(root)
-        self.layoutChanged.emit()
+    def removeRows(self, parent):
+        """@todo: Docstring for removeRows
+
+        :parent: @todo
+        :returns: @todo
+        """
+        model = self.sourceModel()
+        count = model.rowCount(parent)
+        child = self.mapFromSource(model.index(0, 0, parent))
+        self.beginRemoveRows(QtCore.QModelIndex(), child.row(), count)
+        for i in xrange(count):
+            child = model.index(i, 0, parent)
+            self._mapper.remove(QtCore.QPersistentModelIndex(child))
+        self.endRemoveRows()
 
     def setSelection(self, selected, deselected):
         """@todo: Docstring for setSelection
@@ -406,21 +413,22 @@ class Model(QtGui.QAbstractProxyModel):
         :deselected: @todo
         """
         model = self.sourceModel()
-        for s in selected.indexes():
-            if s.column() == 0:
-                index = model.createIndex(
-                    s.row(), s.column(), s.internalPointer()
-                )
-                self._selection.append(index)
         for d in deselected.indexes():
             if d.column() == 0:
                 index = model.createIndex(
                     d.row(), d.column(), d.internalPointer()
                 )
                 self._selection.remove(index)
-        self.flatten()
+                self.removeRows(index)
+        for s in selected.indexes():
+            if s.column() == 0:
+                index = model.createIndex(
+                    s.row(), s.column(), s.internalPointer()
+                )
+                self._selection.append(index)
+                self.insertRows(index)
 
-    def canFetchMore(self, parent):
+    def canFetchMore(self, _=QtCore.QModelIndex()):
         """Reimplemented from QAbstractProxyModel.canFetchMore.
 
         :returns: True if any of the active Nodes can still fetch more.
@@ -431,7 +439,7 @@ class Model(QtGui.QAbstractProxyModel):
                 return True
         return False
 
-    def fetchMore(self, parent):
+    def fetchMore(self, _=QtCore.QModelIndex()):
         """Reimplemented from QAbstractProxyModel.fetchMore.
 
         :returns: @todo
@@ -441,7 +449,6 @@ class Model(QtGui.QAbstractProxyModel):
             if node.canFetchMore():
                 node.fetch()
                 break
-        self.flatten()
 
     def hasChildren(self, parent):
         """Reimplemented from QAbstractProxyModel.hasChildren().
@@ -478,19 +485,20 @@ class Model(QtGui.QAbstractProxyModel):
     def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
         """Reimplemented from QAbstractProxyModel.headerData().
 
-        :section: Specifies for which section (e.g. column) to return data.
-        :_: Normally used for orientation, but there's no use for it here.
-        :role: Specifies for which role to return data.
-        :returns: Appropriate column header data (e.g. name string).
+        @note: _ (orientation) is not used, as there's only horizontal header.
         """
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
                 tmp = list()
                 for s in self._selection:
                     tmp.extend(s.internalPointer().headers)
-                if tmp:
+                # When changing selection, the view sometimes calls this before
+                # columnCount, thus trying to get headerData for columns which
+                # might no longer exist.
+                try:
                     return tmp[section]
-                return 0
+                except IndexError:
+                    pass
 
     def parent(self, _):
         """Reimplemented from QAbstractProxyModel.parent().
