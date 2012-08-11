@@ -123,6 +123,7 @@ class ADRTreeView(QtGui.QTreeView):
         self.delegate = ADRItemDelegate()
         self.delegate.buttonClicked.connect(self.callback)
         self.setItemDelegateForColumn(1, self.delegate)
+        self.setSortingEnabled(True)
 
     def buttoned(self, mx, rx):
         return mx >= rx + 1 and mx <= rx + 36
@@ -231,10 +232,11 @@ class Main(QtGui.QMainWindow):
         self.translators = list()
         #self.loadPluginsTranslators()
         #self.loadPlugins()
-    def disableButtons(self):
-        u"""Disable some buttons one mustn't use during the update.
 
-        Note: They are then re-enabled in the update() method.
+    def disableButtons(self):
+        """Disable some buttons one mustn't use during the update.
+
+        @note: They are then re-enabled in the update() method.
         """
         self.ui.local.setDisabled(True)
         self.ui.remote.setDisabled(True)
@@ -487,48 +489,6 @@ class Main(QtGui.QMainWindow):
         self.ui.albumsGreen.setText(unicode(self.statistics[u'albums'][0]))
         self.ui.albumsYellow.setText(unicode(self.statistics[u'albums'][1]))
         self.ui.albumsRed.setText(unicode(self.statistics[u'albums'][2]))
-    def fillAlbums(self):
-        items = self.ui.artists.selectedItems()
-        self.ui.albums.clear()
-        self.ui.albums.setSortingEnabled(False)
-        for item in items:
-            artist = unicode(item.data(0, 987).toString())
-            for date, albums in self.library[1][artist].iteritems():
-                for album, data in albums.iteritems():
-                    key = self.library[4][artist + date + album]
-                    item_ = QtGui.QTreeWidgetItem([date, album])
-                    item_.artist = artist
-                    item_.aIndex = self.ui.artists.indexOfTopLevelItem(item)
-                    item_.setData(1, 123, key[u'analog'])
-                    item_.setData(1, 234, key[u'digital'])
-                    item_.setData(1, 345, key[u'remote'] and True or False)
-                    item_.setData(1, 987, album)
-                    self.ui.albums.addTopLevelItem(item_)
-        self.ui.albums.setSortingEnabled(True)
-        self.ui.albums.sortItems(0, 0)
-        for i in range(4):
-            self.ui.albums.resizeColumnToContents(i)
-        self.ui.albumFilter.textEdited.emit(self.ui.albumFilter.text())
-    def fillTracks(self):
-        items = self.ui.albums.selectedItems()
-        self.ui.tracks.clear()
-        self.ui.tracks.setSortingEnabled(False)
-        for item in items:
-            date = unicode(item.text(0))
-            album = unicode(item.data(1, 987).toString())
-            for num, titles in self.library[1][item.artist] \
-                    [date][album].iteritems():
-                for title in titles.keys():
-                    item_ = NumericTreeWidgetItem([num, title])
-                    item_.album = album
-                    item_.year = date
-                    item_.artist = item.artist
-                    self.ui.tracks.addTopLevelItem(item_)
-        self.ui.tracks.setSortingEnabled(True)
-        self.ui.tracks.sortItems(0, 0)
-        self.ui.tracks.resizeColumnToContents(0)
-        self.ui.tracks.resizeColumnToContents(1)
-        self.ui.trackFilter.textEdited.emit(self.ui.trackFilter.text())
     def computeStats(self):
         artists = [0, 0, 0]
         albums = [0, 0, 0]

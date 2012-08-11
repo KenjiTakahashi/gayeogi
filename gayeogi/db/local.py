@@ -295,12 +295,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         self._rootNode.fetch()
 
     def data(self, index, role):
-        """Reimplemented from QAbstractItemModel.data().
-
-        :index: Specifies index for which to return data.
-        :role: Specifies role for which the data should be returned.
-        :returns: Data for appropriate index and role.
-        """
+        """Reimplemented from QAbstractItemModel.data."""
         if not index.isValid():
             return None
         if role == QtCore.Qt.DisplayRole:
@@ -308,12 +303,9 @@ class BaseModel(QtCore.QAbstractItemModel):
             return node.metadata[self.headerData(index.column())]
 
     def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
-        """Reimplemented from QAbstractItemModel.headerData().
+        """Reimplemented from QAbstractItemModel.headerData.
 
-        :section: Specifies for which section (e.g. column) to return data.
-        :_: Normally used for orientation, but there's no use for it here.
-        :role: Specifies for which role to return data.
-        :returns: Appropriate column header data (e.g. name string).
+        @note: _ (orientation) is not used as there's only horizontal header.
         """
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
@@ -327,14 +319,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         return self.createIndex(parent.row(), parent.column(), parent)
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
-        """Returns index placed at specified row and column,
-        relatively to parent.
-
-        :row: Specifies row at which to look for index
-        :column: Specifies column at which to look for index
-        :parent: Specifies parent index to which to relate
-        :returns: index placed at specified positions
-        """
+        """Reimplemented from QAbstractItemModel.index."""
         if row < 0 or column < 0:
             return QtCore.QModelIndex()
         child = self.getNode(parent).child(row)
@@ -356,14 +341,6 @@ class BaseModel(QtCore.QAbstractItemModel):
                 return node
         return self._rootNode
 
-    def upsert(self, data):
-        """@todo: Docstring for upsert
-
-        :data: @todo
-        :returns: @todo
-        """
-        raise NotImplemented
-
 
 class Model(QtGui.QAbstractProxyModel):
     """Docstring for Model """
@@ -375,11 +352,29 @@ class Model(QtGui.QAbstractProxyModel):
         self._selection = list()
         self.setSourceModel(sourceModel)
 
-    def insertRows(self, parent):
-        """@todo: Docstring for insertRows
+    def upsert(self, data):
+        """@todo: Docstring for upsert
 
-        :parent: @todo
+        :data: @todo
         :returns: @todo
+        """
+        raise NotImplemented
+
+    def remove(self, data):
+        """@todo: Docstring for remove
+
+        :data: @todo
+        :returns: @todo
+        """
+        raise NotImplemented
+
+    def insertRows(self, parent):
+        """Inserts new rows based on current _selection.
+        It also triggers data fetching as needed.
+
+        @note: To actually add data to the model use Model.upsert.
+
+        :parent: Index whose children should be inserted.
         """
         model = self.sourceModel()
         while self.canFetchMore():
@@ -392,10 +387,12 @@ class Model(QtGui.QAbstractProxyModel):
         self.endInsertRows()
 
     def removeRows(self, parent):
-        """@todo: Docstring for removeRows
+        """Removes rows previously set by Model.insertRows if their :parent:
+        is no longer in _selection.
 
-        :parent: @todo
-        :returns: @todo
+        @note: To actually remove data from the model use Model.remove.
+
+        :parent: Index whose children should be removed.
         """
         model = self.sourceModel()
         count = model.rowCount(parent)
@@ -556,6 +553,57 @@ class Model(QtGui.QAbstractProxyModel):
         )
 
 
+class AlbumsModel(Model):
+    """Docstring for AlbumsModel """
+
+    def __init__(self, sourceModel):
+        """@todo: to be defined """
+        super(AlbumsModel, self).__init__(sourceModel)
+
+    def upsert(self, data):
+        """@todo: Docstring for upsert
+
+        :data: @todo
+        :returns: @todo
+        """
+        raise NotImplemented
+
+    def remove(self, data):
+        """@todo: Docstring for remove
+
+        :data: @todo
+        :returns: @todo
+        """
+        raise NotImplemented
+
+
+class TracksModel(Model):
+    """Docstring for TracksModel """
+
+    def __init__(self, sourceModel):
+        """@todo: to be defined
+
+        :sourceModel: @todo
+        """
+        super(TracksModel, self).__init__(sourceModel)
+
+    def upsert(self, data):
+        """@todo: Docstring for upsert
+
+        :data: @todo
+        :returns: @todo
+        """
+        raise NotImplemented
+
+    def remove(self, data):
+        """@todo: Docstring for remove
+
+        :data: @todo
+        :returns: @todo
+        """
+        raise NotImplemented
+
+
 class DB(object):
     """Local filesystem watcher and DB holder/updater."""
     __settings = QtCore.QSettings(u'gayeogi', u'db')
@@ -563,8 +611,8 @@ class DB(object):
     def __init__(self, path):
         """@todo: to be defined """
         self.artists = BaseModel(path)
-        self.albums = Model(self.artists)
-        self.tracks = Model(self.artists)
+        self.albums = AlbumsModel(self.artists)
+        self.tracks = TracksModel(self.artists)
         self.index = dict()
 
     def isIgnored(self, path):
@@ -577,6 +625,14 @@ class DB(object):
             if enabled and fnmatch(path, u'*' + ignore + u'*'):
                 return True
         return False
+
+    def upsert(self, data):
+        """@todo: Docstring for upsert
+
+        :data: @todo
+        :returns: @todo
+        """
+        raise NotImplemented
 
     def run(self):
         """@todo: Docstring for run
@@ -591,4 +647,4 @@ class DB(object):
                         for filename in filenames:
                             path = os.path.join(root, filename)
                             if not self.isIgnored:
-                                self.index[path] = self.artists.upsert(path)
+                                self.index[path] = self.upsert(path)
