@@ -122,7 +122,10 @@ class _Node(object):
         :row: Row at which to get child.
         :returns: Child at given :row:.
         """
-        return self._children[row]
+        try:
+            return self._children[row]
+        except IndexError:
+            return None
 
     def fn_encode(self, fn):
         """Encodes filename into format passable by filesystem(s).
@@ -305,7 +308,7 @@ class BaseModel(QtCore.QAbstractItemModel):
     def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
         """Reimplemented from QAbstractItemModel.headerData.
 
-        @note: _ (orientation) is not used as there's only horizontal header.
+        @note: _ (orientation) is not used, as there's only horizontal header.
         """
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
@@ -330,16 +333,23 @@ class BaseModel(QtCore.QAbstractItemModel):
     def getNode(self, index):
         """Returns Node for specified index.
 
-        If no Node exists for such index, returns rootNode.
-
-        :index: Specifies index for which to get Node
-        :returns: Node for specified index, if exists, rootNode otherwise
+        :index: Index for which to get Node.
+        :returns: Node for specified index, if exists, rootNode otherwise.
         """
         if index.isValid():
             node = index.internalPointer()
             if node:
                 return node
         return self._rootNode
+
+    def upsert(self, index, data):
+        """@todo: Docstring for upsert
+
+        :index: @todo
+        :data: @todo
+        :returns: @todo
+        """
+        raise NotImplemented  # TODO
 
 
 class Model(QtGui.QAbstractProxyModel):
@@ -380,7 +390,8 @@ class Model(QtGui.QAbstractProxyModel):
         while self.canFetchMore():
             self.fetchMore()
         count = model.rowCount(parent)
-        self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), count)
+        count_ = self.rowCount()
+        self.beginInsertRows(QtCore.QModelIndex(), count_, count_ + count)
         for i in xrange(count):
             child = model.index(i, 0, parent)
             self._mapper.append(QtCore.QPersistentModelIndex(child))
@@ -397,7 +408,8 @@ class Model(QtGui.QAbstractProxyModel):
         model = self.sourceModel()
         count = model.rowCount(parent)
         child = self.mapFromSource(model.index(0, 0, parent))
-        self.beginRemoveRows(QtCore.QModelIndex(), child.row(), count)
+        row = child.row()
+        self.beginRemoveRows(QtCore.QModelIndex(), row, row + count)
         for i in xrange(count):
             child = model.index(i, 0, parent)
             self._mapper.remove(QtCore.QPersistentModelIndex(child))
@@ -587,7 +599,7 @@ class TracksModel(Model):
         """
         super(TracksModel, self).__init__(sourceModel)
 
-    def upsert(self, data):
+    def upsert(self, index, data):
         """@todo: Docstring for upsert
 
         :data: @todo
@@ -626,19 +638,31 @@ class DB(object):
                 return True
         return False
 
-    def upsert(self, data):
+    def getIndex(self, path):
+        """@todo: Docstring for getIndex
+
+        :path: @todo
+        :returns: @todo
+
+        """
+        try:
+            return self.index[path]
+        except IndexError:
+            return None
+
+    def upsert(self, index):
         """@todo: Docstring for upsert
 
-        :data: @todo
+        :index: @todo
         :returns: @todo
         """
-        raise NotImplemented
+
+        def _upsert(meta):
+            self.artists.upsert(index, meta)
+        return _upsert
 
     def run(self):
-        """@todo: Docstring for run
-
-        :returns: @todo
-        """
+        """@todo: Docstring for run"""
         directories = DB.__settings.value(u'directories', []).toPyObject()
         for directory, enabled in directories:
             if enabled:
@@ -647,4 +671,7 @@ class DB(object):
                         for filename in filenames:
                             path = os.path.join(root, filename)
                             if not self.isIgnored:
-                                self.index[path] = self.upsert(path)
+                                # TODO: read real metadata
+                                self.index[path] = self.upsert(
+                                    self.getIndex(path)
+                                )({path: '1', 'test2': 2})

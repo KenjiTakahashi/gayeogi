@@ -219,7 +219,10 @@ class Main(QtGui.QMainWindow):
         self.rt = Distributor(self.library)
         self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
-        self.ui.local.clicked.connect(self.local)
+        self.ui.local.clicked.connect(self.disableButtons)
+        self.ui.local.clicked.connect(self.db.run)  # FIXME: threadify
+        self.ui.remote.clicked.connect(self.disableButtons)
+        self.ui.remote.clicked.connect(self.rt.start)
         self.ui.remote.clicked.connect(self.remote)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
@@ -242,14 +245,7 @@ class Main(QtGui.QMainWindow):
         self.ui.remote.setDisabled(True)
         self.ui.save.setDisabled(True)
         self.ui.settings.setDisabled(True)
-    def local(self):
-        u"""Start local database update."""
-        self.disableButtons()
-        self.fs.start()
-    def remote(self):
-        u"""Start remote databases update."""
-        self.disableButtons()
-        self.rt.start()
+
     def loadPluginsTranslators(self):
         reload(gayeogi.plugins)
         app = QtGui.QApplication.instance()
@@ -259,10 +255,12 @@ class Main(QtGui.QMainWindow):
                     os.path.join(lnPath, u'plugins', u'langs')):
                 self.translators.append(translator)
                 app.installTranslator(translator)
+
     def removePluginsTranslators(self):
         app = QtGui.QApplication.instance()
         for translator in self.translators:
             app.removeTranslator(translator)
+
     def loadPlugins(self):
         def depends(plugin):
             for p in gayeogi.plugins.__all__:
@@ -287,6 +285,7 @@ class Main(QtGui.QMainWindow):
                         del self.ui.plugins[d]
                 if not depends(plugin):
                     del self.ui.plugins[plugin]
+
     def appendPlugin(self, parent, child, position):
         parent = getattr(self.ui, parent)
         if position == 'start':
@@ -312,6 +311,7 @@ class Main(QtGui.QMainWindow):
                         tab.addTab(widget, widget.name)
                         tab.addTab(child, child.name)
                         parent.insertWidget(position, tab)
+
     def removePlugin(self, parent, child, position):
         parent = getattr(self.ui, parent)
         if position == 'start':
