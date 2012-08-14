@@ -56,7 +56,7 @@ class TestUpsert(object):
         assert artist.childCount() == 1
         album = artist.child(0)
         assert isinstance(album, AlbumNode)
-        assert album.metadata == {u'year': u'2o12', u'album': u'test_album'}
+        assert album.metadata == {u'year': u'2012', u'album': u'test_album'}
 
     def test_insert_new_track_to_album(self):
         artist = ArtistNode(parent=self.root)

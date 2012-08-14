@@ -395,17 +395,37 @@ class BaseModel(QtCore.QAbstractItemModel):
         :meta: @todo
         :returns: @todo
         """
+        def find_artist(name):
+            for child in self._rootNode.children():
+                if child.metadata[u'artist'] == name:
+                    return child
+            return None
+
+        def find_album(artist, name):
+            for child in artist.children():
+                if child.metadata[u'album'] == name:
+                    return child
+            return None
         if not index:
-            self.beginInsertRows(QtCore.QModelIndex(), 0, 0)
-            artist = ArtistNode(parent=self._rootNode)
-            self.endInsertRows()
+            try:
+                artist = find_artist(meta[u'artist'])
+            except KeyError:
+                artist = find_artist(u'unknown')
+            if not artist:
+                self.beginInsertRows(QtCore.QModelIndex(), 0, 0)
+                artist = ArtistNode(parent=self._rootNode)
+                self.endInsertRows()
             artist_index = self.index(0, 0)
+            try:
+                album = find_album(artist, meta[u'album'])
+            except KeyError:
+                album = find_album(artist, u'unknown')
+            if not album:
+                self.beginInsertRows(artist_index, 0, 0)
+                album = AlbumNode(parent=artist)
+                self.endInsertRows()
             album_index = self.index(0, 0, artist_index)
             self.beginInsertRows(album_index, 0, 0)
-            album = AlbumNode(parent=artist)
-            self.endInsertRows()
-            track_index = self.index(0, 0, album_index)
-            self.beginInsertRows(track_index, 0, 0)
             track = TrackNode(parent=album)
             self.endInsertRows()
             track.update(meta)
