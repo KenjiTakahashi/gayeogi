@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2012
+# Karol "Kenji Takahashi" Woźniak (C) 2010 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,13 +20,6 @@ import os
 import glob
 from fnmatch import fnmatch
 from PyQt4 import QtCore, QtGui
-from mutagen.id3 import ID3
-from mutagen.flac import FLAC
-from mutagen.asf import ASF
-from mutagen.musepack import Musepack
-from mutagen.wavpack import WavPack
-from mutagen.mp4 import MP4
-from mutagen import File
 import logging
 
 
@@ -66,14 +59,43 @@ logger = logging.getLogger('gayeogi.local')
 
 class _Node(object):
     def __init__(self, path, parent=None):
+        self._primary = ('', '')
+        self._path = path
         self._parent = parent
         self._children = list()
         self.metadata = dict()
         self.headers = set()
         if parent != None:
             parent.addChild(self)
-        if not isinstance(self, TrackNode):
+        if not isinstance(self, TrackNode) and path:
             self._data = glob.glob(os.path.join(path, u'*'))
+
+    def update(self, meta=None):
+        """@todo: Docstring for update
+
+        :meta: @todo
+        :returns: @todo
+
+        """
+        if meta:
+            self.metadata.update(meta)
+        values = dict()
+        for child in self._children:
+            for k, v in child.metadata.iteritems():
+                e1, e2 = self._primary
+                if not k.startswith(e1) and k != e2:
+                    try:
+                        value = values[k]
+                    except KeyError:
+                        values[k] = v
+                    else:
+                        if value != v:
+                            del values[k]
+        self.metadata.update(values)
+        for k in values.keys():
+            for child in self._children:
+                del child.metadata[k]
+        self._parent.headers |= set(self.metadata.keys())
 
     def canFetchMore(self):
         """Indicates if there is still some data to read from
@@ -91,7 +113,7 @@ class _Node(object):
 
         @note: Usually reimplemented in specific type Nodes.
         """
-        ArtistNode(self._data.pop(), self)
+        ArtistNode(path=self._data.pop(), parent=self)
 
     def addChild(self, child):
         self._children.append(child)
@@ -127,6 +149,13 @@ class _Node(object):
         except IndexError:
             return None
 
+    def children(self):
+        """@todo: Docstring for children
+        :returns: @todo
+
+        """
+        return self._children
+
     def fn_encode(self, fn):
         """Encodes filename into format passable by filesystem(s).
 
@@ -149,27 +178,34 @@ class _Node(object):
 class ArtistNode(_Node):
     """Artist node."""
 
-    def __init__(self, path, parent=None):
-        """@todo: Docstring for __init__
+    def __init__(self, path=None, parent=None):
+        """Creates a new Artist Node.
 
-        :path: @todo
-        :parent: @todo
+        If :path: is specified it fetches metadata from persistent storage
+        and prefetches informations about Album Nodes. Otherwise it creates
+        an empty Node meant to be filled with ArtistNode.update method.
+
+        :path: Encoded filesystem path.
+        :parent: Parent Node. It's always a rootNode here.
         """
         super(ArtistNode, self).__init__(path, parent)
-        self._path = path
-        path = os.path.join(self._path, u'.meta')
-        self.metadata = json.loads(open(path, 'r').read())
-        self.metadata[u"artist"] = self.fn_decode(self._path)
-        try:
-            urls = self.metadata[u"__urls__"]
-            if len(urls) > 1:
-                self.metadata[u"__urls__"] = urls[1]
-            else:
-                del self.metadata[u"__urls__"]
-            self.urls = urls[0]
-        except KeyError:
-            self.urls = dict()
-        parent.headers |= set(self.metadata.keys())
+        self._primary = (u'album', u'year')
+        if path:
+            path = os.path.join(self._path, u'.meta')
+            self.metadata = json.loads(open(path, 'r').read())
+            self.metadata[u"artist"] = self.fn_decode(self._path)
+            try:
+                urls = self.metadata[u"__urls__"]
+                if len(urls) > 1:
+                    self.metadata[u"__urls__"] = urls[1]
+                else:
+                    del self.metadata[u"__urls__"]
+                self.urls = urls[0]
+            except KeyError:
+                self.urls = dict()
+            parent.headers |= set(self.metadata.keys())
+        else:
+            self.metadata = dict()
 
     def fetch(self):
         AlbumNode(self._data.pop(), self)
@@ -185,30 +221,33 @@ class ArtistNode(_Node):
 class AlbumNode(_Node):
     """Album node."""
 
-    def __init__(self, path, parent=None):
+    def __init__(self, path=None, parent=None):
         """@todo: Docstring for __init__
 
         :path: @todo
         :parent: @todo
         """
         super(AlbumNode, self).__init__(path, parent)
-        self._path = path
-        path = os.path.join(self._path, u'.meta')
-        self.metadata = json.loads(open(path, 'r').read())
-        (self.metadata[u"year"],
-        self.metadata[u"album"]) = self.fn_decode(self._path)
-        self.adr = dict()
-        for adr in [u"__a__", u"__d__", u"__r__"]:
-            try:
-                _ = self.metadata[adr]
-                if len(_) > 1:
-                    self.metadata[adr] = _[1]
-                else:
-                    del self.metadata[adr]
-                self.adr[adr] = _[0]
-            except KeyError:
-                self.adr[adr] = False
-        parent.headers |= set(self.metadata.keys())
+        self._primary = (u'track', u'title')
+        if path:
+            path = os.path.join(self._path, u'.meta')
+            self.metadata = json.loads(open(path, 'r').read())
+            (self.metadata[u"year"],
+            self.metadata[u"album"]) = self.fn_decode(self._path)
+            self.adr = dict()
+            for adr in [u"__a__", u"__d__", u"__r__"]:
+                try:
+                    _ = self.metadata[adr]
+                    if len(_) > 1:
+                        self.metadata[adr] = _[1]
+                    else:
+                        del self.metadata[adr]
+                    self.adr[adr] = _[0]
+                except KeyError:
+                    self.adr[adr] = False
+            parent.headers |= set(self.metadata.keys())
+        else:
+            self.metadata = dict()
 
     def fetch(self):
         TrackNode(self._data.pop(), self)
@@ -229,18 +268,20 @@ class AlbumNode(_Node):
 class TrackNode(_Node):
     """Track node."""
 
-    def __init__(self, path, parent=None):
+    def __init__(self, path=None, parent=None):
         """@todo: Docstring for __init__
 
         :path: @todo
         :parent: @todo
         """
         super(TrackNode, self).__init__(path, parent)
-        self._path = path
-        self.metadata = json.loads(open(path, 'r').read())
-        (self.metadata[u"tracknumber"],
-        self.metadata[u"title"]) = self.fn_decode(self._path)
-        parent.headers |= set(self.metadata.keys())
+        if path:
+            self.metadata = json.loads(open(path, 'r').read())
+            (self.metadata[u"tracknumber"],
+            self.metadata[u"title"]) = self.fn_decode(self._path)
+            parent.headers |= set(self.metadata.keys())
+        else:
+            self.metadata = dict()
 
     def fn_encode(self, fn):
         fn1, fn2 = fn
@@ -256,13 +297,15 @@ class TrackNode(_Node):
 
 
 class BaseModel(QtCore.QAbstractItemModel):
-    """General model class, meant to implement basic funcionality.
+    """General model class, meant to implement basic funcionality,
+    especially inserting, updating and removing items.
 
     Used directly by Artists view and as a source by Albums/Tracks views.
     """
     def __init__(self, dbpath, parent=None):
         """Constructs new BaseModel instance.
 
+        :dbPath: Path to the database.
         :parent: Parent object.
         """
         super(BaseModel, self).__init__(parent)
@@ -271,7 +314,7 @@ class BaseModel(QtCore.QAbstractItemModel):
     def hasChildren(self, parent):
         """Reimplemented from QAbstractItemModel.hasChildren.
 
-        Returns true only for top-level node as our views are flat.
+        :returns: True if :parent: is a top-level node, False otherwise.
         """
         if not parent.isValid():
             return True
@@ -303,7 +346,10 @@ class BaseModel(QtCore.QAbstractItemModel):
             return None
         if role == QtCore.Qt.DisplayRole:
             node = index.internalPointer()
-            return node.metadata[self.headerData(index.column())]
+            try:
+                return node.metadata[self.headerData(index.column())]
+            except KeyError:
+                return ""
 
     def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
         """Reimplemented from QAbstractItemModel.headerData.
@@ -342,14 +388,31 @@ class BaseModel(QtCore.QAbstractItemModel):
                 return node
         return self._rootNode
 
-    def upsert(self, index, data):
+    def upsert(self, index, meta):
         """@todo: Docstring for upsert
 
         :index: @todo
-        :data: @todo
+        :meta: @todo
         :returns: @todo
         """
-        raise NotImplemented  # TODO
+        if not index:
+            self.beginInsertRows(QtCore.QModelIndex(), 0, 0)
+            artist = ArtistNode(parent=self._rootNode)
+            self.endInsertRows()
+            artist_index = self.index(0, 0)
+            album_index = self.index(0, 0, artist_index)
+            self.beginInsertRows(album_index, 0, 0)
+            album = AlbumNode(parent=artist)
+            self.endInsertRows()
+            track_index = self.index(0, 0, album_index)
+            self.beginInsertRows(track_index, 0, 0)
+            track = TrackNode(parent=album)
+            self.endInsertRows()
+            track.update(meta)
+            album.update()
+            artist.update()
+        else:
+            pass
 
 
 class Model(QtGui.QAbstractProxyModel):
@@ -510,7 +573,7 @@ class Model(QtGui.QAbstractProxyModel):
                     pass
 
     def parent(self, _):
-        """Reimplemented from QAbstractProxyModel.parent().
+        """Reimplemented from QAbstractProxyModel.parent.
 
         :returns: Merely an empty index, because the proxy model is flat.
         """
@@ -568,52 +631,9 @@ class Model(QtGui.QAbstractProxyModel):
 class AlbumsModel(Model):
     """Docstring for AlbumsModel """
 
-    def __init__(self, sourceModel):
-        """@todo: to be defined """
-        super(AlbumsModel, self).__init__(sourceModel)
-
-    def upsert(self, data):
-        """@todo: Docstring for upsert
-
-        :data: @todo
-        :returns: @todo
-        """
-        raise NotImplemented
-
-    def remove(self, data):
-        """@todo: Docstring for remove
-
-        :data: @todo
-        :returns: @todo
-        """
-        raise NotImplemented
-
 
 class TracksModel(Model):
     """Docstring for TracksModel """
-
-    def __init__(self, sourceModel):
-        """@todo: to be defined
-
-        :sourceModel: @todo
-        """
-        super(TracksModel, self).__init__(sourceModel)
-
-    def upsert(self, index, data):
-        """@todo: Docstring for upsert
-
-        :data: @todo
-        :returns: @todo
-        """
-        raise NotImplemented
-
-    def remove(self, data):
-        """@todo: Docstring for remove
-
-        :data: @todo
-        :returns: @todo
-        """
-        raise NotImplemented
 
 
 class DB(object):
@@ -627,13 +647,14 @@ class DB(object):
         self.tracks = TracksModel(self.artists)
         self.index = dict()
 
-    def isIgnored(self, path):
+    def isIgnored(self, path, ignores):
         """Checks if specified folder is to be ignored.
 
         :path: Folder to check.
+        :ignores: List of folders to check against.
         :returns: True if :path: should be ignored, False otherwise.
         """
-        for (ignore, enabled) in self.ignores:
+        for ignore, enabled in ignores:
             if enabled and fnmatch(path, u'*' + ignore + u'*'):
                 return True
         return False
@@ -647,7 +668,7 @@ class DB(object):
         """
         try:
             return self.index[path]
-        except IndexError:
+        except KeyError:
             return None
 
     def upsert(self, index):
@@ -656,7 +677,6 @@ class DB(object):
         :index: @todo
         :returns: @todo
         """
-
         def _upsert(meta):
             self.artists.upsert(index, meta)
         return _upsert
@@ -664,14 +684,17 @@ class DB(object):
     def run(self):
         """@todo: Docstring for run"""
         directories = DB.__settings.value(u'directories', []).toPyObject()
+        ignores = DB.__settings.value(u'ignores', []).toPyObject()
+        if ignores == None:
+            ignores = list()
         for directory, enabled in directories:
             if enabled:
                 for root, _, filenames in os.walk(directory):
-                    if not self.isIgnored(root):
+                    if not self.isIgnored(root, ignores):
                         for filename in filenames:
                             path = os.path.join(root, filename)
-                            if not self.isIgnored:
+                            if not self.isIgnored(path, ignores):
                                 # TODO: read real metadata
                                 self.index[path] = self.upsert(
                                     self.getIndex(path)
-                                )({path: '1', 'test2': 2})
+                                )({path: '1', 'test2': 2, u'artist': 't'})

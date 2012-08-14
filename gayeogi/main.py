@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2012
+# Karol "Kenji Takahashi" Woźniak (C) 2010 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either __version__ 3 of the License, or
-# (at your option) any later __version__.
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -223,7 +223,6 @@ class Main(QtGui.QMainWindow):
         self.ui.local.clicked.connect(self.db.run)  # FIXME: threadify
         self.ui.remote.clicked.connect(self.disableButtons)
         self.ui.remote.clicked.connect(self.rt.start)
-        self.ui.remote.clicked.connect(self.remote)
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
