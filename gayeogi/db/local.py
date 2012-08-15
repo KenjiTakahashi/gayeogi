@@ -401,9 +401,17 @@ class BaseModel(QtCore.QAbstractItemModel):
                     return child
             return None
 
-        def find_album(artist, name):
+        def find_album(artist, name, year):
             for child in artist.children():
-                if child.metadata[u'album'] == name:
+                meta = child.metadata
+                if meta[u'album'] == name and meta[u'year'] == year:
+                    return child
+            return None
+
+        def find_track(album, name, number):
+            for child in album.children():
+                meta = child.metadata
+                if meta[u'title'] == name and meta[u'tracknumber'] == number:
                     return child
             return None
         if not index:
@@ -416,10 +424,17 @@ class BaseModel(QtCore.QAbstractItemModel):
                 artist = ArtistNode(parent=self._rootNode)
                 self.endInsertRows()
             artist_index = self.index(0, 0)
+            m_album = u'unknown'
             try:
-                album = find_album(artist, meta[u'album'])
+                m_album = meta[u'album']
             except KeyError:
-                album = find_album(artist, u'unknown')
+                pass
+            m_year = u'1900'  # ?!
+            try:
+                m_year = meta[u'year']
+            except KeyError:
+                pass
+            album = find_album(artist, m_album, m_year)
             if not album:
                 self.beginInsertRows(artist_index, 0, 0)
                 album = AlbumNode(parent=artist)
@@ -432,7 +447,13 @@ class BaseModel(QtCore.QAbstractItemModel):
             album.update()
             artist.update()
         else:
-            pass
+            index = self.index(index.row(), index.column(), index.parent())
+            track = index.internalPointer()
+            track.update(meta)
+            album = track.parent()
+            album.update()
+            artist = album.parent()
+            artist.update()
 
 
 class Model(QtGui.QAbstractProxyModel):
