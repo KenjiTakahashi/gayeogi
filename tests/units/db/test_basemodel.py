@@ -143,3 +143,117 @@ class TestUpsert(object):
         artist = self.root.child(0)
         assert artist.metadata == {u'artist': u'test_artist2'}
         assert artist.childCount() == 1
+
+    def test_leverage_album_metadata_from_tracks(self):
+        # Non-primary metadata is considered "album" when
+        # it stays the same across all "tracks" in that album.
+        self.prepare_update()
+        album2 = AlbumNode(parent=self.artist)
+        album2.metadata = {
+            u'year': u'2000',
+            u'album': u'test_album2',
+            u'comment': u'test_comment1'
+        }
+        track1 = TrackNode(parent=album2)
+        track1.metadata = {
+            u'tracknumber': u'11',
+            u'title': u'test_title2'
+        }
+        self.db.upsert(None, {
+            u'artist': u'test_artist1',
+            u'year': u'2000',
+            u'album': u'test_album2',
+            u'tracknumber': u'10',
+            u'title': u'test_title3',
+            u'comment': u'test_comment1'
+        })
+        assert album2.childCount() == 2
+        track2 = album2.child(1)
+        assert track2.metadata == {
+            u'tracknumber': u'10',
+            u'title': u'test_title3'
+        }
+        assert (u'comment', u'test_comment1') in album2.metadata.iteritems()
+
+    def test_do_not_leverage_tracks_metadata_to_album(self):
+        # See :test_leverage_album_metadata_from_tracks:.
+        self.prepare_update()
+        album2 = AlbumNode(parent=self.artist)
+        album2.metadata = {
+            u'year': u'2000',
+            u'album': u'test_album2'
+        }
+        track1 = TrackNode(parent=album2)
+        track1.metadata = {
+            u'tracknumber': u'11',
+            u'title': u'test_title2',
+            u'comment': u'test_comment1'
+        }
+        self.db.upsert(None, {
+            u'artist': u'test_artist1',
+            u'year': u'2000',
+            u'album': u'test_album2',
+            u'tracknumber': u'10',
+            u'title': u'test_title3',
+            u'comment': u'test_comment2'
+        })
+        assert album2.childCount() == 2
+        track2 = album2.child(1)
+        assert track2.metadata == {
+            u'tracknumber': u'10',
+            u'title': u'test_title3',
+            u'comment': u'test_comment2'
+        }
+        assert u'comment' not in album2.metadata
+
+    def test_leverage_artist_metadata_from_albums(self):
+        # See :test_leverage_album_metadata_from_tracks:.
+        self.prepare_update()
+        artist2 = ArtistNode(parent=self.root)
+        artist2.metadata = {
+            u'artist': u'test_artist2'
+        }
+        album2 = AlbumNode(parent=artist2)
+        album2.metadata = {
+            u'year': u'2000',
+            u'album': u'test_album2',
+            u'comment': u'test_comment1'
+        }
+        self.db.upsert(None, {
+            u'artist': u'test_artist2',
+            u'year': u'2001',
+            u'album': u'test_album3',
+            u'comment': u'test_comment1'
+        })
+        assert artist2.childCount() == 2
+        album3 = artist2.child(1)
+        assert album3.metadata == {u'year': u'2001', u'album': u'test_album3'}
+        assert (u'comment', u'test_comment1') in artist2.metadata.iteritems()
+
+    def test_do_not_leverage_albums_metadata_to_artist(self):
+        # See :test_leverage_album_metadata_from_tracks:.
+        self.prepare_update()
+        artist2 = ArtistNode(parent=self.root)
+        artist2.metadata = {
+            u'artist': u'test_artist2'
+        }
+        album2 = AlbumNode(parent=artist2)
+        album2.metadata = {
+            u'year': u'2000',
+            u'album': u'test_album2',
+            u'comment': u'test_comment1'
+        }
+        self.db.upsert(None, {
+            u'artist': u'test_artist2',
+            u'year': u'2001',
+            u'album': u'test_album3',
+            u'comment': u'test_comment2'
+        })
+        assert artist2.childCount() == 2
+        album3 = artist2.child(1)
+        assert album3.metadata == {
+            u'year': u'2001',
+            u'album': u'test_album3',
+            u'comment': u'test_comment2'
+        }
+        assert u'comment' not in artist2.metadata

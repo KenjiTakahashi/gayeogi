@@ -79,22 +79,37 @@ class _Node(object):
         """
         if meta:
             self.metadata.update(meta)
-        values = dict()
+        values = set()
         for child in self._children:
+            if not values:
+                values = set(child.metadata.iteritems())
+            else:
+                values &= set(child.metadata.iteritems())
             for k, v in child.metadata.iteritems():
-                e1, e2 = self._primary
-                if not k.startswith(e1) and k != e2:
+                try:
+                    value = self.metadata[k]
+                except KeyError:
+                    pass
+                else:
+                    if value == v:
+                        values.add((k, v))
+                try:
+                    value = self._parent.metadata[k]
+                except KeyError:
+                    pass
+                else:
+                    if value == v:
+                        values.add((k, v))
+        while values:
+            k, v = values.pop()
+            e1, e2 = self._primary
+            if not k.startswith(e1) and k != e2:
+                self.metadata[k] = v
+                for child in self._children:
                     try:
-                        value = values[k]
+                        del child.metadata[k]
                     except KeyError:
-                        values[k] = v
-                    else:
-                        if value != v:
-                            del values[k]
-        self.metadata.update(values)
-        for k in values.keys():
-            for child in self._children:
-                del child.metadata[k]
+                        pass
         self._parent.headers |= set(self.metadata.keys())
 
     def canFetchMore(self):
