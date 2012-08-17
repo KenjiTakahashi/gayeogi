@@ -69,6 +69,8 @@ class _Node(object):
             parent.addChild(self)
         if not isinstance(self, TrackNode) and path:
             self._data = glob.glob(os.path.join(path, u'*'))
+        else:
+            self._data = list()
 
     def update(self, meta=None):
         """@todo: Docstring for update
@@ -110,6 +112,8 @@ class _Node(object):
                         del child.metadata[k]
                     except KeyError:
                         pass
+
+    def update_headers(self):
         self._parent.headers |= set(self.metadata.keys())
 
     def canFetchMore(self):
@@ -353,9 +357,11 @@ class BaseModel(QtCore.QAbstractItemModel):
 
     def fetchMore(self, parent):
         """Reimplemented from QAbstractItemModel.fetchMore."""
+        self.beginInsertRows(QtCore.QModelIndex(), 0, 0)
         self._rootNode.fetch()
+        self.endInsertRows()
 
-    def data(self, index, role):
+    def data(self, index, role=QtCore.Qt.DisplayRole):
         """Reimplemented from QAbstractItemModel.data."""
         if not index.isValid():
             return None
@@ -461,6 +467,9 @@ class BaseModel(QtCore.QAbstractItemModel):
             track.update(meta)
             album.update()
             artist.update()
+            artist.update_headers()
+            album.update_headers()
+            track.update_headers()
         else:
             index = self.index(index.row(), index.column(), index.parent())
             track = index.internalPointer()
@@ -753,4 +762,10 @@ class DB(object):
                                 # TODO: read real metadata
                                 self.index[path] = self.upsert(
                                     self.getIndex(path)
-                                )({path: '1', 'test2': 2, u'artist': 't'})
+                                )({
+                                    '1': path,
+                                    'test2': 2,
+                                    u'artist': 't',
+                                    u'album': 'dang',
+                                    u'year': '200'
+                                })

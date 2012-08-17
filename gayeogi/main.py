@@ -24,6 +24,7 @@ from PyQt4.QtCore import pyqtSignal, QModelIndex
 from gayeogi.db.local import DB
 from gayeogi.db.distributor import Distributor
 from gayeogi.interfaces.settings import Settings
+from gayeogi.utils.filter import Filter
 import gayeogi.plugins
 
 __version__ = '0.6.3'
@@ -171,6 +172,41 @@ class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
             return self.text(column) < qtreewidgetitem.text(column)
 
 
+class View(QtGui.QWidget):
+    def __init__(self, model, parent=None):
+        """@todo: Docstring for __init__
+
+        :model: @todo
+        :parent: @todo
+        :returns: @todo
+
+        """
+        super(View, self).__init__(parent)
+        self.model = Filter(model)
+        self.filter = QtGui.QLineEdit()
+        self.filter.textEdited.connect(self.model.setFilter)
+        self.filter.setStatusTip(self.trUtf8((
+            u"Pattern: <pair>|<pair>, "
+            u"where <pair> is <column_name>:<searching_phrase> or (not) "
+            u"(a or d or r). Case insensitive, regexp allowed."
+        )))
+        self.view = QtGui.QTreeView()
+        self.view.setModel(self.model)
+        self.view.setSelectionMode(QtGui.QTreeView.ExtendedSelection)
+        self.view.setEditTriggers(QtGui.QTreeView.NoEditTriggers)
+        self.view.setIndentation(0)
+        self.view.setItemsExpandable(False)
+        self.view.setSortingEnabled(True)
+        self.view.selectionModel().selectionChanged.connect(
+            self.model.setSelection
+        )
+        layout = QtGui.QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.filter)
+        layout.addWidget(self.view)
+        self.setLayout(layout)
+
+
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'gayeogi', u'gayeogi')
 
@@ -189,20 +225,17 @@ class Main(QtGui.QMainWindow):
         self.ui = Ui_main()
         widget = QtGui.QWidget()
         self.ui.setupUi(widget)
-        self.ui.artists.setModel(self.db.artists)
-        self.ui.artists.selectionModel().selectionChanged.connect(
-            self.db.albums.setSelection
-        )
+        self.ui.artists = View(self.db.artists, self.ui.splitter)
         delegate = ADRItemDelegate()
         #self.ui.artists.setItemDelegateForColumn(0, delegate)
-        self.ui.albums = ADRTreeView()
+        self.ui.albums = ADRTreeView(self.ui.splitter)
         self.ui.albums.setModel(self.db.albums)
+        #self.ui.albums = View(self.db.albums, self.ui.splitter)
         self.ui.albums.selectionModel().selectionChanged.connect(
             self.db.tracks.setSelection
         )
         self.ui.albums.buttonClicked.connect(self.setAnalog)
-        self.ui.verticalLayout_4.addWidget(self.ui.albums)
-        self.ui.tracks.setModel(self.db.tracks)
+        self.ui.tracks = View(self.db.tracks, self.ui.splitter)
         self.ui.plugins = {}
         self.ui.splitter.restoreState(
             self.__settings.value(u'splitters').toByteArray()
@@ -226,9 +259,6 @@ class Main(QtGui.QMainWindow):
         self.ui.close.clicked.connect(self.close)
         self.ui.save.clicked.connect(self.save)
         self.ui.settings.clicked.connect(self.showSettings)
-        self.ui.artistFilter.textEdited.connect(self.filter_)
-        self.ui.albumFilter.textEdited.connect(self.filter_)
-        self.ui.trackFilter.textEdited.connect(self.filter_)
         self.statusBar()
         self.setWindowTitle(u'gayeogi ' + __version__)
         self.translators = list()
@@ -331,68 +361,7 @@ class Main(QtGui.QMainWindow):
                     parent.takeAt(position).widget().deleteLater()
                     parent.insertWidget(position, tmp)
                     parent.itemAt(position).widget().show()
-    def filter_(self, text):
-        columns = list()
-        arguments = list()
-        adr = [u'a', u'd', u'r', u'not a', u'not d', u'not r']
-        num_adr = dict()
-        __num_adr = {
-            u'a': 123,
-            u'd': 234,
-            u'r': 345
-        }
-        for a in unicode(text).split(u'|'):
-            temp = a.split(u':')
-            if len(temp) == 1 and temp[0] in adr:
-                temp2 = temp[0].split(u' ')
-                if len(temp2) == 2:
-                    num_adr[temp2[1]] = False
-                else:
-                    num_adr[temp2[0]] = True
-                continue
-            if len(temp) != 2 or temp[1] == u'':
-                break
-            columns.append(temp[0].lower())
-            arguments.append(temp[1].lower())
-        tree = self.sender().parent().children()[2]
-        if (len(columns) != 0 and len(columns) == len(arguments)) or num_adr:
-            header = tree.header().model()
-            num_columns = [i for i in range(tree.columnCount())
-                if unicode(header.headerData(i,
-                    Qt.Horizontal).toString()).lower() in columns]
-            adr_column = -1
-            if num_adr:
-                item = tree.topLevelItem(0)
-                for i in range(item.columnCount()):
-                    if item.data(i, 987).toString():
-                        adr_column = i
-                        break
-            for i in range(tree.topLevelItemCount()):
-                item = tree.topLevelItem(i)
-                hidden = list()
-                for j, c in enumerate(num_columns):
-                    try:
-                        if item not in hidden:
-                            if not re.search(arguments[j],
-                            unicode(item.text(c)).lower()):
-                                item.setHidden(True)
-                                item.setSelected(False)
-                                hidden.append(item)
-                            else:
-                                item.setHidden(False)
-                    except:
-                        pass
-                if adr_column != -1 and item not in hidden:
-                    for adr, v in num_adr.iteritems():
-                        if item.data(adr_column, __num_adr[adr]).toBool() == v:
-                            item.setHidden(False)
-                        else:
-                            item.setHidden(True)
-                            item.setSelected(False)
-                            hidden.append(item)
-        else:
-            for i in range(tree.topLevelItemCount()):
-                tree.topLevelItem(i).setHidden(False)
+
     def showSettings(self):
         u"""Show settings dialog and then update accordingly."""
         def __save():
