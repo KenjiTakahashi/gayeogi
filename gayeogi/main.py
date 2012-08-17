@@ -17,7 +17,6 @@
 
 import sys
 import os
-import re
 from PyQt4 import QtGui
 from PyQt4.QtCore import Qt, QSettings, QLocale, QTranslator, QSize
 from PyQt4.QtCore import pyqtSignal, QModelIndex
