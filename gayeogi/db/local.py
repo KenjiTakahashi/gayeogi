@@ -368,7 +368,10 @@ class BaseModel(QtCore.QAbstractItemModel):
         if role == QtCore.Qt.DisplayRole:
             node = index.internalPointer()
             try:
-                return node.metadata[self.headerData(index.column())]
+                header = self.headerData(index.column())
+                if header == u'#':
+                    header = u'tracknumber'
+                return node.metadata[header]
             except KeyError:
                 return ""
 
@@ -379,7 +382,10 @@ class BaseModel(QtCore.QAbstractItemModel):
         """
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
-                return self._rootNode.header(section)
+                header = self._rootNode.header(section)
+                if header == u'tracknumber':
+                    return u'#'
+                return header
 
     def parent(self, index):
         """Reimplemented from QAbstractItemModel.parent."""
@@ -519,11 +525,20 @@ class Model(QtGui.QAbstractProxyModel):
             self.fetchMore()
         count = model.rowCount(parent)
         count_ = self.rowCount()
-        self.beginInsertRows(QtCore.QModelIndex(), count_, count_ + count)
+        end = count_ + count - 1
+        self.beginInsertRows(QtCore.QModelIndex(), count_, end)
+        headers = set()
         for i in xrange(count):
             child = model.index(i, 0, parent)
             self._mapper.append(QtCore.QPersistentModelIndex(child))
+            headers.update(child.internalPointer().parent().headers)
         self.endInsertRows()
+        headers = len(headers) - 1
+        self.beginMoveColumns(
+            QtCore.QModelIndex(), 0, headers,
+            QtCore.QModelIndex(), headers + 2
+        )
+        self.endMoveColumns()
 
     def removeRows(self, parent):
         """Removes rows previously set by Model.insertRows if their :parent:
@@ -538,10 +553,18 @@ class Model(QtGui.QAbstractProxyModel):
         child = self.mapFromSource(model.index(0, 0, parent))
         row = child.row()
         self.beginRemoveRows(QtCore.QModelIndex(), row, row + count)
+        headers = set()
         for i in xrange(count):
             child = model.index(i, 0, parent)
             self._mapper.remove(QtCore.QPersistentModelIndex(child))
+            headers.update(child.internalPointer().parent().headers)
         self.endRemoveRows()
+        headers = len(headers) - 1
+        self.beginMoveColumns(
+            QtCore.QModelIndex(), 0, headers,
+            QtCore.QModelIndex(), headers + 2
+        )
+        self.endMoveColumns()
 
     def setSelection(self, selected, deselected):
         """@todo: Docstring for setSelection
@@ -550,14 +573,14 @@ class Model(QtGui.QAbstractProxyModel):
         :deselected: @todo
         """
         model = self.sourceModel()
-        for d in deselected.indexes():
+        for d in deselected:
             if d.column() == 0:
                 index = model.createIndex(
                     d.row(), d.column(), d.internalPointer()
                 )
                 self._selection.remove(index)
                 self.removeRows(index)
-        for s in selected.indexes():
+        for s in selected:
             if s.column() == 0:
                 index = model.createIndex(
                     s.row(), s.column(), s.internalPointer()
@@ -588,14 +611,14 @@ class Model(QtGui.QAbstractProxyModel):
                 break
 
     def hasChildren(self, parent):
-        """Reimplemented from QAbstractProxyModel.hasChildren().
+        """Reimplemented from QAbstractProxyModel.hasChildren.
 
         Calls source implementation from BaseModel.
         """
         return self.sourceModel().hasChildren(parent)
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
-        """Reimplemented from QAbstractProxyModel.index()."""
+        """Reimplemented from QAbstractProxyModel.index."""
         if not self.hasIndex(row, column, parent):
             return QtCore.QModelIndex()
         source = QtCore.QModelIndex(self._mapper[row])
@@ -603,24 +626,22 @@ class Model(QtGui.QAbstractProxyModel):
             self.sourceModel().index(source.row(), column, source.parent())
         )
 
-    def data(self, index, role):
-        """Reimplemented from QAbstractProxyModel.data().
-
-        :index: Specifies index for which to return data.
-        :role: Specifies role for which the data should be returned.
-        :returns: Data for appropriate index and role.
-        """
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        """Reimplemented from QAbstractProxyModel.data."""
         if not index.isValid():
             return None
         if role == QtCore.Qt.DisplayRole:
             node = index.internalPointer()
             try:
-                return node.metadata[self.headerData(index.column())]
+                header = self.headerData(index.column())
+                if header == u'#':
+                    header = u'tracknumber'
+                return node.metadata[header]
             except KeyError:
                 return ""
 
     def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
-        """Reimplemented from QAbstractProxyModel.headerData().
+        """Reimplemented from QAbstractProxyModel.headerData.
 
         @note: _ (orientation) is not used, as there's only horizontal header.
         """
@@ -633,7 +654,10 @@ class Model(QtGui.QAbstractProxyModel):
                 # columnCount, thus trying to get headerData for columns which
                 # might no longer exist.
                 try:
-                    return tmp[section]
+                    header = tmp[section]
+                    if header == u'tracknumber':
+                        return u'#'
+                    return header
                 except IndexError:
                     pass
 
@@ -665,9 +689,9 @@ class Model(QtGui.QAbstractProxyModel):
         ])
 
     def mapFromSource(self, source):
-        """Reimplemented from QAbstractProxyModel.mapFromSource().
+        """Reimplemented from QAbstractProxyModel.mapFromSource.
 
-        Uses _mapper object created with Model.flatten() method to map
+        Uses _mapper object created with Model.flatten method to map
         tree-like source model to a flat one.
         """
         if not source.isValid():
@@ -680,9 +704,9 @@ class Model(QtGui.QAbstractProxyModel):
         return index
 
     def mapToSource(self, proxy):
-        """Reimplemented from QAbstractProxyModel.mapToSource().
+        """Reimplemented from QAbstractProxyModel.mapToSource.
 
-        Uses _mapper object created with Model.flatten() method to map
+        Uses _mapper object created with Model.flatten method to map
         flat proxy model back to tree-like source one.
         """
         if not proxy.isValid():

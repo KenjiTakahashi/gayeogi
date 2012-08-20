@@ -35,7 +35,11 @@ class Filter(QSortFilterProxyModel):
         self.setDynamicSortFilter(True)
 
     def setSelection(self, selected, deselected):
-        self.sourceModel().setSelection(selected, deselected)
+        """@todo: Docstring for setSelection."""
+        self.sourceModel().setSelection(
+            [e.model().mapToSource(e) for e in selected.indexes()],
+            [e.model().mapToSource(e) for e in deselected.indexes()]
+        )
 
     def setFilter(self, filter):
         """@todo: Docstring for setFilter
@@ -86,3 +90,26 @@ class Filter(QSortFilterProxyModel):
                         return True
             return False
         return True
+
+    def lessThan(self, left, right):
+        """@todo: Docstring for lessThan
+
+        :left: @todo
+        :right: @todo
+        :returns: @todo
+
+        """
+        source = self.sourceModel()
+        lcolumn = source.headerData(left.column())
+        rcolumn = source.headerData(right.column())
+        leftd = source.data(left)
+        rightd = source.data(right)
+        if lcolumn == u'#' and rcolumn == u'#':
+            track1 = int(leftd.split(u'/')[0])
+            track2 = int(rightd.split(u'/')[0])
+            source2 = source.sourceModel()
+            # FIXME: get album names properly
+            album1 = source.data(source2.parent(left))
+            album2 = source.data(source2.parent(right))
+            return album1 < album2 or track1 < track2
+        return leftd < rightd

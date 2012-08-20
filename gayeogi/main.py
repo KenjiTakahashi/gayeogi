@@ -122,7 +122,7 @@ class ADRTreeView(QtGui.QTreeView):
         self.setMouseTracking(True)
         self.delegate = ADRItemDelegate()
         self.delegate.buttonClicked.connect(self.callback)
-        self.setItemDelegateForColumn(1, self.delegate)
+        #self.setItemDelegateForColumn(1, self.delegate)
         self.setSortingEnabled(True)
 
     def buttoned(self, mx, rx):
@@ -155,24 +155,8 @@ class ADRTreeView(QtGui.QTreeView):
             QtGui.QTreeWidget.mouseDoubleClickEvent(self, event)
 
 
-class NumericTreeWidgetItem(QtGui.QTreeWidgetItem):
-    def __lt__(self, qtreewidgetitem):
-        column = self.treeWidget().sortColumn()
-        if not column:
-            track1 = self.text(0).split(u'/')[0].toInt()[0]
-            track2 = qtreewidgetitem.text(0).split(u'/')[0].toInt()[0]
-            album1 = self.album
-            album2 = qtreewidgetitem.album
-            if album1 == album2:
-                return track1 < track2
-            else:
-                return False
-        else:
-            return self.text(column) < qtreewidgetitem.text(column)
-
-
 class View(QtGui.QWidget):
-    def __init__(self, model, parent=None):
+    def __init__(self, model, view, parent=None):
         """@todo: Docstring for __init__
 
         :model: @todo
@@ -189,16 +173,13 @@ class View(QtGui.QWidget):
             u"where <pair> is <column_name>:<searching_phrase> or (not) "
             u"(a or d or r). Case insensitive, regexp allowed."
         )))
-        self.view = QtGui.QTreeView()
+        self.view = view
         self.view.setModel(self.model)
         self.view.setSelectionMode(QtGui.QTreeView.ExtendedSelection)
         self.view.setEditTriggers(QtGui.QTreeView.NoEditTriggers)
         self.view.setIndentation(0)
         self.view.setItemsExpandable(False)
         self.view.setSortingEnabled(True)
-        self.view.selectionModel().selectionChanged.connect(
-            self.model.setSelection
-        )
         layout = QtGui.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.filter)
@@ -224,17 +205,24 @@ class Main(QtGui.QMainWindow):
         self.ui = Ui_main()
         widget = QtGui.QWidget()
         self.ui.setupUi(widget)
-        self.ui.artists = View(self.db.artists, self.ui.splitter)
+        self.ui.artists = View(
+            self.db.artists, QtGui.QTreeView(), self.ui.splitter
+        )
         delegate = ADRItemDelegate()
         #self.ui.artists.setItemDelegateForColumn(0, delegate)
-        self.ui.albums = ADRTreeView(self.ui.splitter)
-        self.ui.albums.setModel(self.db.albums)
-        #self.ui.albums = View(self.db.albums, self.ui.splitter)
-        self.ui.albums.selectionModel().selectionChanged.connect(
-            self.db.tracks.setSelection
+        self.ui.albums = View(
+            self.db.albums, ADRTreeView(), self.ui.splitter
         )
-        self.ui.albums.buttonClicked.connect(self.setAnalog)
-        self.ui.tracks = View(self.db.tracks, self.ui.splitter)
+        self.ui.albums.view.buttonClicked.connect(self.setAnalog)
+        self.ui.tracks = View(
+            self.db.tracks, QtGui.QTreeView(), self.ui.splitter
+        )
+        self.ui.artists.view.selectionModel().selectionChanged.connect(
+            self.ui.albums.model.setSelection
+        )
+        self.ui.albums.view.selectionModel().selectionChanged.connect(
+            self.ui.tracks.model.setSelection
+        )
         self.ui.plugins = {}
         self.ui.splitter.restoreState(
             self.__settings.value(u'splitters').toByteArray()
