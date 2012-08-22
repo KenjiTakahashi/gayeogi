@@ -351,14 +351,20 @@ class BaseModel(QtCore.QAbstractItemModel):
         """Reimplemented from QAbstractItemModel.columnCount."""
         return len(self._rootNode.headers)
 
-    def canFetchMore(self, parent):
+    def canFetchMore(self, parent=QtCore.QModelIndex()):
         """Reimplemented from QAbstractItemModel.canFetchMore."""
-        return self._rootNode.canFetchMore()
+        if not parent.isValid():
+            return self._rootNode.canFetchMore()
+        return parent.internalPointer().canFetchMore()
 
-    def fetchMore(self, parent):
+    def fetchMore(self, parent=QtCore.QModelIndex()):
         """Reimplemented from QAbstractItemModel.fetchMore."""
-        self.beginInsertRows(QtCore.QModelIndex(), 0, 0)
-        self._rootNode.fetch()
+        if not parent.isValid():
+            node = self._rootNode
+        else:
+            node = parent.internalPointer()
+        self.beginInsertRows(parent, 0, 0)
+        node.fetch()
         self.endInsertRows()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
@@ -423,19 +429,23 @@ class BaseModel(QtCore.QAbstractItemModel):
         :returns: @todo
         """
         def find_artist(name):
+            while self.canFetchMore():
+                self.fetchMore()
             for child in self._rootNode.children():
                 if child.metadata[u'artist'] == name:
                     return child
             return None
 
-        def find_album(artist, name, year):
+        def find_album(index, artist, name, year):
+            while self.canFetchMore(index):
+                self.fetchMore(index)
             for child in artist.children():
                 meta = child.metadata
                 if meta[u'album'] == name and meta[u'year'] == year:
                     return child
             return None
 
-        def find_track(album, name, number):
+        def find_track(index, album, name, number):
             for child in album.children():
                 meta = child.metadata
                 if meta[u'title'] == name and meta[u'tracknumber'] == number:
@@ -461,7 +471,7 @@ class BaseModel(QtCore.QAbstractItemModel):
                 m_year = meta[u'year']
             except KeyError:
                 pass
-            album = find_album(artist, m_album, m_year)
+            album = find_album(artist_index, artist, m_album, m_year)
             if not album:
                 self.beginInsertRows(artist_index, 0, 0)
                 album = AlbumNode(parent=artist)
@@ -495,22 +505,6 @@ class Model(QtGui.QAbstractProxyModel):
         self._mapper = list()
         self._selection = list()
         self.setSourceModel(sourceModel)
-
-    def upsert(self, data):
-        """@todo: Docstring for upsert
-
-        :data: @todo
-        :returns: @todo
-        """
-        raise NotImplemented
-
-    def remove(self, data):
-        """@todo: Docstring for remove
-
-        :data: @todo
-        :returns: @todo
-        """
-        raise NotImplemented
 
     def insertRows(self, parent):
         """Inserts new rows based on current _selection.
