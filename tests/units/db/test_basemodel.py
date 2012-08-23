@@ -8,7 +8,7 @@ from gayeogi.db.local import ArtistNode, AlbumNode, TrackNode
 class TestUpsert(object):
     """Deeply test different kinds of inserting and updating cases."""
     def setUp(self):
-        self.db = BaseModel(os.getcwd())
+        self.db = BaseModel("{0}/non_existing".format(os.getcwd()))
         self.root = self.db._rootNode
 
     def test_insert_to_empty_db(self):
@@ -257,3 +257,16 @@ class TestUpsert(object):
             u'comment': u'test_comment2'
         }
         assert u'comment' not in artist2.metadata
+
+    def test_drop_artist_tag_to_album(self):
+        # It's meant to happen when newly added album
+        # doesn't have a tag matching the one associated
+        # with artist so far.
+        # See :test_leverage_album_metadata_from_tracks:
+        self.prepare_update()
+        assert False
+
+    def test_drop_album_tag_to_track(self):
+        # See :test_drop_artist_tag_to_album:.
+        self.prepare_update()
+        assert False

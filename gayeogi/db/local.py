@@ -466,7 +466,7 @@ class BaseModel(QtCore.QAbstractItemModel):
                 m_album = meta[u'album']
             except KeyError:
                 pass
-            m_year = u'1900'  # ?!
+            m_year = u'0000'
             try:
                 m_year = meta[u'year']
             except KeyError:
