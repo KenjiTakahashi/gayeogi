@@ -82,17 +82,15 @@ class _Node(object):
         """
         if meta:
             self.metadata.update(meta)
-        for child in self._children:
+        for i, child in enumerate(self._children):
+            if not i:
+                self.metadata.update(child.metadata)
+                continue
             for k, v in child.metadata.iteritems():
-                try:
-                    self.metadata[k]
-                except KeyError:
-                    self.matadata[k] = v
-                else:
-                    value = self.metadata[k]
-                    if value != v:
-                        self.metadata[k] = "<multiple_values>"
-                        break
+                value = self.metadata[k]
+                if value != v:
+                    self.metadata[k] = u"<multiple_values>"
+                    break
 
     def update_headers(self):
         _Node.headers |= set(self.metadata.keys())
@@ -424,16 +422,12 @@ class BaseModel(QtCore.QAbstractItemModel):
         :returns: @todo
         """
         def find_artist(name):
-            while self.canFetchMore():
-                self.fetchMore()
             for child in self._rootNode.children():
                 if child.metadata[u'artist'] == name:
                     return child
             return None
 
         def find_album(index, artist, name, year):
-            while self.canFetchMore(index):
-                self.fetchMore(index)
             for child in artist.children():
                 meta = child.metadata
                 if meta[u'album'] == name and meta[u'year'] == year:
