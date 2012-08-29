@@ -39,14 +39,8 @@ class TestUpsert(object):
         artist = self.root.child(0)
         album = artist.child(0)
         track = album.child(0)
-        assert album.childCount() == 1
-        assert isinstance(track, TrackNode)
         assert track.metadata == result
-        assert artist.childCount() == 1
-        assert isinstance(album, AlbumNode)
         assert album.metadata == result
-        assert self.root.childCount() == 1
-        assert isinstance(artist, ArtistNode)
         assert artist.metadata == result
 
     def test_insert_new_artist(self):
@@ -55,9 +49,7 @@ class TestUpsert(object):
         self.db.upsert(None, {
             u'artist': u'test_artist2'
         })
-        assert self.root.childCount() == 2
         artist2 = self.root.child(1)
-        assert isinstance(artist2, ArtistNode)
         assert artist2.metadata == {u'artist': u'test_artist2'}
 
     def test_insert_new_album_to_artist(self):
@@ -69,9 +61,7 @@ class TestUpsert(object):
             u'album': u'test_album'
         }
         self.db.upsert(None, result)
-        assert artist.childCount() == 1
         album = artist.child(0)
-        assert isinstance(album, AlbumNode)
         assert album.metadata == result
         assert artist.metadata == result
 
@@ -88,20 +78,25 @@ class TestUpsert(object):
             u'title': u'test_title'
         }
         self.db.upsert(None, result)
-        assert album.childCount() == 1
         track = album.child(0)
-        assert isinstance(track, TrackNode)
         assert track.metadata == result
         assert album.metadata == result
         assert artist.metadata == result
 
     def prepare_update(self):
         self.artist = ArtistNode(parent=self.root)
-        self.artist.metadata = {u'artist': u'test_artist1'}
+        meta = {
+            u'artist': u'test_artist1',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'tracknumber': u'12',
+            u'title': u'test_title1'
+        }
+        self.artist.metadata = meta
         self.album = AlbumNode(parent=self.artist)
-        self.album.metadata = {u'year': u'2012', u'album': u'test_album1'}
+        self.album.metadata = meta
         self.track = TrackNode(parent=self.album)
-        self.track.metadata = {u'tracknumber': u'12', u'title': u'test_title1'}
+        self.track.metadata = meta
         self.artist_index = self.db.index(0, 0)
         self.album_index = self.db.index(0, 0, self.artist_index)
         self.track_index = self.db.index(0, 0, self.album_index)
@@ -116,7 +111,6 @@ class TestUpsert(object):
             u'title': u'test_title2'
         }
         self.db.upsert(self.track_index, result)
-        assert self.album.childCount() == 1
         assert self.track.metadata == result
         assert self.album.metadata == result
         assert self.artist.metadata == result
@@ -131,11 +125,8 @@ class TestUpsert(object):
             u'title': u'test_title1'
         }
         self.db.upsert(self.track_index, result)
-        assert self.artist.childCount() == 1
-        album = self.artist.child(0)
-        assert isinstance(album, AlbumNode)
         assert self.track.metadata == result
-        assert album.metadata == result
+        assert self.album.metadata == result
         assert self.artist.metadata == result
 
     def test_update_track_changing_album(self):
@@ -148,11 +139,8 @@ class TestUpsert(object):
             u'title': u'test_title1'
         }
         self.db.upsert(self.track_index, result)
-        assert self.artist.childCount() == 1
-        album = self.artist.child(0)
-        assert isinstance(album, AlbumNode)
         assert self.track.metadata == result
-        assert album.metadata == result
+        assert self.album.metadata == result
         assert self.artist.metadata == result
 
     def test_update_track_changing_artist(self):
@@ -165,8 +153,41 @@ class TestUpsert(object):
             u'title': u'test_title1'
         }
         self.db.upsert(self.track_index, result)
-        assert self.root.childCount() == 1
-        artist = self.root.child(0)
         assert self.track.metadata == result
         assert self.album.metadata == result
-        assert artist.metadata == result
+        assert self.artist.metadata == result
+
+    def test_add_second_track_to_album(self):
+        self.prepare_update()
+        result = {
+            u'title': u'test_title2',
+            u'tracknumber': u'11',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'artist': u'test_artist1'
+        }
+        self.db.upsert(None, result)
+        track = self.album.child(1)
+        assert track.metadata == result
+        result[u'title'] = u'<multiple_values>'
+        result[u'tracknumber'] = u'<multiple_values>'
+        assert self.album.metadata == result
+        assert self.artist.metadata == result
+
+    def test_add_second_album_to_artist(self):
+        self.prepare_update()
+        result = {
+            u'title': u'test_title1',
+            u'tracknumber': u'12',
+            u'year': u'2010',
+            u'album': u'test_album2',
+            u'artist': u'test_artist1'
+        }
+        self.db.upsert(None, result)
+        album = self.artist.child(1)
+        track = album.child(0)
+        assert track.metadata == result
+        assert album.metadata == result
+        result[u'year'] = u'<multiple_values>'
+        result[u'album'] = u'<multiple_values>'
+        assert self.artist.metadata == result

@@ -90,7 +90,6 @@ class _Node(object):
                 value = self.metadata[k]
                 if value != v:
                     self.metadata[k] = u"<multiple_values>"
-                    break
 
     def update_headers(self):
         _Node.headers |= set(self.metadata.keys())
