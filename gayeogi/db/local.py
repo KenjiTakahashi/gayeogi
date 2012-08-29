@@ -58,13 +58,14 @@ logger = logging.getLogger('gayeogi.local')
 
 
 class _Node(object):
+    headers = set()
+
     def __init__(self, path, parent=None):
         self._primary = ('', '')
         self._path = path
         self._parent = parent
         self._children = list()
         self.metadata = dict()
-        self.headers = set()
         if parent != None:
             parent.addChild(self)
         if not isinstance(self, TrackNode) and path:
@@ -81,40 +82,20 @@ class _Node(object):
         """
         if meta:
             self.metadata.update(meta)
-        values = set()
         for child in self._children:
-            if not values:
-                values = set(child.metadata.iteritems())
-            else:
-                values &= set(child.metadata.iteritems())
             for k, v in child.metadata.iteritems():
                 try:
+                    self.metadata[k]
+                except KeyError:
+                    self.matadata[k] = v
+                else:
                     value = self.metadata[k]
-                except KeyError:
-                    pass
-                else:
-                    if value == v:
-                        values.add((k, v))
-                try:
-                    value = self._parent.metadata[k]
-                except KeyError:
-                    pass
-                else:
-                    if value == v:
-                        values.add((k, v))
-        while values:
-            k, v = values.pop()
-            e1, e2 = self._primary
-            if not k.startswith(e1) and k != e2:
-                self.metadata[k] = v
-                for child in self._children:
-                    try:
-                        del child.metadata[k]
-                    except KeyError:
-                        pass
+                    if value != v:
+                        self.metadata[k] = "<multiple_values>"
+                        break
 
     def update_headers(self):
-        self._parent.headers |= set(self.metadata.keys())
+        _Node.headers |= set(self.metadata.keys())
 
     def canFetchMore(self):
         """Indicates if there is still some data to read from
@@ -137,13 +118,14 @@ class _Node(object):
     def addChild(self, child):
         self._children.append(child)
 
-    def header(self, section):
+    @staticmethod
+    def header(section):
         """@todo: Docstring for header
 
         :section: @todo
         :returns: @todo
         """
-        return list(self.headers)[section]
+        return list(_Node.headers)[section]
 
     def parent(self):
         return self._parent
@@ -222,7 +204,7 @@ class ArtistNode(_Node):
                 self.urls = urls[0]
             except KeyError:
                 self.urls = dict()
-            parent.headers |= set(self.metadata.keys())
+            self.update_headers()
         else:
             self.metadata = dict()
 
@@ -264,7 +246,7 @@ class AlbumNode(_Node):
                     self.adr[adr] = _[0]
                 except KeyError:
                     self.adr[adr] = False
-            parent.headers |= set(self.metadata.keys())
+            self.update_headers()
         else:
             self.metadata = dict()
 
@@ -298,7 +280,7 @@ class TrackNode(_Node):
             self.metadata = json.loads(open(path, 'r').read())
             (self.metadata[u"tracknumber"],
             self.metadata[u"title"]) = self.fn_decode(self._path)
-            parent.headers |= set(self.metadata.keys())
+            self.update_headers()
         else:
             self.metadata = dict()
 
@@ -342,14 +324,14 @@ class BaseModel(QtCore.QAbstractItemModel):
     def rowCount(self, parent):
         """Reimplemented from QAbstractItemModel.rowCount."""
         if parent.isValid():
-            parentNode = parent.internalPointer()
+            node = parent.internalPointer()
         else:
-            parentNode = self._rootNode
-        return parentNode.childCount()
+            node = self._rootNode
+        return node.childCount()
 
     def columnCount(self, parent):
         """Reimplemented from QAbstractItemModel.columnCount."""
-        return len(self._rootNode.headers)
+        return len(_Node.headers)
 
     def canFetchMore(self, parent=QtCore.QModelIndex()):
         """Reimplemented from QAbstractItemModel.canFetchMore."""
@@ -366,6 +348,19 @@ class BaseModel(QtCore.QAbstractItemModel):
         self.beginInsertRows(parent, 0, 0)
         node.fetch()
         self.endInsertRows()
+        count = node.childCount()
+        for i in xrange(count):
+            child = node.child(i)
+            if child.canFetchMore():
+                child.fetch()
+            count = child.childCount()
+            for j in xrange(count):
+                child = child.child(j)
+                if child.canFetchMore():
+                    child.fetch()
+            hlen = len(_Node.headers) - 1
+            self.beginMoveColumns(parent, 0, hlen, parent, hlen + 2)
+            self.endMoveColumns()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         """Reimplemented from QAbstractItemModel.data."""
@@ -388,7 +383,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         """
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
-                header = self._rootNode.header(section)
+                header = _Node.header(section)
                 if header == u'tracknumber':
                     return u'#'
                 return header
@@ -483,9 +478,7 @@ class BaseModel(QtCore.QAbstractItemModel):
             track.update(meta)
             album.update()
             artist.update()
-            artist.update_headers()
-            album.update_headers()
-            track.update_headers()
+            self._rootNode.update_headers()
         else:
             index = self.index(index.row(), index.column(), index.parent())
             track = index.internalPointer()
@@ -510,35 +503,25 @@ class Model(QtGui.QAbstractProxyModel):
         """Inserts new rows based on current _selection.
         It also triggers data fetching as needed.
 
-        @note: To actually add data to the model use Model.upsert.
+        @note: To actually add data to the model use BaseModel.upsert.
 
         :parent: Index whose children should be inserted.
         """
         model = self.sourceModel()
-        while self.canFetchMore():
-            self.fetchMore()
         count = model.rowCount(parent)
         count_ = self.rowCount()
         end = count_ + count - 1
         self.beginInsertRows(QtCore.QModelIndex(), count_, end)
-        headers = set()
         for i in xrange(count):
             child = model.index(i, 0, parent)
             self._mapper.append(QtCore.QPersistentModelIndex(child))
-            headers.update(child.internalPointer().parent().headers)
         self.endInsertRows()
-        headers = len(headers) - 1
-        self.beginMoveColumns(
-            QtCore.QModelIndex(), 0, headers,
-            QtCore.QModelIndex(), headers + 2
-        )
-        self.endMoveColumns()
 
     def removeRows(self, parent):
         """Removes rows previously set by Model.insertRows if their :parent:
         is no longer in _selection.
 
-        @note: To actually remove data from the model use Model.remove.
+        @note: To actually remove data from the model use BaseModel.remove.
 
         :parent: Index whose children should be removed.
         """
@@ -547,24 +530,16 @@ class Model(QtGui.QAbstractProxyModel):
         child = self.mapFromSource(model.index(0, 0, parent))
         row = child.row()
         self.beginRemoveRows(QtCore.QModelIndex(), row, row + count)
-        headers = set()
         for i in xrange(count):
             child = model.index(i, 0, parent)
             self._mapper.remove(QtCore.QPersistentModelIndex(child))
-            headers.update(child.internalPointer().parent().headers)
         self.endRemoveRows()
-        headers = len(headers) - 1
-        self.beginMoveColumns(
-            QtCore.QModelIndex(), 0, headers,
-            QtCore.QModelIndex(), headers + 2
-        )
-        self.endMoveColumns()
 
     def setSelection(self, selected, deselected):
-        """@todo: Docstring for setSelection
+        """Sets new visible items, based on parent view's selections.
 
-        :selected: @todo
-        :deselected: @todo
+        :selected: Parent view's newly selected items.
+        :deselected: Parent view's deselected items.
         """
         model = self.sourceModel()
         for d in deselected:
@@ -581,28 +556,6 @@ class Model(QtGui.QAbstractProxyModel):
                 )
                 self._selection.append(index)
                 self.insertRows(index)
-
-    def canFetchMore(self, _=QtCore.QModelIndex()):
-        """Reimplemented from QAbstractProxyModel.canFetchMore.
-
-        :returns: True if any of the active Nodes can still fetch more.
-        """
-        for s in self._selection:
-            node = s.internalPointer()
-            if node.canFetchMore():
-                return True
-        return False
-
-    def fetchMore(self, _=QtCore.QModelIndex()):
-        """Reimplemented from QAbstractProxyModel.fetchMore.
-
-        :returns: @todo
-        """
-        for s in self._selection:
-            node = s.internalPointer()
-            if node.canFetchMore():
-                node.fetch()
-                break
 
     def hasChildren(self, parent):
         """Reimplemented from QAbstractProxyModel.hasChildren.
@@ -641,14 +594,11 @@ class Model(QtGui.QAbstractProxyModel):
         """
         if role == QtCore.Qt.DisplayRole:
             if section >= 0:
-                tmp = list()
-                for s in self._selection:
-                    tmp.extend(s.internalPointer().headers)
                 # When changing selection, the view sometimes calls this before
                 # columnCount, thus trying to get headerData for columns which
                 # might no longer exist.
                 try:
-                    header = tmp[section]
+                    header = _Node.header(section)
                     if header == u'tracknumber':
                         return u'#'
                     return header
@@ -678,9 +628,7 @@ class Model(QtGui.QAbstractProxyModel):
 
         :returns: Sum of the length of all rows headers data.
         """
-        return sum([
-            len(s.internalPointer().headers) for s in self._selection
-        ])
+        return len(_Node.headers)
 
     def mapFromSource(self, source):
         """Reimplemented from QAbstractProxyModel.mapFromSource.
