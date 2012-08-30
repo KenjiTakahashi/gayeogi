@@ -21,11 +21,32 @@ from gayeogi.db.local import BaseModel
 from gayeogi.db.local import ArtistNode, AlbumNode, TrackNode
 
 
-class TestUpsert(object):
-    """Deeply test different kinds of inserting and updating cases."""
+class BaseTest(object):
     def setUp(self):
         self.db = BaseModel("{0}/non_existing".format(os.getcwd()))
         self.root = self.db._rootNode
+
+    def prepare_update(self):
+        self.artist = ArtistNode(parent=self.root)
+        meta = {
+            u'artist': u'test_artist1',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'tracknumber': u'12',
+            u'title': u'test_title1'
+        }
+        self.artist.metadata = meta.copy()
+        self.album = AlbumNode(parent=self.artist)
+        self.album.metadata = meta.copy()
+        self.track = TrackNode(parent=self.album)
+        self.track.metadata = meta.copy()
+        self.artistIndex = self.db.index(0, 0)
+        self.albumIndex = self.db.index(0, 0, self.artistIndex)
+        self.trackIndex = self.db.index(0, 0, self.albumIndex)
+
+
+class TestUpsert(BaseTest):
+    """Test different kinds of inserting and updating cases."""
 
     def test_insert_to_empty_db(self):
         result = {
@@ -83,24 +104,6 @@ class TestUpsert(object):
         assert album.metadata == result
         assert artist.metadata == result
 
-    def prepare_update(self):
-        self.artist = ArtistNode(parent=self.root)
-        meta = {
-            u'artist': u'test_artist1',
-            u'year': u'2012',
-            u'album': u'test_album1',
-            u'tracknumber': u'12',
-            u'title': u'test_title1'
-        }
-        self.artist.metadata = meta
-        self.album = AlbumNode(parent=self.artist)
-        self.album.metadata = meta
-        self.track = TrackNode(parent=self.album)
-        self.track.metadata = meta
-        self.artist_index = self.db.index(0, 0)
-        self.album_index = self.db.index(0, 0, self.artist_index)
-        self.track_index = self.db.index(0, 0, self.album_index)
-
     def test_update_track_changing_title(self):
         self.prepare_update()
         result = {
@@ -110,7 +113,7 @@ class TestUpsert(object):
             u'tracknumber': u'12',
             u'title': u'test_title2'
         }
-        self.db.upsert(self.track_index, result)
+        self.db.upsert(self.trackIndex, result)
         assert self.track.metadata == result
         assert self.album.metadata == result
         assert self.artist.metadata == result
@@ -124,7 +127,7 @@ class TestUpsert(object):
             u'tracknumber': u'12',
             u'title': u'test_title1'
         }
-        self.db.upsert(self.track_index, result)
+        self.db.upsert(self.trackIndex, result)
         assert self.track.metadata == result
         assert self.album.metadata == result
         assert self.artist.metadata == result
@@ -138,7 +141,7 @@ class TestUpsert(object):
             u'tracknumber': u'12',
             u'title': u'test_title1'
         }
-        self.db.upsert(self.track_index, result)
+        self.db.upsert(self.trackIndex, result)
         assert self.track.metadata == result
         assert self.album.metadata == result
         assert self.artist.metadata == result
@@ -152,7 +155,7 @@ class TestUpsert(object):
             u'tracknumber': u'12',
             u'title': u'test_title1'
         }
-        self.db.upsert(self.track_index, result)
+        self.db.upsert(self.trackIndex, result)
         assert self.track.metadata == result
         assert self.album.metadata == result
         assert self.artist.metadata == result
@@ -191,3 +194,74 @@ class TestUpsert(object):
         result[u'year'] = u'<multiple_values>'
         result[u'album'] = u'<multiple_values>'
         assert self.artist.metadata == result
+
+
+class TestRemove(BaseTest):
+    """Test different kinds of removing cases."""
+
+    def _add_and_remove_track(self):
+        trackIndex = self.db.upsert(None, {
+            u'artist': u'test_artist1',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'tracknumber': u'11',
+            u'title': u'test_title2'
+        })
+        self.db.remove(trackIndex)
+
+    def test_remove_track(self):
+        self.prepare_update()
+        self._add_and_remove_track()
+        assert self.album.childCount() == 1
+        track = self.album.child(0)
+        print(track.metadata)
+        assert track.metadata == {
+            u'artist': u'test_artist1',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'tracknumber': u'12',
+            u'title': u'test_title1'
+        }
+
+    def test_remove_album(self):
+        # Album gets removed when there are no tracks and
+        # it's not a and not r.
+        self.prepare_update()
+        trackIndex = self.db.upsert(None, {
+            u'artist': u'test_artist1',
+            u'year': u'2010',
+            u'album': u'test_album2',
+            u'tracknumber': u'12',
+            u'title': u'test_title1'
+        })
+        self.db.remove(trackIndex)
+        assert self.artist.childCount() == 1
+        album = self.artist.child(0)
+        assert album.metadata == {
+            u'artist': u'test_artist1',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'tracknumber': u'12',
+            u'title': u'test_title1'
+        }
+
+    def test_remove_artist(self):
+        # Artist gets removed when there are no albums.
+        self.prepare_update()
+        artistIndex = self.db.upsert(None, {
+            u'artist': u'test_artist2',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'tracknumber': u'12',
+            u'title': u'test_title1'
+        })
+        self.db.remove(artistIndex)
+        assert self.root.childCount() == 1
+        artist = self.root.child(0)
+        assert artist.metadata == {
+            u'artist': u'test_artist1',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'tracknumber': u'12',
+            u'title': u'test_title1'
+        }

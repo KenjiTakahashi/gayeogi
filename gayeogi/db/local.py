@@ -115,6 +115,9 @@ class _Node(object):
     def addChild(self, child):
         self._children.append(child)
 
+    def removeChild(self, child):
+        self._children.remove(child)
+
     @staticmethod
     def header(section):
         """@todo: Docstring for header
@@ -440,15 +443,21 @@ class BaseModel(QtCore.QAbstractItemModel):
                     return child
             return None
         if not index:
+            # TODO: deal with adr
             try:
                 artist = find_artist(meta[u'artist'])
             except KeyError:
                 artist = find_artist(u'unknown')
+            artistPosition = self._rootNode.childCount()
             if not artist:
-                self.beginInsertRows(QtCore.QModelIndex(), 0, 0)
+                self.beginInsertRows(
+                    QtCore.QModelIndex(), artistPosition, artistPosition
+                )
                 artist = ArtistNode(parent=self._rootNode)
                 self.endInsertRows()
-            artist_index = self.index(0, 0)
+            else:
+                artistPosition -= 1
+            artistIndex = self.index(artistPosition, 0)
             m_album = u'unknown'
             try:
                 m_album = meta[u'album']
@@ -459,19 +468,28 @@ class BaseModel(QtCore.QAbstractItemModel):
                 m_year = meta[u'year']
             except KeyError:
                 pass
-            album = find_album(artist_index, artist, m_album, m_year)
+            album = find_album(artistIndex, artist, m_album, m_year)
+            albumPosition = artist.childCount()
             if not album:
-                self.beginInsertRows(artist_index, 0, 0)
+                self.beginInsertRows(
+                    artistIndex, albumPosition, albumPosition
+                )
                 album = AlbumNode(parent=artist)
                 self.endInsertRows()
-            album_index = self.index(0, 0, artist_index)
-            self.beginInsertRows(album_index, 0, 0)
+            else:
+                albumPosition -= 1
+            albumIndex = self.index(albumPosition, 0, artistIndex)
+            trackPosition = album.childCount()
+            self.beginInsertRows(
+                albumIndex, trackPosition, trackPosition
+            )
             track = TrackNode(parent=album)
             self.endInsertRows()
             track.update(meta)
             album.update()
             artist.update()
             self._rootNode.update_headers()
+            index = self.index(trackPosition, 0, albumIndex)
         else:
             index = self.index(index.row(), index.column(), index.parent())
             track = index.internalPointer()
@@ -480,6 +498,32 @@ class BaseModel(QtCore.QAbstractItemModel):
             album.update()
             artist = album.parent()
             artist.update()
+        return QtCore.QPersistentModelIndex(index)
+
+    def remove(self, index):
+        """@todo: Docstring for remove
+
+        :index: @todo
+        :meta: @todo
+        :returns: @todo
+
+        """
+        # TODO: deal with adr
+        index = self.index(index.row(), index.column(), index.parent())
+        albumIndex = self.parent(index)
+        album = albumIndex.internalPointer()
+        album.removeChild(index.internalPointer())
+        if not album.childCount():
+            artistIndex = self.parent(albumIndex)
+            artist = artistIndex.internalPointer()
+            artist.removeChild(album)
+            if not artist.childCount():
+                self._rootNode.removeChild(artist)
+            else:
+                artist.update()
+        else:
+            album.update()
+        self._rootNode.update_headers()
 
 
 class Model(QtGui.QAbstractProxyModel):
