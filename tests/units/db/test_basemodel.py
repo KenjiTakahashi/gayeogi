@@ -245,6 +245,20 @@ class TestRemove(BaseTest):
             u'title': u'test_title1'
         }
 
+    def test_do_not_remove_a_album(self):
+        self.prepare_update()
+        self.album.adr[u'__a__'] = True
+        self.db.remove(self.trackIndex)
+        assert self.album.childCount() == 0
+        assert self.artist.childCount() == 1
+
+    def test_do_not_remove_r_album(self):
+        self.prepare_update()
+        self.album.adr[u'__r__'] = True
+        self.db.remove(self.trackIndex)
+        assert self.album.childCount() == 0
+        assert self.artist.childCount() == 1
+
     def test_remove_artist(self):
         # Artist gets removed when there are no albums.
         self.prepare_update()

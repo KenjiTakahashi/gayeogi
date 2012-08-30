@@ -61,7 +61,6 @@ class _Node(object):
     headers = set()
 
     def __init__(self, path, parent=None):
-        self._primary = ('', '')
         self._path = path
         self._parent = parent
         self._children = list()
@@ -190,7 +189,7 @@ class ArtistNode(_Node):
         :parent: Parent Node. It's always a rootNode here.
         """
         super(ArtistNode, self).__init__(path, parent)
-        self._primary = (u'album', u'year')
+        self.adr = {u'__a__': True, u'__d__': True, u'__r__': True}
         if path:
             path = os.path.join(self._path, u'.meta')
             self.metadata = json.loads(open(path, 'r').read())
@@ -207,6 +206,17 @@ class ArtistNode(_Node):
             self.update_headers()
         else:
             self.metadata = dict()
+
+    def updateADR(self):
+        """@todo: Docstring for updateADR
+        :returns: @todo
+
+        """
+        self.adr = {u'__a__': True, u'__d__': True, u'__r__': True}
+        for child in self._children:
+            for adr in [u'__a__', u'__d__', u'__r__']:
+                if not child.adr[adr]:
+                    self.adr[adr] = False
 
     def fetch(self):
         AlbumNode(self._data.pop(), self)
@@ -229,13 +239,12 @@ class AlbumNode(_Node):
         :parent: @todo
         """
         super(AlbumNode, self).__init__(path, parent)
-        self._primary = (u'track', u'title')
+        self.adr = {u'__a__': False, u'__d__': False, u'__r__': False}
         if path:
             path = os.path.join(self._path, u'.meta')
             self.metadata = json.loads(open(path, 'r').read())
             (self.metadata[u"year"],
             self.metadata[u"album"]) = self.fn_decode(self._path)
-            self.adr = dict()
             for adr in [u"__a__", u"__d__", u"__r__"]:
                 try:
                     _ = self.metadata[adr]
@@ -244,8 +253,10 @@ class AlbumNode(_Node):
                     else:
                         del self.metadata[adr]
                     self.adr[adr] = _[0]
+                    if not self.adr[adr]:
+                        self.parent().adr[adr] = False
                 except KeyError:
-                    self.adr[adr] = False
+                    pass
             self.update_headers()
         else:
             self.metadata = dict()
@@ -417,11 +428,11 @@ class BaseModel(QtCore.QAbstractItemModel):
         return self._rootNode
 
     def upsert(self, index, meta):
-        """@todo: Docstring for upsert
+        """Inserts or updates an entry in the database.
 
-        :index: @todo
-        :meta: @todo
-        :returns: @todo
+        :index: Persistent index pointing at entry to update. None for insert.
+        :meta: Metadata to put into the database.
+        :returns: New persistent index pointing at inserted/updated entry.
         """
         def find_artist(name):
             for child in self._rootNode.children():
@@ -501,14 +512,10 @@ class BaseModel(QtCore.QAbstractItemModel):
         return QtCore.QPersistentModelIndex(index)
 
     def remove(self, index):
-        """@todo: Docstring for remove
+        """Removes specified track's index and it's parents, as needed.
 
-        :index: @todo
-        :meta: @todo
-        :returns: @todo
-
+        :index: Track's index.
         """
-        # TODO: deal with adr
         index = self.index(index.row(), index.column(), index.parent())
         albumIndex = self.parent(index)
         album = albumIndex.internalPointer()
@@ -516,11 +523,16 @@ class BaseModel(QtCore.QAbstractItemModel):
         if not album.childCount():
             artistIndex = self.parent(albumIndex)
             artist = artistIndex.internalPointer()
-            artist.removeChild(album)
-            if not artist.childCount():
-                self._rootNode.removeChild(artist)
+            if album.adr[u'__a__'] or album.adr[u'__r__']:
+                album.adr[u'__d__'] = False
+                album.update()
             else:
-                artist.update()
+                artist.removeChild(album)
+                if not artist.childCount():
+                    self._rootNode.removeChild(artist)
+                else:
+                    artist.update()
+            artist.updateADR()
         else:
             album.update()
         self._rootNode.update_headers()
