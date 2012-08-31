@@ -77,7 +77,6 @@ class _Node(object):
 
         :meta: @todo
         :returns: @todo
-
         """
         if meta:
             self.metadata.update(meta)
@@ -86,9 +85,13 @@ class _Node(object):
                 self.metadata.update(child.metadata)
                 continue
             for k, v in child.metadata.iteritems():
-                value = self.metadata[k]
-                if value != v:
-                    self.metadata[k] = u"<multiple_values>"
+                try:
+                    value = self.metadata[k]
+                except KeyError:
+                    self.metadata[k] = value
+                else:
+                    if value != v:
+                        self.metadata[k] = u"<multiple_values>"
 
     def update_headers(self):
         _Node.headers |= set(self.metadata.keys())
@@ -207,10 +210,20 @@ class ArtistNode(_Node):
         else:
             self.metadata = dict()
 
-    def updateADR(self):
-        """@todo: Docstring for updateADR
+    def update(self, meta=None):
+        """@todo: Docstring for update
+
+        :meta: @todo
         :returns: @todo
 
+        """
+        self.updateADR()
+        super(ArtistNode, self).update(meta)
+
+    def updateADR(self):
+        """@todo: Docstring for updateADR
+
+        :returns: @todo
         """
         self.adr = {u'__a__': True, u'__d__': True, u'__r__': True}
         for child in self._children:
@@ -260,6 +273,26 @@ class AlbumNode(_Node):
             self.update_headers()
         else:
             self.metadata = dict()
+
+    def update(self, meta=None):
+        """@todo: Docstring for update
+
+        :meta: @todo
+        :returns: @todo
+
+        """
+        if meta:
+            for adr in [u"__a__", u"__d__", u"__r__"]:
+                try:
+                    _ = meta[adr]
+                    self.adr[adr] = _[0]
+                    if len(_) > 1:
+                        meta[adr] = _[1]
+                    else:
+                        del meta[adr]
+                except KeyError:
+                    pass
+        super(AlbumNode, self).update(meta)
 
     def fetch(self):
         TrackNode(self._data.pop(), self)
@@ -430,6 +463,19 @@ class BaseModel(QtCore.QAbstractItemModel):
     def upsert(self, index, meta):
         """Inserts or updates an entry in the database.
 
+        When :index: is None metadata should also tell what to update, e.g.:
+        (u'track', {}) will pass the metadata dict to the track,
+        (u'album', {}) will pass the metadata dict to the album,
+        (u'artist', {}) will pass the metadata dict to the artist.
+
+        For specified :index:, it's derived from it.
+
+        It's created that way to allow passing ADR directly to the albums,
+        without messing with it's tracks.
+
+        @note: For convenience, it's assumed that passing a single dict is
+        meant to be passed to the track.
+
         :index: Persistent index pointing at entry to update. None for insert.
         :meta: Metadata to put into the database.
         :returns: New persistent index pointing at inserted/updated entry.
@@ -446,13 +492,10 @@ class BaseModel(QtCore.QAbstractItemModel):
                 if meta[u'album'] == name and meta[u'year'] == year:
                     return child
             return None
-
-        def find_track(index, album, name, number):
-            for child in album.children():
-                meta = child.metadata
-                if meta[u'title'] == name and meta[u'tracknumber'] == number:
-                    return child
-            return None
+        if isinstance(meta, tuple):
+            place, meta = meta
+        else:
+            place = None
         if not index:
             # TODO: deal with adr
             try:
@@ -468,39 +511,46 @@ class BaseModel(QtCore.QAbstractItemModel):
                 self.endInsertRows()
             else:
                 artistPosition -= 1
-            artistIndex = self.index(artistPosition, 0)
-            m_album = u'unknown'
-            try:
-                m_album = meta[u'album']
-            except KeyError:
-                pass
-            m_year = u'0000'
-            try:
-                m_year = meta[u'year']
-            except KeyError:
-                pass
-            album = find_album(artistIndex, artist, m_album, m_year)
-            albumPosition = artist.childCount()
-            if not album:
-                self.beginInsertRows(
-                    artistIndex, albumPosition, albumPosition
-                )
-                album = AlbumNode(parent=artist)
-                self.endInsertRows()
+            index = self.index(artistPosition, 0)
+            if not place or place == u'album' or place == u'track':
+                m_album = u'unknown'
+                try:
+                    m_album = meta[u'album']
+                except KeyError:
+                    pass
+                m_year = u'0000'
+                try:
+                    m_year = meta[u'year']
+                except KeyError:
+                    pass
+                album = find_album(index, artist, m_album, m_year)
+                albumPosition = artist.childCount()
+                if not album:
+                    self.beginInsertRows(
+                        index, albumPosition, albumPosition
+                    )
+                    album = AlbumNode(parent=artist)
+                    self.endInsertRows()
+                else:
+                    albumPosition -= 1
+                index = self.index(albumPosition, 0, index)
+                if not place or place == u'track':
+                    trackPosition = album.childCount()
+                    self.beginInsertRows(
+                        index, trackPosition, trackPosition
+                    )
+                    track = TrackNode(parent=album)
+                    self.endInsertRows()
+                    track.update(meta)
+                    album.update()
+                    artist.update()
+                    self._rootNode.update_headers()
+                    index = self.index(trackPosition, 0, index)
+                else:
+                    album.update(meta)
+                    artist.update()
             else:
-                albumPosition -= 1
-            albumIndex = self.index(albumPosition, 0, artistIndex)
-            trackPosition = album.childCount()
-            self.beginInsertRows(
-                albumIndex, trackPosition, trackPosition
-            )
-            track = TrackNode(parent=album)
-            self.endInsertRows()
-            track.update(meta)
-            album.update()
-            artist.update()
-            self._rootNode.update_headers()
-            index = self.index(trackPosition, 0, albumIndex)
+                artist.update(meta)
         else:
             index = self.index(index.row(), index.column(), index.parent())
             track = index.internalPointer()

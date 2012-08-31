@@ -195,6 +195,67 @@ class TestUpsert(BaseTest):
         result[u'album'] = u'<multiple_values>'
         assert self.artist.metadata == result
 
+    def test_add_r_album(self):
+        # We're testing only 'r', because 'a' is equivalent.
+        self.prepare_update()
+        self.db.upsert(None, (u'album', {
+            u'year': u'2010',
+            u'album': u'test_album2',
+            u'artist': u'test_artist1',
+            u'__r__': [True]
+        }))
+        album = self.artist.child(1)
+        assert album.metadata == {
+            u'year': u'2010',
+            u'album': u'test_album2',
+            u'artist': u'test_artist1'
+        }
+        assert album.adr == {u'__a__': False, u'__d__': False, u'__r__': True}
+        assert self.artist.adr == {
+            u'__a__': False, u'__d__': False, u'__r__': False
+        }
+
+    def test_add_r_to_album(self):
+        self.prepare_update()
+        self.db.upsert(None, (u'album', {
+            u'year': u'2010',
+            u'album': u'test_album2',
+            u'artist': u'test_artist1'
+        }))
+        self.db.upsert(None, (u'album', {
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'artist': u'test_artist1',
+            u'__r__': [True]
+        }))
+        assert self.album.metadata == {
+            u'artist': u'test_artist1',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'tracknumber': u'12',
+            u'title': u'test_title1'
+        }
+        assert self.album.adr == {
+            u'__a__': False, u'__d__': False, u'__r__': True
+        }
+        assert self.artist.adr == {
+            u'__a__': False, u'__d__': False, u'__r__': False
+        }
+
+    def test_add_r_to_all_albums(self):
+        # This should update the artist to have 'r' too.
+        self.prepare_update()
+        self.db.upsert(None, (u'album', {
+            u'year': u'2010',
+            u'album': u'test_album2',
+            u'artist': u'test_artist1',
+            u'__r__': [True]
+        }))
+        self.db.upsert(self.albumIndex, {u'__r__': [True]})
+        assert self.artist.adr == {
+            u'__a__': False, u'__d__': False, u'__r__': True
+        }
+
 
 class TestRemove(BaseTest):
     """Test different kinds of removing cases."""
