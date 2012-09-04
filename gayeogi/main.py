@@ -23,7 +23,7 @@ from PyQt4.QtCore import pyqtSignal, QModelIndex
 from gayeogi.db.local import DB
 from gayeogi.db.distributor import Distributor
 from gayeogi.interfaces.settings import Settings
-from gayeogi.utils.filter import Filter
+from gayeogi.utils import Filter
 import gayeogi.plugins
 
 __version__ = '0.6.3'
