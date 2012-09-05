@@ -15,5 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from filter import Filter
-from tagger import Tagger
+
+class ID3(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def readAll(self):
+        pass

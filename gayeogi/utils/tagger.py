@@ -15,5 +15,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from filter import Filter
-from tagger import Tagger
+import os
+from _tagger import ID3, MP4, Vorbis
+
+
+class Tagger(object):
+    """Docstring for Tag """
+
+    def __init__(self, filename):
+        """@todo: to be defined
+
+        :filename: @todo
+        """
+        self.filename = filename
+        ext = os.path.splitext(self.filename)[1].lower()
+        if ext == u'.mp3':
+            self.type = ID3
+        elif ext in [u'.mp4', u'.m4a', u'.mpeg4', u'.aac']:
+            self.type = MP4
+        else:
+            self.type = Vorbis
+
+    def readAll(self):
+        """@todo: Docstring for readAll
+
+        :returns: @todo
+        """
+        return self.type(self.filename).readAll()

@@ -15,5 +15,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from filter import Filter
-from tagger import Tagger
+import os
+from mutagen.flac import FLAC
+from mutagen.asf import ASF
+from mtagen.wavpack import WavPack
+from mutagen.musepack import Musepack
+from mutagen import File
+
+
+class Vorbis(object):
+    def __init__(self, filename):
+        self.filename = filename
+        ext = os.path.splitext(filename)[1].lower()
+        if ext == u'.flac':
+            self.file = FLAC(filename)
+        elif ext == u'.asf':
+            self.file = ASF(filename)
+        elif ext == u'.wv':
+            self.file = WavPack(filename)
+        elif ext in [u'.mpc', u'.mpp', u'.mp+']:
+            self.file = Musepack(filename)
+        elif ext in [u'.ogg', u'.ape']:
+            self.file = File(filename)
+
+    def readAll(self):
+        return {k: v[0] for k, v in self.file.iteritems()}

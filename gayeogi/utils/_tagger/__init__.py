@@ -15,5 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from filter import Filter
-from tagger import Tagger
+from id3 import ID3
+from mp4 import MP4
+from vorbis import Vorbis
