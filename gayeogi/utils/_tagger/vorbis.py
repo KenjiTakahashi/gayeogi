@@ -18,7 +18,7 @@
 import os
 from mutagen.flac import FLAC
 from mutagen.asf import ASF
-from mtagen.wavpack import WavPack
+from mutagen.wavpack import WavPack
 from mutagen.musepack import Musepack
 from mutagen import File
 
@@ -39,4 +39,11 @@ class Vorbis(object):
             self.file = File(filename)
 
     def readAll(self):
-        return {k: v[0] for k, v in self.file.iteritems()}
+        data = {k: v[0] for k, v in self.file.iteritems()}
+        for pkey, nkey in [(u'year', u'date'), (u'tracknumber', u'track')]:
+            if pkey not in data:
+                try:
+                    data[pkey] = data[nkey]
+                except KeyError:
+                    pass
+        return data
