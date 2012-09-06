@@ -42,6 +42,7 @@ class TestTagger(object):
 
     def readAllTest(self, ext, result):
         tag = Tagger(os.path.join(self.path, u'test.{0}'.format(ext)))
+        print(tag.readAll())
         assert tag.readAll() == result
 
     def test_readAll_flac(self):
@@ -57,14 +58,14 @@ class TestTagger(object):
 
     def test_readAll_musepack(self):
         self.readAllTest(u'mpc', self.result)
-        self.readAllTest(u'mpp', self.result)
-        self.readAllTest(u'mp+', self.result)
 
     def test_readAll_ogg(self):
         self.readAllTest(u'ogg', self.result_vorbis)
 
     def test_readAll_ape(self):
-        self.readAllTest(u'ape', self.result)
+        result = self.result.copy()
+        result[u'track'] = u'12'
+        self.readAllTest(u'ape', result)
 
     def test_readAll_mp3(self):
         self.readAllTest(u'mp3', self.result)

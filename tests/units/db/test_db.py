@@ -27,7 +27,9 @@ class TestRun(object):
         path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), u'..', u'data')
         )
-        DB._DB__settings = QSettings(path, QSettings.NativeFormat)
+        DB._DB__settings = QSettings(
+            os.path.join(path, u'db.conf'), QSettings.NativeFormat
+        )
         DB._DB__settings.setValue(u'directories', [(path, True)])
 
     def test_add_files(self):
@@ -37,4 +39,4 @@ class TestRun(object):
         artist = root.child(0)
         assert artist.childCount() == 1
         album = artist.child(0)
-        assert album.childCount() == 3
+        assert album.childCount() == 4
