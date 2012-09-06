@@ -42,7 +42,6 @@ class TestTagger(object):
 
     def readAllTest(self, ext, result):
         tag = Tagger(os.path.join(self.path, u'test.{0}'.format(ext)))
-        print(tag.readAll())
         assert tag.readAll() == result
 
     def test_readAll_flac(self):

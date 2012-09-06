@@ -37,6 +37,8 @@ class Vorbis(object):
             self.file = Musepack(filename)
         elif ext in [u'.ogg', u'.ape']:
             self.file = File(filename)
+        else:
+            raise TypeError
 
     def readAll(self):
         data = {k: v[0] for k, v in self.file.iteritems()}

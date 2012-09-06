@@ -15,33 +15,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import os
-from _tagger import ID3, MP4, Vorbis
+from gayeogi.db.local import DB
+from PyQt4.QtCore import QSettings
 
 
-class Tagger(object):
-    """Docstring for Tag """
+class TestRun(object):
+    def setUp(self):
+        self.db = DB("{0}/non_existing".format(os.getcwd()))
+        path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), u'..', u'data')
+        )
+        DB._DB__settings = QSettings(path, QSettings.NativeFormat)
+        DB._DB__settings.setValue(u'directories', [(path, True)])
 
-    def __init__(self, filename):
-        """@todo: to be defined
-
-        :filename: @todo
-        """
-        self.filename = filename
-        ext = os.path.splitext(self.filename)[1].lower()
-        if ext == u'.mp3':
-            self.type = ID3
-        elif ext in [u'.mp4', u'.m4a', u'.mpeg4', u'.aac']:
-            self.type = MP4
-        else:
-            self.type = Vorbis
-
-    def readAll(self):
-        """@todo: Docstring for readAll
-
-        :returns: @todo
-        """
-        try:
-            return self.type(self.filename).readAll()
-        except TypeError:
-            return None
+    def test_add_files(self):
+        self.db.run()
+        root = self.db.artists._rootNode
+        assert root.childCount() == 1
+        artist = root.child(0)
+        assert artist.childCount() == 1
+        album = artist.child(0)
+        assert album.childCount() == 3

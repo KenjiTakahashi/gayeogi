@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Woźniak (C) 2010 - 2012
+# Karol "Kenji Takahashi" Woźniak © 2010 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ import glob
 from fnmatch import fnmatch
 from PyQt4 import QtCore, QtGui
 import logging
+from gayeogi.utils import Tagger
 
 
 class LegacyDB(object):
@@ -65,7 +66,7 @@ class _Node(object):
         self._parent = parent
         self._children = list()
         self.metadata = dict()
-        if parent != None:
+        if parent is not None:
             parent.addChild(self)
         if not isinstance(self, TrackNode) and path:
             self._data = glob.glob(os.path.join(path, u'*'))
@@ -815,7 +816,7 @@ class DB(object):
         """@todo: Docstring for run"""
         directories = DB.__settings.value(u'directories', []).toPyObject()
         ignores = DB.__settings.value(u'ignores', []).toPyObject()
-        if ignores == None:
+        if ignores is None:
             ignores = list()
         for directory, enabled in directories:
             if enabled:
@@ -824,13 +825,8 @@ class DB(object):
                         for filename in filenames:
                             path = os.path.join(root, filename)
                             if not self.isIgnored(path, ignores):
-                                # TODO: read real metadata
-                                self.index[path] = self.upsert(
-                                    self.getIndex(path)
-                                )({
-                                    '1': path,
-                                    'test2': 2,
-                                    u'artist': 't',
-                                    u'album': 'dang',
-                                    u'year': '200'
-                                })
+                                tag = Tagger(path).readAll()
+                                if tag is not None:
+                                    self.index[path] = self.upsert(
+                                        self.getIndex(path)
+                                    )(tag)
