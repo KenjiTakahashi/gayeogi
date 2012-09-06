@@ -601,8 +601,10 @@ class Model(QtGui.QAbstractProxyModel):
         """@todo: to be defined """
         super(Model, self).__init__(parent)
         self._mapper = list()
+        self._rmapper = dict()
         self._selection = list()
         self.setSourceModel(sourceModel)
+        self.sourceModel = sourceModel
 
     def insertRows(self, parent):
         """Inserts new rows based on current _selection.
@@ -612,14 +614,16 @@ class Model(QtGui.QAbstractProxyModel):
 
         :parent: Index whose children should be inserted.
         """
-        model = self.sourceModel()
+        model = self.sourceModel
         count = model.rowCount(parent)
         count_ = self.rowCount()
         end = count_ + count - 1
         self.beginInsertRows(QtCore.QModelIndex(), count_, end)
         for i in xrange(count):
             child = model.index(i, 0, parent)
-            self._mapper.append(QtCore.QPersistentModelIndex(child))
+            pindex = QtCore.QPersistentModelIndex(child)
+            self._mapper.append(pindex)
+            self._rmapper[pindex] = len(self._mapper) - 1
         self.endInsertRows()
 
     def removeRows(self, parent):
@@ -630,14 +634,16 @@ class Model(QtGui.QAbstractProxyModel):
 
         :parent: Index whose children should be removed.
         """
-        model = self.sourceModel()
+        model = self.sourceModel
         count = model.rowCount(parent)
         child = self.mapFromSource(model.index(0, 0, parent))
         row = child.row()
         self.beginRemoveRows(QtCore.QModelIndex(), row, row + count)
         for i in xrange(count):
             child = model.index(i, 0, parent)
-            self._mapper.remove(QtCore.QPersistentModelIndex(child))
+            pindex = QtCore.QPersistentModelIndex(child)
+            self._mapper.remove(pindex)
+            del self._rmapper[pindex]
         self.endRemoveRows()
 
     def setSelection(self, selected, deselected):
@@ -646,7 +652,7 @@ class Model(QtGui.QAbstractProxyModel):
         :selected: Parent view's newly selected items.
         :deselected: Parent view's deselected items.
         """
-        model = self.sourceModel()
+        model = self.sourceModel
         for d in deselected:
             if d.column() == 0:
                 index = model.createIndex(
@@ -680,7 +686,7 @@ class Model(QtGui.QAbstractProxyModel):
             return QtCore.QModelIndex()
         source = QtCore.QModelIndex(self._mapper[row])
         return self.mapFromSource(
-            self.sourceModel().index(source.row(), column, source.parent())
+            self.sourceModel.index(source.row(), column, source.parent())
         )
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
@@ -746,10 +752,10 @@ class Model(QtGui.QAbstractProxyModel):
         """
         if not source.isValid():
             return QtCore.QModelIndex()
-        source0 = self.sourceModel().createIndex(
+        source0 = self.sourceModel.createIndex(
             source.row(), 0, source.internalPointer()
         )
-        i = self._mapper.index(source0)
+        i = self._rmapper[QtCore.QPersistentModelIndex(source0)]
         index = self.createIndex(i, source.column(), source.internalPointer())
         return index
 
@@ -762,7 +768,7 @@ class Model(QtGui.QAbstractProxyModel):
         if not proxy.isValid():
             return QtCore.QModelIndex()
         sourceIndex = self._mapper[proxy.row()]
-        return self.sourceModel().createIndex(
+        return self.sourceModel.createIndex(
             sourceIndex.row(), proxy.column(), proxy.internalPointer()
         )
 

@@ -112,18 +112,15 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
             index.data(987).toString()), option.fontMetrics.height() + 2)
 
 
-class ADRTreeView(QtGui.QTreeView):
+class ADRTableView(QtGui.QTableView):
     buttonClicked = pyqtSignal(QtGui.QTreeWidgetItem)
 
     def __init__(self, parent=None):
-        super(ADRTreeView, self).__init__(parent)
-        self.setIndentation(0)
-        self.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
+        super(ADRTableView, self).__init__(parent)
         self.setMouseTracking(True)
         self.delegate = ADRItemDelegate()
         self.delegate.buttonClicked.connect(self.callback)
         #self.setItemDelegateForColumn(1, self.delegate)
-        self.setSortingEnabled(True)
 
     def buttoned(self, mx, rx):
         return mx >= rx + 1 and mx <= rx + 36
@@ -140,7 +137,7 @@ class ADRTreeView(QtGui.QTreeView):
 
     def mouseReleaseEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
-            QtGui.QTreeWidget.mouseReleaseEvent(self, event)
+            super(ADRTableView, self).mouseReleaseEvent(event)
         else:
             self.delegate.buttoned = True
             self.delegate.my = event.y()
@@ -148,11 +145,11 @@ class ADRTreeView(QtGui.QTreeView):
 
     def mousePressEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
-            QtGui.QTreeWidget.mousePressEvent(self, event)
+            super(ADRTableView, self).mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event):
         if not self.buttoned(event.x(), self.delegate.rx):
-            QtGui.QTreeWidget.mouseDoubleClickEvent(self, event)
+            super(ADRTableView, self).mouseDoubleClickEvent(event)
 
 
 class View(QtGui.QWidget):
@@ -174,11 +171,21 @@ class View(QtGui.QWidget):
             u"(a or d or r). Case insensitive, regexp allowed."
         )))
         self.view = view
+        self.view.setShowGrid(False)
+        self.view.setCornerButtonEnabled(False)
+        self.view.setWordWrap(False)
+        vheader = self.view.verticalHeader()
+        vheader.setHidden(True)
+        # this is slow as hell :/
+        #vheader.setResizeMode(vheader.ResizeToContents)
+        hheader = self.view.horizontalHeader()
+        hheader.setStretchLastSection(True)
+        hheader.setDefaultAlignment(Qt.AlignLeft)
+        hheader.setHighlightSections(False)
         self.view.setModel(self.model)
-        self.view.setSelectionMode(QtGui.QTreeView.ExtendedSelection)
-        self.view.setEditTriggers(QtGui.QTreeView.NoEditTriggers)
-        self.view.setIndentation(0)
-        self.view.setItemsExpandable(False)
+        self.view.setSelectionMode(self.view.ExtendedSelection)
+        self.view.setSelectionBehavior(self.view.SelectRows)
+        self.view.setEditTriggers(self.view.NoEditTriggers)
         self.view.setSortingEnabled(True)
         layout = QtGui.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -207,16 +214,16 @@ class Main(QtGui.QMainWindow):
         widget = QtGui.QWidget()
         self.ui.setupUi(widget)
         self.ui.artists = View(
-            self.db.artists, QtGui.QTreeView(), self.ui.splitter
+            self.db.artists, QtGui.QTableView(), self.ui.splitter
         )
         delegate = ADRItemDelegate()
         #self.ui.artists.setItemDelegateForColumn(0, delegate)
         self.ui.albums = View(
-            self.db.albums, ADRTreeView(), self.ui.splitter
+            self.db.albums, ADRTableView(), self.ui.splitter
         )
         self.ui.albums.view.buttonClicked.connect(self.setAnalog)
         self.ui.tracks = View(
-            self.db.tracks, QtGui.QTreeView(), self.ui.splitter
+            self.db.tracks, QtGui.QTableView(), self.ui.splitter
         )
         self.ui.artists.view.selectionModel().selectionChanged.connect(
             self.ui.albums.model.setSelection
@@ -229,14 +236,7 @@ class Main(QtGui.QMainWindow):
             self.__settings.value(u'splitters').toByteArray()
         )
         self.setCentralWidget(widget)
-        ###
-        self.library = (__version__, {}, {}, {}, {}, [False])
-        self.ignores = self.__settings.value(u'ignores', []).toPyObject()
-        if self.ignores == None:
-            self.ignores = []
-        directory = self.__settings.value(u'directory', []).toPyObject()
-        if type(directory) != list:
-            directory = [(unicode(directory), 2)]
+        self.library = (__version__, {}, {}, {}, {}, [False])  # FIXME: remove
         self.rt = Distributor(self.library)
         self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
