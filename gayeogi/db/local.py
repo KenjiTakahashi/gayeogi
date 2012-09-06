@@ -94,8 +94,9 @@ class _Node(object):
                     if value != v:
                         self.metadata[k] = u"<multiple_values>"
 
-    def update_headers(self):
-        _Node.headers |= set(self.metadata.keys())
+    def updateHeaders(self):
+        for child in self._children:
+            _Node.headers |= set(child.metadata.keys())
 
     def canFetchMore(self):
         """Indicates if there is still some data to read from
@@ -207,7 +208,7 @@ class ArtistNode(_Node):
                 self.urls = urls[0]
             except KeyError:
                 self.urls = dict()
-            self.update_headers()
+            self.updateHeaders()
         else:
             self.metadata = dict()
 
@@ -271,7 +272,7 @@ class AlbumNode(_Node):
                         self.parent().adr[adr] = False
                 except KeyError:
                     pass
-            self.update_headers()
+            self.updateHeaders()
         else:
             self.metadata = dict()
 
@@ -325,7 +326,7 @@ class TrackNode(_Node):
             self.metadata = json.loads(open(path, 'r').read())
             (self.metadata[u"tracknumber"],
             self.metadata[u"title"]) = self.fn_decode(self._path)
-            self.update_headers()
+            self.updateHeaders()
         else:
             self.metadata = dict()
 
@@ -368,6 +369,8 @@ class BaseModel(QtCore.QAbstractItemModel):
 
     def rowCount(self, parent):
         """Reimplemented from QAbstractItemModel.rowCount."""
+        if parent.column() > 0:
+            return 0
         if parent.isValid():
             node = parent.internalPointer()
         else:
@@ -376,6 +379,8 @@ class BaseModel(QtCore.QAbstractItemModel):
 
     def columnCount(self, parent):
         """Reimplemented from QAbstractItemModel.columnCount."""
+        if parent.column() > 0:
+            return 0
         return len(_Node.headers)
 
     def canFetchMore(self, parent=QtCore.QModelIndex()):
@@ -414,9 +419,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         if role == QtCore.Qt.DisplayRole:
             node = index.internalPointer()
             try:
-                header = self.headerData(index.column())
-                if header == u'#':
-                    header = u'tracknumber'
+                header = _Node.header(index.column())
                 return node.metadata[header]
             except KeyError:
                 return ""
@@ -436,13 +439,13 @@ class BaseModel(QtCore.QAbstractItemModel):
     def parent(self, index):
         """Reimplemented from QAbstractItemModel.parent."""
         parent = self.getNode(index).parent()
-        if parent == self._rootNode:
+        if not parent or parent == self._rootNode:
             return QtCore.QModelIndex()
         return self.createIndex(parent.row(), parent.column(), parent)
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
         """Reimplemented from QAbstractItemModel.index."""
-        if row < 0 or column < 0:
+        if row < 0 or column < 0 or parent.column() > 0:
             return QtCore.QModelIndex()
         child = self.getNode(parent).child(row)
         if child:
@@ -545,13 +548,15 @@ class BaseModel(QtCore.QAbstractItemModel):
                     track.update(meta)
                     album.update()
                     artist.update()
-                    self._rootNode.update_headers()
+                    self._rootNode.updateHeaders()
                     index = self.index(trackPosition, 0, index)
                 else:
                     album.update(meta)
                     artist.update()
+                    self._rootNode.updateHeaders()
             else:
                 artist.update(meta)
+                self._rootNode.updateHeaders()
         else:
             index = self.index(index.row(), index.column(), index.parent())
             track = index.internalPointer()
@@ -586,7 +591,7 @@ class BaseModel(QtCore.QAbstractItemModel):
             artist.updateADR()
         else:
             album.update()
-        self._rootNode.update_headers()
+        self._rootNode.updateHeaders()
 
 
 class Model(QtGui.QAbstractProxyModel):
@@ -660,13 +665,18 @@ class Model(QtGui.QAbstractProxyModel):
     def hasChildren(self, parent):
         """Reimplemented from QAbstractProxyModel.hasChildren.
 
-        Calls source implementation from BaseModel.
+        It returns True for top-level, because otherwise the model would
+        ignore AlbumNodes, as they're root's children.
+
+        :returns: True for top-level Node, False otherwise.
         """
-        return self.sourceModel().hasChildren(parent)
+        if not parent.isValid():
+            return True
+        return False
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
         """Reimplemented from QAbstractProxyModel.index."""
-        if not self.hasIndex(row, column, parent):
+        if not self.hasIndex(row, column, parent) or parent.column() > 0:
             return QtCore.QModelIndex()
         source = QtCore.QModelIndex(self._mapper[row])
         return self.mapFromSource(
@@ -680,9 +690,7 @@ class Model(QtGui.QAbstractProxyModel):
         if role == QtCore.Qt.DisplayRole:
             node = index.internalPointer()
             try:
-                header = self.headerData(index.column())
-                if header == u'#':
-                    header = u'tracknumber'
+                header = _Node.header(index.column())
                 return node.metadata[header]
             except KeyError:
                 return ""
