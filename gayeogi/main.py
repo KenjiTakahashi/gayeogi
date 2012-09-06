@@ -201,6 +201,7 @@ class Main(QtGui.QMainWindow):
                 dialog = Settings()
                 dialog.exec_()
         self.db = DB(dbPath)
+        self.db.finished.connect(self.enableButtons)
         from interfaces.main import Ui_main
         self.ui = Ui_main()
         widget = QtGui.QWidget()
@@ -240,7 +241,7 @@ class Main(QtGui.QMainWindow):
         self.rt.stepped.connect(self.statusBar().showMessage)
         self.rt.updated.connect(self.update)
         self.ui.local.clicked.connect(self.disableButtons)
-        self.ui.local.clicked.connect(self.db.run)  # FIXME: threadify
+        self.ui.local.clicked.connect(self.db.start)
         self.ui.remote.clicked.connect(self.disableButtons)
         self.ui.remote.clicked.connect(self.rt.start)
         self.ui.close.clicked.connect(self.close)
@@ -261,6 +262,12 @@ class Main(QtGui.QMainWindow):
         self.ui.remote.setDisabled(True)
         self.ui.save.setDisabled(True)
         self.ui.settings.setDisabled(True)
+
+    def enableButtons(self):
+        self.ui.local.setEnabled(True)
+        self.ui.remote.setEnabled(True)
+        self.ui.save.setEnabled(True)
+        self.ui.settings.setEnabled(True)
 
     def loadPluginsTranslators(self):
         reload(gayeogi.plugins)
@@ -405,10 +412,6 @@ class Main(QtGui.QMainWindow):
     def update(self):
         self.computeStats()
         self.statusBar().showMessage(self.trUtf8('Done'))
-        self.ui.local.setEnabled(True)
-        self.ui.remote.setEnabled(True)
-        self.ui.save.setEnabled(True)
-        self.ui.settings.setEnabled(True)
         sArtists = [i.text(0) for i in self.ui.artists.selectedItems()]
         sAlbums = [i.text(1) for i in self.ui.albums.selectedItems()]
         sTracks = [i.text(0) for i in self.ui.tracks.selectedItems()]

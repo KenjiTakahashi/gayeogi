@@ -767,12 +767,14 @@ class TracksModel(Model):
     """Docstring for TracksModel """
 
 
-class DB(object):
+class DB(QtCore.QThread):
     """Local filesystem watcher and DB holder/updater."""
     __settings = QtCore.QSettings(u'gayeogi', u'db')
+    finished = QtCore.pyqtSignal()
 
     def __init__(self, path):
         """@todo: to be defined """
+        super(DB, self).__init__()
         self.artists = BaseModel(path)
         self.albums = AlbumsModel(self.artists)
         self.tracks = TracksModel(self.artists)
@@ -830,3 +832,4 @@ class DB(object):
                                     self.index[path] = self.upsert(
                                         self.getIndex(path)
                                     )(tag)
+        self.finished.emit()
