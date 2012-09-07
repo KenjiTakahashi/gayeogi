@@ -18,6 +18,7 @@
 import json
 import os
 import glob
+import cPickle
 from fnmatch import fnmatch
 from PyQt4 import QtCore, QtGui
 import logging
@@ -29,7 +30,6 @@ class LegacyDB(object):
         self.dbPath = os.path.join(dbPath, u'db.pkl')
 
     def read(self):
-        import cPickle
         handler = open(self.dbPath, u'rb')
         result = cPickle.load(handler)
         handler.close()
@@ -608,7 +608,6 @@ class Model(QtGui.QAbstractProxyModel):
 
     def insertRows(self, parent):
         """Inserts new rows based on current _selection.
-        It also triggers data fetching as needed.
 
         @note: To actually add data to the model use BaseModel.upsert.
 
@@ -644,6 +643,9 @@ class Model(QtGui.QAbstractProxyModel):
             pindex = QtCore.QPersistentModelIndex(child)
             self._mapper.remove(pindex)
             del self._rmapper[pindex]
+        for k, v in self._rmapper.iteritems():
+            if v > row:
+                self._rmapper[k] -= count
         self.endRemoveRows()
 
     def setSelection(self, selected, deselected):
@@ -756,8 +758,7 @@ class Model(QtGui.QAbstractProxyModel):
             source.row(), 0, source.internalPointer()
         )
         i = self._rmapper[QtCore.QPersistentModelIndex(source0)]
-        index = self.createIndex(i, source.column(), source.internalPointer())
-        return index
+        return self.createIndex(i, source.column(), source.internalPointer())
 
     def mapToSource(self, proxy):
         """Reimplemented from QAbstractProxyModel.mapToSource.
@@ -789,10 +790,11 @@ class DB(QtCore.QThread):
     def __init__(self, path):
         """@todo: to be defined """
         super(DB, self).__init__()
+        self.path = path
         self.artists = BaseModel(path)
         self.albums = AlbumsModel(self.artists)
         self.tracks = TracksModel(self.artists)
-        self.index = dict()
+        self.index = None
 
     def isIgnored(self, path, ignores):
         """Checks if specified folder is to be ignored.
@@ -834,6 +836,12 @@ class DB(QtCore.QThread):
         ignores = DB.__settings.value(u'ignores', []).toPyObject()
         if ignores is None:
             ignores = list()
+        if self.index is None:
+            path = os.path.join(os.path.dirname(self.path), u'index.db')
+            if os.path.exists(path):
+                self.index = cPickle.load(open(path, u'rb'))
+            else:
+                self.index = dict()
         for directory, enabled in directories:
             if enabled:
                 for root, _, filenames in os.walk(directory):
