@@ -22,7 +22,7 @@ from gayeogi.utils import Tagger
 
 class TestTagger(object):
     def setUp(self):
-        self.path = os.path.join(os.path.dirname(__file__), u'..', u'data')
+        self.path = os.path.join(__file__, u'..', u'..', u'data')
         self.path = os.path.normpath(self.path)
         self.result = {
             u'artist': u'test_artist1',

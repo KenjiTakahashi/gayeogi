@@ -23,7 +23,10 @@ from PyQt4.QtCore import QSettings
 
 class TestRun(object):
     def setUp(self):
-        self.db = DB("{0}/non_existing".format(os.getcwd()))
+        self.path = os.path.join(__file__, u'..', u'..', u'data', u'empty')
+        self.path = os.path.normpath(self.path)
+        os.mkdir(self.path)
+        self.db = DB(self.path)
         path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), u'..', u'data')
         )
@@ -31,6 +34,9 @@ class TestRun(object):
             os.path.join(path, u'db.conf'), QSettings.NativeFormat
         )
         DB._DB__settings.setValue(u'directories', [(path, True)])
+
+    def tearDown(self):
+        os.rmdir(self.path)
 
     def test_add_files(self):
         self.db.run()

@@ -23,8 +23,14 @@ from gayeogi.db.local import ArtistNode, AlbumNode, TrackNode
 
 class BaseTest(object):
     def setUp(self):
-        self.db = BaseModel("{0}/non_existing".format(os.getcwd()))
+        self.path = os.path.join(__file__, u'..', u'..', u'data', u'empty')
+        self.path = os.path.normpath(self.path)
+        os.mkdir(self.path)
+        self.db = BaseModel(self.path)
         self.root = self.db._rootNode
+
+    def tearDown(self):
+        os.rmdir(self.path)
 
     def prepare_update(self):
         self.artist = ArtistNode(parent=self.root)
