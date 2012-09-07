@@ -370,15 +370,13 @@ class Main(QtGui.QMainWindow):
         dialog = Settings()
         dialog.ok.clicked.connect(__save)
         dialog.exec_()
+
     def save(self):
         u"""Save database to file."""
-        try:
-            self.library[5][0] = False
-            self.db.write(self.library)
-        except AttributeError:
-            self.statusBar().showMessage(self.trUtf8('Nothing to save...'))
-        else:
+        if self.db.save():
             self.statusBar().showMessage(self.trUtf8('Saved'))
+        else:
+            self.statusBar().showMessage(self.trUtf8('Nothing to save'))
     def setAnalog(self, item):
         data = not item.data(1, 123).toBool()
         item.setData(1, 123, data)

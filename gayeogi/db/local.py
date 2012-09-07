@@ -19,6 +19,7 @@ import json
 import os
 import glob
 import cPickle
+from base64 import urlsafe_b64encode, urlsafe_b64decode
 from fnmatch import fnmatch
 from PyQt4 import QtCore, QtGui
 import logging
@@ -63,6 +64,7 @@ class _Node(object):
 
     def __init__(self, path, parent=None):
         self._path = path
+        self._mtime = self._path and os.stat(path).st_mtime or None
         self._parent = parent
         self._children = list()
         self.metadata = dict()
@@ -94,7 +96,40 @@ class _Node(object):
                     if value != v:
                         self.metadata[k] = u"<multiple_values>"
 
+    def flush(self):
+        """@todo: Docstring for flush """
+        for child in self._children:
+            child.flush()
+
+    def _fclear(self, fnd):
+        newpath = os.path.join(self._parent._path, self.fn_encode(fnd))
+        if self._path and self._path != newpath:
+            newmtime = os.stat(newpath).st_mtime
+            if self._mtime == newmtime:
+                if isinstance(self, TrackNode):
+                    os.remove(self._path)
+                else:
+                    os.remove(os.path.join(self._path, u'.meta'))
+                try:
+                    os.rmdir(self._path)
+                except OSError:
+                    pass
+        self._path = newpath
+
+    def _fsave(self, meta):
+        if isinstance(self, TrackNode):
+            f = open(self._path, u'w')
+        else:
+            try:
+                os.mkdir(self._path)
+            except:
+                pass
+            f = open(os.path.join(self._path, u'.meta'), u'w')
+        f.write(json.dumps(meta, separators=(',', ':')))
+        f.close()
+
     def updateHeaders(self):
+        _Node.headers |= set(self.metadata.keys())
         for child in self._children:
             _Node.headers |= set(child.metadata.keys())
 
@@ -104,7 +139,7 @@ class _Node(object):
 
         :returns: True or False.
         """
-        return bool(len(self._data))
+        return bool(self._data)
 
     def fetch(self):
         """Fetches next chunk of data from presistent storage
@@ -222,11 +257,19 @@ class ArtistNode(_Node):
         self.updateADR()
         super(ArtistNode, self).update(meta)
 
-    def updateADR(self):
-        """@todo: Docstring for updateADR
-
+    def flush(self):
+        """@todo: Docstring for flush
         :returns: @todo
+
         """
+        self._fclear(self.metadata[u'artist'])
+        metadata = self.metadata.copy()
+        del metadata[u'artist']
+        self._fsave(metadata)
+        super(ArtistNode, self).flush()
+
+    def updateADR(self):
+        """@todo: Docstring for updateADR """
         self.adr = {u'__a__': True, u'__d__': True, u'__r__': True}
         for child in self._children:
             for adr in [u'__a__', u'__d__', u'__r__']:
@@ -237,11 +280,12 @@ class ArtistNode(_Node):
         AlbumNode(self._data.pop(), self)
 
     def fn_encode(self, fn):
-        return u'&'.join([unicode(ord(c)) for c in fn])
+        return urlsafe_b64encode(fn.encode(u'utf-8'))
 
     def fn_decode(self, fn):
-        fn = os.path.basename(fn)
-        return u''.join([unichr(int(n)) for n in fn.split(u'&')])
+        return unicode(
+            urlsafe_b64decode(os.path.basename(fn.encode(u'utf-8')))
+        )
 
 
 class AlbumNode(_Node):
@@ -296,20 +340,36 @@ class AlbumNode(_Node):
                     pass
         super(AlbumNode, self).update(meta)
 
+    def flush(self):
+        """@todo: Docstring for flush
+        :returns: @todo
+
+        """
+        self._fclear((self.metadata[u'year'], self.metadata[u'album']))
+        metadata = self.metadata.copy()
+        del metadata[u'year']
+        del metadata[u'album']
+        for adr in [u'__a__', u'__d__', u'__r__']:
+            try:
+                _ = metadata[adr]
+                metadata[adr] = [self.adr[adr], _]
+            except KeyError:
+                metadata[adr] = [self.adr[adr]]
+        self._fsave(metadata)
+        super(AlbumNode, self).flush()
+
     def fetch(self):
         TrackNode(self._data.pop(), self)
 
     def fn_encode(self, fn):
         fn1, fn2 = fn
-        y = u'&'.join([unicode(ord(c)) for c in fn1])
-        a = u'&'.join([unicode(ord(c)) for c in fn2])
-        return "{0}.{1}".format(y, a)
+        return urlsafe_b64encode("{0}.{1}".format(fn1, fn2))
 
     def fn_decode(self, fn):
-        fn = os.path.basename(fn).split(u'.')
-        y = u''.join([unichr(int(n)) for n in fn[0].split(u'&')])
-        a = u''.join([unichr(int(n)) for n in fn[1].split(u'&')])
-        return (y, a)
+        fn = unicode(
+            urlsafe_b64decode(os.path.basename(fn.encode(u'utf-8'))
+        )).split(u'.')
+        return (fn[0], fn[1])
 
 
 class TrackNode(_Node):
@@ -330,17 +390,26 @@ class TrackNode(_Node):
         else:
             self.metadata = dict()
 
+    def flush(self):
+        """@todo: Docstring for flush
+        :returns: @todo
+
+        """
+        self._fclear((self.metadata[u'tracknumber'], self.metadata[u'title']))
+        metadata = self.metadata.copy()
+        del metadata[u'tracknumber']
+        del metadata[u'title']
+        self._fsave(metadata)
+
     def fn_encode(self, fn):
         fn1, fn2 = fn
-        n = u'&'.join([unicode(ord(c)) for c in fn1])
-        t = u'&'.join([unicode(ord(c)) for c in fn2])
-        return (n, t)
+        return urlsafe_b64encode("{0}.{1}".format(fn1, fn2))
 
     def fn_decode(self, fn):
-        fn = os.path.basename(fn).split(u'.')
-        n = u''.join([unichr(int(n)) for n in fn[0].split(u'&')])
-        t = u''.join([unichr(int(n)) for n in fn[1].split(u'&')])
-        return (n, t)
+        fn = unicode(
+            urlsafe_b64decode(os.path.basename(fn.encode(u'utf-8'))
+        )).split(u'.')
+        return (fn[0], fn[1])
 
 
 class BaseModel(QtCore.QAbstractItemModel):
@@ -401,16 +470,16 @@ class BaseModel(QtCore.QAbstractItemModel):
         count = node.childCount()
         for i in xrange(count):
             child = node.child(i)
-            if child.canFetchMore():
+            while child.canFetchMore():
                 child.fetch()
             count = child.childCount()
             for j in xrange(count):
-                child = child.child(j)
-                if child.canFetchMore():
-                    child.fetch()
-            hlen = len(_Node.headers) - 1
-            self.beginMoveColumns(parent, 0, hlen, parent, hlen + 2)
-            self.endMoveColumns()
+                child_ = child.child(j)
+                while child_.canFetchMore():
+                    child_.fetch()
+        hlen = len(_Node.headers) - 1
+        self.beginMoveColumns(parent, 0, hlen, parent, hlen + 2)
+        self.endMoveColumns()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         """Reimplemented from QAbstractItemModel.data."""
@@ -592,6 +661,11 @@ class BaseModel(QtCore.QAbstractItemModel):
         else:
             album.update()
         self._rootNode.updateHeaders()
+
+    def flush(self):
+        """@todo: Docstring for flush """
+        # TODO: remove old files (needs adjusts in remove and upsert methods)
+        self._rootNode.flush()
 
 
 class Model(QtGui.QAbstractProxyModel):
@@ -790,11 +864,16 @@ class DB(QtCore.QThread):
     def __init__(self, path):
         """@todo: to be defined """
         super(DB, self).__init__()
-        self.path = path
         self.artists = BaseModel(path)
+        self.path = os.path.join(os.path.dirname(path), u'index.db')
         self.albums = AlbumsModel(self.artists)
         self.tracks = TracksModel(self.artists)
         self.index = None
+
+    def save(self):
+        """@todo: Docstring for save """
+        cPickle.dump(self.index, open(self.path, u'wb'), -1)
+        self.artists.flush()
 
     def isIgnored(self, path, ignores):
         """Checks if specified folder is to be ignored.
@@ -837,9 +916,8 @@ class DB(QtCore.QThread):
         if ignores is None:
             ignores = list()
         if self.index is None:
-            path = os.path.join(os.path.dirname(self.path), u'index.db')
-            if os.path.exists(path):
-                self.index = cPickle.load(open(path, u'rb'))
+            if os.path.exists(self.path):
+                self.index = cPickle.load(open(self.path, u'rb'))
             else:
                 self.index = dict()
         for directory, enabled in directories:
