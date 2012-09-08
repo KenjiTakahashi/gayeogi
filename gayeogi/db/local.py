@@ -64,7 +64,11 @@ class _Node(object):
 
     def __init__(self, path, parent=None):
         self._path = path
-        self._mtime = self._path and os.stat(path).st_mtime or None
+        self._mtime = None
+        if self._path:
+            metapath = os.path.join(self._path, u'.meta')
+            if os.path.exists(metapath):
+                self._mtime = os.stat(metapath).st_mtime
         self._parent = parent
         self._children = list()
         self.metadata = dict()
@@ -104,30 +108,25 @@ class _Node(object):
     def _fclear(self, fnd):
         newpath = os.path.join(self._parent._path, self.fn_encode(fnd))
         if self._path and self._path != newpath:
-            newmtime = os.stat(newpath).st_mtime
+            metapath = os.path.join(self._path, u'.meta')
+            newmtime = os.stat(metapath).st_mtime
             if self._mtime == newmtime:
-                if isinstance(self, TrackNode):
-                    os.remove(self._path)
-                else:
-                    os.remove(os.path.join(self._path, u'.meta'))
+                os.remove(metapath)
                 try:
                     os.rmdir(self._path)
                 except OSError:
                     pass
-            self._mtime = newmtime
+            self._mtime = os.stat(newpath).st_mtime
         self._path = newpath
 
     def _fsave(self, meta):
-        if isinstance(self, TrackNode):
-            f = open(self._path, u'w')
-        else:
-            try:
-                os.mkdir(self._path)
-            except:
-                pass
-            f = open(os.path.join(self._path, u'.meta'), u'w')
-        f.write(json.dumps(meta, separators=(',', ':')))
-        f.close()
+        try:
+            os.mkdir(self._path)
+        except:
+            pass
+        open(os.path.join(self._path, u'.meta'), u'w').write(
+            json.dumps(meta, separators=(',', ':'))
+        )
 
     def updateHeaders(self):
         _Node.headers |= set(self.metadata.keys())
@@ -384,6 +383,7 @@ class TrackNode(_Node):
         """
         super(TrackNode, self).__init__(path, parent)
         if path:
+            path = os.path.join(self._path, u'.meta')
             self.metadata = json.loads(open(path, 'r').read())
             (self.metadata[u"tracknumber"],
             self.metadata[u"title"]) = self.fn_decode(self._path)
@@ -665,7 +665,6 @@ class BaseModel(QtCore.QAbstractItemModel):
 
     def flush(self):
         """@todo: Docstring for flush """
-        # TODO: remove old files (needs adjusts in remove and upsert methods)
         self._rootNode.flush()
 
 
