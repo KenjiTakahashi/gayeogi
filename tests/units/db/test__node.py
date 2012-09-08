@@ -18,12 +18,11 @@
 
 import os
 import shutil
+import json
 from gayeogi.db.local import _Node, ArtistNode, AlbumNode, TrackNode
 
 
-class Test_fclear(object):
-    # It is same for artist, album and track,
-    # so we'll test ArtistNode here.
+class BaseTest(object):
     def setUp(self):
         self.path = os.path.join(__file__, u'..', u'..', u'data', u'empty')
         self.path = os.path.normpath(self.path)
@@ -41,15 +40,19 @@ class Test_fclear(object):
         self.artist._path = os.path.join(
             self.path, self.artist.fn_encode(self.meta[u'artist'])
         )
-        metadata = self.meta.copy()
-        del metadata[u'artist']
-        self.artist._fsave(metadata)
-        self.artist._mtime = os.stat(os.path.join(
-            self.artist._path, u'.meta'
-        )).st_mtime
 
     def tearDown(self):
         shutil.rmtree(self.path)
+
+
+class Test_fclear(BaseTest):
+    # It is same for artist, album and track,
+    # so we'll test ArtistNode here.
+    def setUp(self):
+        super(Test_fclear, self).setUp()
+        metadata = self.meta.copy()
+        del metadata[u'artist']
+        self.artist._fsave(metadata)
 
     def test_do_not_remove_unchanged(self):
         self.artist._fclear(self.meta[u'artist'])
@@ -83,12 +86,28 @@ class Test_fclear(object):
         assert not os.path.exists(oldpath)
 
 
-class Test_fsave(object):
-    def test_save_artist(self):
-        pass
+class Test_fsave(BaseTest):
+    # It is same for artist, album and track,
+    # so we'll test ArtistNode here.
+    def test_save_new(self):
+        metadata = self.meta.copy()
+        del metadata[u'artist']
+        self.artist._fsave(metadata)
+        assert os.path.exists(self.artist._path)
+        path = os.path.join(self.artist._path, u'.meta')
+        assert os.path.exists(path)
+        assert json.loads(open(path).read()) == metadata
+        assert self.artist.fn_decode(self.artist._path) == u'test_artist1'
 
-    def test_save_album(self):
-        pass
-
-    def test_save_track(self):
-        pass
+    def test_save_update(self):
+        metadata = self.meta.copy()
+        del metadata[u'artist']
+        self.artist._fsave(metadata)
+        self.artist.update({u'artist': u'test_artist2'})
+        self.artist._fclear(u'test_artist2')
+        self.artist._fsave(metadata)
+        assert os.path.exists(self.artist._path)
+        path = os.path.join(self.artist._path, u'.meta')
+        assert os.path.exists(path)
+        assert json.loads(open(path).read()) == metadata
+        assert self.artist.fn_decode(self.artist._path) == u'test_artist2'

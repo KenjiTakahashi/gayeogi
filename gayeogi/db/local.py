@@ -116,7 +116,6 @@ class _Node(object):
                     os.rmdir(self._path)
                 except OSError:
                     pass
-            self._mtime = os.stat(os.path.join(newpath, u'.meta')).st_mtime
         self._path = newpath
 
     def _fsave(self, meta):
@@ -124,9 +123,9 @@ class _Node(object):
             os.mkdir(self._path)
         except:
             pass
-        open(os.path.join(self._path, u'.meta'), u'w').write(
-            json.dumps(meta, separators=(',', ':'))
-        )
+        path = os.path.join(self._path, u'.meta')
+        open(path, u'w').write(json.dumps(meta, separators=(',', ':')))
+        self._mtime = os.stat(path).st_mtime
 
     def updateHeaders(self):
         _Node.headers |= set(self.metadata.keys())
