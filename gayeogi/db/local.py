@@ -116,7 +116,7 @@ class _Node(object):
                     os.rmdir(self._path)
                 except OSError:
                     pass
-            self._mtime = os.stat(newpath).st_mtime
+            self._mtime = os.stat(os.path.join(newpath, u'.meta')).st_mtime
         self._path = newpath
 
     def _fsave(self, meta):

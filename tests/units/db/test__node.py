@@ -58,9 +58,11 @@ class Test_fclear(object):
     def test_do_not_remove_changed_file(self):
         # It means that somebody already overwritten this entry
         # (e.g. File has been moved without metadata change).
-        os.mkdir(os.path.join(
+        path = os.path.join(
             self.path, self.artist.fn_encode(u'test_artist2')
-        ))
+        )
+        os.mkdir(path)
+        open(os.path.join(path, u'.meta'), u'w')
         oldpath = self.artist._path
         stat = os.stat(oldpath)
         os.utime(
@@ -71,9 +73,11 @@ class Test_fclear(object):
         assert os.path.exists(oldpath)
 
     def test_remove_changed_with_unchanged_file(self):
-        os.mkdir(os.path.join(
+        path = os.path.join(
             self.path, self.artist.fn_encode(u'test_artist2')
-        ))
+        )
+        os.mkdir(path)
+        open(os.path.join(path, u'.meta'), u'w')
         oldpath = self.artist._path
         self.artist._fclear(u'test_artist2')
         assert not os.path.exists(oldpath)
