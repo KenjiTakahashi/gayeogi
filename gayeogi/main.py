@@ -112,11 +112,69 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
             index.data(987).toString()), option.fontMetrics.height() + 2)
 
 
-class ADRTableView(QtGui.QTableView):
+class TableView(QtGui.QTableView):
+    """Docstring for TableView """
+
+    def __init__(self, state, parent=None):
+        """@todo: to be defined
+
+        :parent: @todo
+        """
+        super(TableView, self).__init__(parent)
+        self.setSelectionMode(self.ExtendedSelection)
+        self.setSelectionBehavior(self.SelectRows)
+        self.setEditTriggers(self.NoEditTriggers)
+        self.setShowGrid(False)
+        self.setCornerButtonEnabled(False)
+        self.setWordWrap(False)
+        vheader = self.verticalHeader()
+        vheader.setHidden(True)
+        # this is slow as hell :/
+        #vheader.setResizeMode(vheader.ResizeToContents)
+        hheader = self.horizontalHeader()
+        hheader.setStretchLastSection(True)
+        hheader.setDefaultAlignment(Qt.AlignLeft)
+        hheader.setHighlightSections(False)
+        hheader.setMovable(True)
+        hheader.setContextMenuPolicy(Qt.CustomContextMenu)
+        hheader.customContextMenuRequested.connect(self.showHeaderContextMenu)
+        # This restores state over and over for every column added.
+        # FIXME: Restore state once (somehow).
+        hheader.sectionCountChanged.connect(
+            lambda: self.horizontalHeader().restoreState(state)
+        )
+
+    def showHeaderContextMenu(self):
+        """@todo: Docstring for showHeaderContextMenu """
+        menu = QtGui.QMenu()
+        model = self.model()
+        for i in xrange(model.columnCount()):
+            action = menu.addAction(
+                model.headerData(i, Qt.Horizontal, Qt.DisplayRole).toString()
+            )
+            action.setProperty(u'column', i)
+            action.setCheckable(True)
+            if not self.isColumnHidden(i):
+                action.setChecked(True)
+        menu.triggered.connect(self.showHideColumn)
+        menu.exec_(QtGui.QCursor.pos())
+
+    def showHideColumn(self, action):
+        """@todo: Docstring for showHideColumn
+
+        :action: @todo
+        :returns: @todo
+
+        """
+        column = action.property(u'column').toInt()[0]
+        self.setColumnHidden(column, not self.isColumnHidden(column))
+
+
+class ADRTableView(TableView):
     buttonClicked = pyqtSignal(QtGui.QTreeWidgetItem)
 
-    def __init__(self, parent=None):
-        super(ADRTableView, self).__init__(parent)
+    def __init__(self, state, parent=None):
+        super(ADRTableView, self).__init__(state, parent)
         self.setMouseTracking(True)
         self.delegate = ADRItemDelegate()
         self.delegate.buttonClicked.connect(self.callback)
@@ -171,27 +229,13 @@ class View(QtGui.QWidget):
             u"(a or d or r). Case insensitive, regexp allowed."
         )))
         self.view = view
-        self.view.setShowGrid(False)
-        self.view.setCornerButtonEnabled(False)
-        self.view.setWordWrap(False)
-        vheader = self.view.verticalHeader()
-        vheader.setHidden(True)
-        # this is slow as hell :/
-        #vheader.setResizeMode(vheader.ResizeToContents)
-        hheader = self.view.horizontalHeader()
-        hheader.setStretchLastSection(True)
-        hheader.setDefaultAlignment(Qt.AlignLeft)
-        hheader.setHighlightSections(False)
         self.view.setModel(self.model)
-        self.view.setSelectionMode(self.view.ExtendedSelection)
-        self.view.setSelectionBehavior(self.view.SelectRows)
-        self.view.setEditTriggers(self.view.NoEditTriggers)
-        self.view.setSortingEnabled(True)
         layout = QtGui.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.filter)
         layout.addWidget(self.view)
         self.setLayout(layout)
+        self.view.setSortingEnabled(True)
 
 
 class Main(QtGui.QMainWindow):
@@ -213,18 +257,18 @@ class Main(QtGui.QMainWindow):
         self.ui = Ui_main()
         widget = QtGui.QWidget()
         self.ui.setupUi(widget)
-        self.ui.artists = View(
-            self.db.artists, QtGui.QTableView(), self.ui.splitter
-        )
-        delegate = ADRItemDelegate()
+        self.ui.artists = View(self.db.artists, TableView(
+            self.__settings.value(u'artistsView').toByteArray()
+        ), self.ui.splitter)
+        #delegate = ADRItemDelegate()
         #self.ui.artists.setItemDelegateForColumn(0, delegate)
-        self.ui.albums = View(
-            self.db.albums, ADRTableView(), self.ui.splitter
-        )
-        self.ui.albums.view.buttonClicked.connect(self.setAnalog)
-        self.ui.tracks = View(
-            self.db.tracks, QtGui.QTableView(), self.ui.splitter
-        )
+        self.ui.albums = View(self.db.albums, ADRTableView(
+            self.__settings.value(u'albumsView').toByteArray()
+        ), self.ui.splitter)
+        #self.ui.albums.view.buttonClicked.connect(self.setAnalog)
+        self.ui.tracks = View(self.db.tracks, TableView(
+            self.__settings.value(u'tracksView').toByteArray()
+        ), self.ui.splitter)
         self.ui.artists.view.selectionModel().selectionChanged.connect(
             self.ui.albums.model.setSelection
         )
@@ -480,14 +524,27 @@ class Main(QtGui.QMainWindow):
             u'albums': albums,
             u'detailed': detailed
         }
+
     def closeEvent(self, event):
         def unload():
             for plugin in self.ui.plugins.values():
                 plugin.unload()
-            self.__settings.setValue(u'splitters', self.ui.splitter.saveState())
+            self.__settings.setValue(
+                u'splitters', self.ui.splitter.saveState()
+            )
+            self.__settings.setValue(u'artistsView',
+                self.ui.artists.view.horizontalHeader().saveState()
+            )
+            self.__settings.setValue(u'albumsView',
+                self.ui.albums.view.horizontalHeader().saveState()
+            )
+            self.__settings.setValue(u'tracksView',
+                self.ui.tracks.view.horizontalHeader().saveState()
+            )
         if self.library[5][0]:
             def save():
                 self.save()
+
             def reject():
                 event.ignore()
             from interfaces.confirmation import ConfirmationDialog

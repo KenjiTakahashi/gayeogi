@@ -19,7 +19,7 @@
 import os
 import shutil
 import json
-from gayeogi.db.local import _Node, ArtistNode, AlbumNode, TrackNode
+from gayeogi.db.local import _Node, ArtistNode
 
 
 class BaseTest(object):
