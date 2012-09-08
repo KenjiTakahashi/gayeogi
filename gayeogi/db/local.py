@@ -114,6 +114,7 @@ class _Node(object):
                     os.rmdir(self._path)
                 except OSError:
                     pass
+            self._mtime = newmtime
         self._path = newpath
 
     def _fsave(self, meta):
@@ -920,6 +921,10 @@ class DB(QtCore.QThread):
                 self.index = cPickle.load(open(self.path, u'rb'))
             else:
                 self.index = dict()
+        for path, index in self.index.copy().iteritems():
+            if not os.path.exists(path):
+                self.artists.remove(index)
+                del self.index[path]
         for directory, enabled in directories:
             if enabled:
                 for root, _, filenames in os.walk(directory):
