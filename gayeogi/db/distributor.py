@@ -26,52 +26,72 @@ logger = logging.getLogger('gayeogi.remote')
 
 class Bee(QThread):
     """Worker thread used by Distributor."""
-    def __init__(self, tasks, library, urls, avai,
-            modified, name, rlock, processed, case):
+
+    def __init__(self, tasks, rlock, case):
         """Constructs new worker instance.
 
-        Args:
-            tasks: initial tasks queue (it will get tasks from here)
-            library: main library part (library[1])
-            urls: urls library part (library[3])
-            avai: available library part (library[4])
-            name: used database name
-            rlock: RLock object used to provide thread-safety
-                (should be the same for all instances of Bee!)
-            processed: processed artists storage (used in ~behaviour mode)
-            case: case sensitivity
+        @note: :rlock: object should be the same for all Bee instances!
 
+        :tasks: Initial tasks queue (Bee will get tasks from here).
+        :rlock: RLock object used to provide thread-safety.
+        :case: Case sensitivity.
         """
-        QThread.__init__(self)
+        super(Bee, self).__init__()
         self.tasks = tasks
-        self.library = library
-        self.urls = urls
-        self.avai = avai
-        self.modified = modified
-        self.name = name
         self.rlock = rlock
-        self.processed = processed
         self.case = case
         self.start()
+
+    def fetch(self, work, artist, url, albums, types):
+        """@todo: Docstring for fetch
+
+        :work: @todo
+        :artist: @todo
+        :url: @todo
+        :albums: @todo
+        :types: @todo
+        :returns: @todo
+
+        """
+        try:
+            result = work(artist, albums, url, types)
+        except NoBandError as e:
+            pass  # TODO: remove url (no such artist in that db)
+        except ConnError as e:
+            pass  # TODO: log connection error
+        else:
+            for error in result[u'errors']:
+                pass  # TODO: log errors
+            return result[u'result']
 
     def run(self):
         """Starts worker thread, fetches given artist releases
         and appends them to the library.
 
-        Note: Use start() method to run it in a separate thread.
-
+        @note: Use Bee.start method to run in a separate thread.
         """
         while True:
-            work, (artist, element), types = self.tasks.get()
-            if not work:
-                break
+            dbs, behaviour, (artist, urls, albums, upsert) = self.tasks.get()
+            processed = False
+            for db, types in dbs:
+                url = ""  # TODO: get url
+                if not behaviour:
+                    if not processed[0]:
+                        result = self.fetch(db, artist, url, albums, types)
+                else:
+                    result = self.fetch(db, artist, url, albums, types)
+            if result is not None:
+                for a1, y1 in result[u'result']:
+                    if self.case:
+                        for a2, y2 in albums:
+                            if y1 == y2 and a1.lower() == a2.lower():
+                                a1 = a2
+                    with self.rlock:
+                        pass  # TODO: upsert
             added = False
             albums = dict()
             try:
-                try:
-                    result = work(artist, element, self.urls[artist], types)
-                except KeyError:
-                    result = work(artist, element, {}, types)
+                pass
             except NoBandError as e:
                 self.rlock.acquire()
                 try:
@@ -86,11 +106,7 @@ class Bee(QThread):
                     pass
                 self.rlock.release()
                 logger.warning([artist, e.message])
-            except ConnError as e:
-                logger.error([artist, e.message])
             else:
-                for error in result[u'errors']:
-                    logger.warning([artist, error])
                 for (album, year) in result[u'result']:
                     if self.case and year in self.library[artist]:
                         for alb in self.library[artist][year].iterkeys():
@@ -183,47 +199,38 @@ class Bee(QThread):
 class Distributor(QThread):
     """Main db object to fetch all releases and append them to the library.
 
-    Signals:
+    @signals:
     updated -- emitted at the end (should be 'finished', but comp. reasons)
     stepped -- emitted after every release:
         unicode -- release name
-
     """
+
     __settings = QSettings(u'gayeogi', u'Databases')
-    updated = pyqtSignal()
+    finished = pyqtSignal()
     stepped = pyqtSignal(unicode)
 
     def __init__(self, library):
         """Constructs new Distributor instance.
 
-        Args:
-            library (tuple): reference to the library structure
-
+        :library: Iterator over all artists in library.
         """
-        QThread.__init__(self)
-        self.library = library[1]
-        self.urls = library[3]
-        self.avai = library[4]
-        self.modified = library[5]
+        super(Distributor, self).__init__()
+        self.library = library
 
     def run(self):
         """Starts Distributor and fetches releases for enabled dbs.
 
-        It also reads appropriate settings from Databases.conf file.
-
-        Note: Use start() method to run in separate thread.
-
+        @note: Also reads appropriate settings from Databases.conf file.
+        @note: Use Distributor.start method to run in separate thread.
         """
         bases = [(unicode(self.__settings.value(x + u'/module').toString()),
-                    self.__settings.value(x + u'/size').toInt()[0],
-                    [unicode(t) for t, e in
-                        self.__settings.value(x +
-                            u'/types').toPyObject().iteritems() if e])
-                for x in self.__settings.value(u'order').toPyObject()
+                    [unicode(t) for t, e in self.__settings.value(
+                        x + u'/types'
+                    ).toPyObject().iteritems() if e]
+                ) for x in self.__settings.value(u'order').toPyObject()
                 if self.__settings.value(x + u'/Enabled').toBool()]
-        behaviour = self.__settings.value(u'behaviour').toBool()
-        processed = dict()
-        for (name, threads, types) in bases:
+        dbs = list()
+        for name, types in bases:
             try:
                 db = __import__(u'gayeogi.db.bees.' + name, globals(),
                     locals(), [u'work', u'name', u'init'], -1)
@@ -232,32 +239,22 @@ class Distributor(QThread):
                     [name, self.trUtf8('No such module has been found!!!')]
                 )
             else:
-                tasks = Queue(threads)
-                threa = list()
-                rlock = RLock()
                 try:
                     db.init()
                 except AttributeError:
                     pass
-                for _ in range(threads):
-                    t = Bee(
-                        tasks, self.library, self.urls, self.avai,
-                        self.modified, db.name, rlock, processed,
-                        self.__settings.value(u'case').toBool()
-                    )
-                    threa.append(t)
-                for entry in self.library.iteritems():
-                    if not behaviour:
-                        try:
-                            processed[entry[0]]
-                        except KeyError:
-                            tasks.put((db.work, entry, types))
-                    else:
-                        tasks.put((db.work, entry, types))
-                    self.stepped.emit(entry[0])
-                tasks.join()
-                for _ in range(threads):
-                    tasks.put((False, (False, False), False))
-                for t in threa:
-                    t.wait()
-        self.updated.emit()
+                dbs.append((db.work, types))
+        threadsnum = self.__settings.value(u'threads', 1).toInt()[0]
+        behaviour = self.__settings.value(u'behaviour').toBool()
+        tasks = Queue(threadsnum)
+        threads = [Bee(
+            tasks, RLock(), self.__settings.value(u'case').toBool()
+        ) for i in xrange(threadsnum)]
+        for artist in self.library:
+            self.stepped.emit(artist)
+            tasks.put((dbs, behaviour, artist))
+        tasks.join()
+        # FIXME: It was here, but do we need it?
+        for t in threads:
+            t.wait()
+        self.finished.emit()

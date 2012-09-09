@@ -264,6 +264,11 @@ class ArtistNode(_Node):
         self._fclear(self.metadata[u'artist'])
         metadata = self.metadata.copy()
         del metadata[u'artist']
+        try:
+            _ = metadata[u'__urls__']
+            metadata[u'__urls__'] = [self.urls, _]
+        except KeyError:
+            metadata[u'__urls__'] = [self.urls]
         self._fsave(metadata)
         super(ArtistNode, self).flush()
 
@@ -493,12 +498,12 @@ class BaseModel(QtCore.QAbstractItemModel):
             except KeyError:
                 return ""
 
-    def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
-        """Reimplemented from QAbstractItemModel.headerData.
-
-        @note: _ (orientation) is not used, as there's only horizontal header.
-        """
-        if role == QtCore.Qt.DisplayRole:
+    def headerData(
+        self, section,
+        o=QtCore.Qt.Horizontal, role=QtCore.Qt.DisplayRole
+    ):
+        """Reimplemented from QAbstractItemModel.headerData. """
+        if role == QtCore.Qt.DisplayRole and o == QtCore.Qt.Horizontal:
             if section >= 0:
                 header = _Node.header(section)
                 if header == u'tracknumber':
@@ -520,6 +525,16 @@ class BaseModel(QtCore.QAbstractItemModel):
         if child:
             return self.createIndex(row, column, child)
         return QtCore.QModelIndex()
+
+    def permanentIndex(self, row, column, parent=QtCore.QModelIndex()):
+        """Returns permanent index and Node for given location.
+
+        @note: Arguments as in BaseModel.index.
+
+        :returns: A tuple in form of (permanent index, Node).
+        """
+        index = self.index(row, column, parent)
+        return (QtCore.QPermanentModelIndex(index), index.internalPointer())
 
     def getNode(self, index):
         """Returns Node for specified index.
@@ -570,7 +585,6 @@ class BaseModel(QtCore.QAbstractItemModel):
         else:
             place = None
         if not index:
-            # TODO: deal with adr
             try:
                 artist = find_artist(meta[u'artist'])
             except KeyError:
@@ -863,6 +877,7 @@ class DB(QtCore.QThread):
     def __init__(self, path):
         """@todo: to be defined """
         super(DB, self).__init__()
+        self.modified = False
         self.artists = BaseModel(path)
         self.path = os.path.join(os.path.dirname(path), u'index.db')
         self.albums = AlbumsModel(self.artists)
@@ -897,6 +912,29 @@ class DB(QtCore.QThread):
             return self.index[path]
         except KeyError:
             return None
+
+    def iterator(self):
+        """Returns an iterator over the library, suitable for remote updating.
+
+        Provides artist name for lookup, an upsert closure for that artist,
+        artist's albums (for sensors) and existing urls to remote databases.
+
+        :returns: An iterator yielding a tuple in form of
+                  (artist name, albums, urls, upsert)
+        """
+        for i in xrange(self.artists.rowCount()):
+            index, node = self.artists.permanentIndex(i, 0)
+            albums = list()
+            for j in xrange(self.artists.rowCount(index)):
+                _, albumNode = self.artists.permanentIndex(j, 0, index)
+                metadata = albumNode.metadata
+                albums.append((metadata[u'album'], metadata[u'year']))
+            yield (
+                node.metadata[u'artist'],
+                node.urls,
+                albums,
+                self.upsert(index)
+            )
 
     def upsert(self, index):
         """@todo: Docstring for upsert

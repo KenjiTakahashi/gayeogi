@@ -242,7 +242,7 @@ class Main(QtGui.QMainWindow):
     __settings = QSettings(u'gayeogi', u'gayeogi')
 
     def __init__(self):
-        QtGui.QMainWindow.__init__(self)
+        super(Main, self).__init__()
         self.statistics = None
         if not os.path.exists(dbPath):
             os.mkdir(dbPath)
@@ -280,10 +280,9 @@ class Main(QtGui.QMainWindow):
             self.__settings.value(u'splitters').toByteArray()
         )
         self.setCentralWidget(widget)
-        self.library = (__version__, {}, {}, {}, {}, [False])  # FIXME: remove
-        self.rt = Distributor(self.library)
+        self.rt = Distributor(self.db.iterator())
         self.rt.stepped.connect(self.statusBar().showMessage)
-        self.rt.updated.connect(self.update)
+        self.rt.finished.connect(self.enableButtons)
         self.ui.local.clicked.connect(self.disableButtons)
         self.ui.local.clicked.connect(self.db.start)
         self.ui.remote.clicked.connect(self.disableButtons)
@@ -298,10 +297,7 @@ class Main(QtGui.QMainWindow):
         #self.loadPlugins()
 
     def disableButtons(self):
-        """Disable some buttons one mustn't use during the update.
-
-        @note: They are then re-enabled in the update() method.
-        """
+        """Disable some buttons one mustn't use during the update."""
         self.ui.local.setDisabled(True)
         self.ui.remote.setDisabled(True)
         self.ui.save.setDisabled(True)
@@ -312,6 +308,7 @@ class Main(QtGui.QMainWindow):
         self.ui.remote.setEnabled(True)
         self.ui.save.setEnabled(True)
         self.ui.settings.setEnabled(True)
+        self.statusBar().showMessage(self.trUtf8('Done'))
 
     def loadPluginsTranslators(self):
         reload(gayeogi.plugins)
@@ -451,44 +448,7 @@ class Main(QtGui.QMainWindow):
                 self.statistics[u'detailed'][item.artist][u'a'] = False
                 self.ui.artists.topLevelItem(item.aIndex).setData(0, 123, False)
         self.ui.albumsGreen.setText(unicode(self.statistics[u'albums'][0]))
-    def update(self):
-        self.computeStats()
-        self.statusBar().showMessage(self.trUtf8('Done'))
-        sArtists = [i.text(0) for i in self.ui.artists.selectedItems()]
-        sAlbums = [i.text(1) for i in self.ui.albums.selectedItems()]
-        sTracks = [i.text(0) for i in self.ui.tracks.selectedItems()]
-        self.ui.artists.clear()
-        self.ui.artists.setSortingEnabled(False)
-        for i, l in enumerate(self.library[1].keys()):
-            item = QtGui.QTreeWidgetItem([l])
-            item.setData(0, 123, self.statistics[u'detailed'][l][u'a'])
-            item.setData(0, 234, self.statistics[u'detailed'][l][u'd'])
-            item.setData(0, 345, self.statistics[u'detailed'][l][u'r'])
-            item.setData(0, 987, l)
-            self.ui.artists.insertTopLevelItem(i, item)
-        self.ui.artists.setSortingEnabled(True)
-        self.ui.artists.sortItems(0, 0)
-        for i in range(3):
-            self.ui.artists.resizeColumnToContents(i)
-        self.ui.artistFilter.textEdited.emit(self.ui.artistFilter.text())
-        for a in sArtists:
-            i = self.ui.artists.findItems(a, Qt.MatchExactly)
-            if i:
-                i[0].setSelected(True)
-        for a in sAlbums:
-            i = self.ui.albums.findItems(a, Qt.MatchExactly, 1)
-            if i:
-                i[0].setSelected(True)
-        for a in sTracks:
-            i = self.ui.tracks.findItems(a, Qt.MatchExactly)
-            if i:
-                i[0].setSelected(True)
-        self.ui.artistsGreen.setText(unicode(self.statistics[u'artists'][0]))
-        self.ui.artistsYellow.setText(unicode(self.statistics[u'artists'][1]))
-        self.ui.artistsRed.setText(unicode(self.statistics[u'artists'][2]))
-        self.ui.albumsGreen.setText(unicode(self.statistics[u'albums'][0]))
-        self.ui.albumsYellow.setText(unicode(self.statistics[u'albums'][1]))
-        self.ui.albumsRed.setText(unicode(self.statistics[u'albums'][2]))
+
     def computeStats(self):
         artists = [0, 0, 0]
         albums = [0, 0, 0]
@@ -541,7 +501,7 @@ class Main(QtGui.QMainWindow):
             self.__settings.setValue(u'tracksView',
                 self.ui.tracks.view.horizontalHeader().saveState()
             )
-        if self.library[5][0]:
+        if self.db.modified:
             def save():
                 self.save()
 
