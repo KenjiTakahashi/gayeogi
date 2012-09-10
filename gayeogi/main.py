@@ -44,7 +44,7 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
     buttonClicked = pyqtSignal(QModelIndex)
 
     def __init__(self, parent=None):
-        QtGui.QStyledItemDelegate.__init__(self, parent)
+        super(ADRItemDelegate, self).__init__(parent)
         self.palette = QtGui.QPalette()
         self.buttoned = False
         self.mx = 0
@@ -55,7 +55,7 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         self.ht = 0
 
     def paint(self, painter, option, index):
-        QtGui.QStyledItemDelegate.paint(self, painter, option, QModelIndex())
+        super(ADRItemDelegate, self).paint(painter, option, QModelIndex())
         painter.save()
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setPen(Qt.NoPen)
@@ -253,6 +253,8 @@ class Main(QtGui.QMainWindow):
                 dialog.exec_()
         self.db = DB(dbPath)
         self.db.finished.connect(self.enableButtons)
+        self.db.artistsStatisticsChanged.connect(self.updateArtistsStatistics)
+        self.db.albumsStatisticsChanged.connect(self.updateAlbumsStatistics)
         from interfaces.main import Ui_main
         self.ui = Ui_main()
         widget = QtGui.QWidget()
@@ -418,6 +420,7 @@ class Main(QtGui.QMainWindow):
             self.statusBar().showMessage(self.trUtf8('Saved'))
         else:
             self.statusBar().showMessage(self.trUtf8('Nothing to save'))
+
     def setAnalog(self, item):
         data = not item.data(1, 123).toBool()
         item.setData(1, 123, data)
@@ -449,41 +452,29 @@ class Main(QtGui.QMainWindow):
                 self.ui.artists.topLevelItem(item.aIndex).setData(0, 123, False)
         self.ui.albumsGreen.setText(unicode(self.statistics[u'albums'][0]))
 
-    def computeStats(self):
-        artists = [0, 0, 0]
-        albums = [0, 0, 0]
-        detailed = dict()
-        for a, d in self.library[1].iteritems():
-            detailed[a] = dict()
-            aa = 1
-            ad = 1
-            ar = 1
-            for y, t in d.iteritems():
-                for al in t.keys():
-                    key = self.library[4][a + y + al]
-                    analog = int(key[u'analog'])
-                    digital = int(key[u'digital'])
-                    remote = int(bool(key[u'remote']))
-                    albums[0] += analog
-                    albums[1] += digital
-                    albums[2] += remote
-                    if not analog:
-                        aa = 0
-                    if not digital:
-                        ad = 0
-                    if not remote:
-                        ar = 0
-            detailed[a][u'a'] = bool(aa)
-            detailed[a][u'd'] = bool(ad)
-            detailed[a][u'r'] = bool(ar)
-            artists[0] += aa
-            artists[1] += ad
-            artists[2] += ar
-        self.statistics = {
-            u'artists': artists,
-            u'albums': albums,
-            u'detailed': detailed
-        }
+    def updateArtistsStatistics(self, a, d, r):
+        """@todo: Docstring for updateArtistsStatistics
+
+        :a: @todo
+        :d: @todo
+        :r: @todo
+        :returns: @todo
+        """
+        self.ui.artistsGreen.setText(unicode(a))
+        self.ui.artistsYellow.setText(unicode(d))
+        self.ui.artistsRed.setText(unicode(r))
+
+    def updateAlbumsStatistics(self, a, d, r):
+        """@todo: Docstring for updateAlbumsStatistics
+
+        :a: @todo
+        :d: @todo
+        :r: @todo
+        :returns: @todo
+        """
+        self.ui.albumsGreen.setText(unicode(a))
+        self.ui.albumsYellow.setText(unicode(d))
+        self.ui.albumsRed.setText(unicode(r))
 
     def closeEvent(self, event):
         def unload():

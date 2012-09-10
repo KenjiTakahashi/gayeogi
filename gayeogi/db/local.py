@@ -59,10 +59,14 @@ class LegacyDB(object):
 logger = logging.getLogger('gayeogi.local')
 
 
-class _Node(object):
+class _Node(QtCore.QObject):
     headers = set()
+    stats = [{u'__a__': 0, u'__d__': 0, u'__r__': 0} for _ in xrange(2)]
+    artistsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
+    albumsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
 
     def __init__(self, path, parent=None):
+        super(_Node, self).__init__()
         self._path = path
         self._mtime = None
         if self._path:
@@ -132,6 +136,42 @@ class _Node(object):
         for child in self._children:
             _Node.headers |= set(child.metadata.keys())
 
+    @staticmethod
+    def header(section):
+        """@todo: Docstring for header
+
+        :section: @todo
+        :returns: @todo
+        """
+        return list(_Node.headers)[section]
+
+    def updateStatistics(self, artists, adr, value):
+        """Updates global statistics count and emits appropriate singal
+        for the views.
+
+        @note: It makes sure that this method is always called on _Node
+        instance, not any of the subclasses.
+
+        :artists: True for artists stats, False for albums stats.
+        :adr: __a/d/r__ key value.
+        :value: -1/+1.
+        """
+        if not type(self) == _Node:
+            self._parent.updateStatistics(artists, adr, value)
+        else:
+            if artists:
+                _Node.stats[0][adr] += value
+                stats = _Node.stats[0]
+                self.artistsStatisticsChanged.emit(
+                    stats[u'__a__'], stats[u'__d__'], stats[u'__r__']
+                )
+            else:
+                _Node.stats[1][adr] += value
+                stats = _Node.stats[1]
+                self.albumsStatisticsChanged.emit(
+                    stats[u'__a__'], stats[u'__d__'], stats[u'__r__']
+                )
+
     def canFetchMore(self):
         """Indicates if there is still some data to read from
         persistent storage.
@@ -155,15 +195,6 @@ class _Node(object):
 
     def removeChild(self, child):
         self._children.remove(child)
-
-    @staticmethod
-    def header(section):
-        """@todo: Docstring for header
-
-        :section: @todo
-        :returns: @todo
-        """
-        return list(_Node.headers)[section]
 
     def parent(self):
         return self._parent
@@ -274,11 +305,19 @@ class ArtistNode(_Node):
 
     def updateADR(self):
         """@todo: Docstring for updateADR """
+        oldadr = self.adr
         self.adr = {u'__a__': True, u'__d__': True, u'__r__': True}
         for child in self._children:
             for adr in [u'__a__', u'__d__', u'__r__']:
                 if not child.adr[adr]:
                     self.adr[adr] = False
+        for k, v1 in self.adr.iteritems():
+            v2 = oldadr[k]
+            if v1 != v2:
+                if v1:
+                    self.updateStatistics(True, k, 1)
+                else:
+                    self.updateStatistics(True, k, -1)
 
     def fetch(self):
         AlbumNode(self._data.pop(), self)
@@ -296,10 +335,16 @@ class AlbumNode(_Node):
     """Album node."""
 
     def __init__(self, path=None, parent=None):
-        """@todo: Docstring for __init__
+        """Creates a new Album Node.
 
-        :path: @todo
-        :parent: @todo
+        If :path: is specified it fetches metadata from persistent storage
+        and prefetches informations about Track Nodes. Otherwise it creates
+        an empty Node meant to be filled with AlbumNode.update method.
+
+        Also updates adr information for it's parent Node.
+
+        :path: Encoded filesystem path.
+        :parent: Parent Node.
         """
         super(AlbumNode, self).__init__(path, parent)
         self.adr = {u'__a__': False, u'__d__': False, u'__r__': False}
@@ -316,10 +361,15 @@ class AlbumNode(_Node):
                     else:
                         del self.metadata[adr]
                     self.adr[adr] = _[0]
+                    if self.adr[adr]:
+                        self.updateStatistics(False, adr, 1)
                     if not self.adr[adr]:
-                        self.parent().adr[adr] = False
+                        self._parent.adr[adr] = False
                 except KeyError:
                     pass
+            for adr in [u'__a__', u'__d__', u'__r__']:
+                if self._parent.adr[adr]:
+                    self._parent.updateStatistics(True, adr, 1)
             self.updateHeaders()
         else:
             self.metadata = dict()
@@ -335,6 +385,11 @@ class AlbumNode(_Node):
             for adr in [u"__a__", u"__d__", u"__r__"]:
                 try:
                     _ = meta[adr]
+                    if self.adr[adr] != _[0]:
+                        if not self.adr[adr]:
+                            self.updateStatistics(False, adr, 1)
+                        else:
+                            self.updateStatistics(False, adr, -1)
                     self.adr[adr] = _[0]
                     if len(_) > 1:
                         meta[adr] = _[1]
@@ -423,6 +478,10 @@ class BaseModel(QtCore.QAbstractItemModel):
 
     Used directly by Artists view and as a source by Albums/Tracks views.
     """
+
+    artistsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
+    albumsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
+
     def __init__(self, dbpath, parent=None):
         """Constructs new BaseModel instance.
 
@@ -431,6 +490,17 @@ class BaseModel(QtCore.QAbstractItemModel):
         """
         super(BaseModel, self).__init__(parent)
         self._rootNode = _Node(dbpath)
+        self._rootNode.artistsStatisticsChanged.connect(
+            self.artistsStatisticsChanged
+        )
+        def test(a,d,r):
+            print(d)
+        self._rootNode.albumsStatisticsChanged.connect(
+            test
+        )
+        self._rootNode.albumsStatisticsChanged.connect(
+            self.albumsStatisticsChanged
+        )
 
     def hasChildren(self, parent):
         """Reimplemented from QAbstractItemModel.hasChildren.
@@ -562,7 +632,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         without messing with it's tracks.
 
         @note: For convenience, it's assumed that passing a single dict is
-        meant to be passed to the track.
+        equivalent to (u'track', {}).
 
         :index: Persistent index pointing at entry to update. None for insert.
         :meta: Metadata to put into the database.
@@ -873,6 +943,8 @@ class DB(QtCore.QThread):
     """Local filesystem watcher and DB holder/updater."""
     __settings = QtCore.QSettings(u'gayeogi', u'db')
     finished = QtCore.pyqtSignal()
+    artistsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
+    albumsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
 
     def __init__(self, path):
         """@todo: to be defined """
@@ -883,6 +955,12 @@ class DB(QtCore.QThread):
         self.albums = AlbumsModel(self.artists)
         self.tracks = TracksModel(self.artists)
         self.index = None
+        self.artists.artistsStatisticsChanged.connect(
+            self.artistsStatisticsChanged
+        )
+        self.artists.albumsStatisticsChanged.connect(
+            self.albumsStatisticsChanged
+        )
 
     def save(self):
         """@todo: Docstring for save """
