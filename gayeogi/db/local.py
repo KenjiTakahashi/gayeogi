@@ -493,11 +493,6 @@ class BaseModel(QtCore.QAbstractItemModel):
         self._rootNode.artistsStatisticsChanged.connect(
             self.artistsStatisticsChanged
         )
-        def test(a,d,r):
-            print(d)
-        self._rootNode.albumsStatisticsChanged.connect(
-            test
-        )
         self._rootNode.albumsStatisticsChanged.connect(
             self.albumsStatisticsChanged
         )
@@ -626,10 +621,15 @@ class BaseModel(QtCore.QAbstractItemModel):
         (u'album', {}) will pass the metadata dict to the album,
         (u'artist', {}) will pass the metadata dict to the artist.
 
-        For specified :index:, it's derived from it.
+        For specified :index::
+            if :meta: is a tuple, as described above, it will update all
+            children[*] of :index:, which match the specified type.
+            if :meta: is a dict it will pass the specified meta to :index:.
 
-        It's created that way to allow passing ADR directly to the albums,
-        without messing with it's tracks.
+        [*] That also (possibly) counts grand children.
+
+        It's created that way to allow passing ADR to the albums using artist's
+        index and without messing with it's tracks.
 
         @note: For convenience, it's assumed that passing a single dict is
         equivalent to (u'track', {}).
@@ -701,23 +701,42 @@ class BaseModel(QtCore.QAbstractItemModel):
                     track.update(meta)
                     album.update()
                     artist.update()
-                    self._rootNode.updateHeaders()
                     index = self.index(trackPosition, 0, index)
                 else:
                     album.update(meta)
                     artist.update()
-                    self._rootNode.updateHeaders()
             else:
                 artist.update(meta)
-                self._rootNode.updateHeaders()
         else:
             index = self.index(index.row(), index.column(), index.parent())
-            track = index.internalPointer()
-            track.update(meta)
-            album = track.parent()
-            album.update()
-            artist = album.parent()
-            artist.update()
+            pointer = index.internalPointer()
+            if isinstance(pointer, ArtistNode):
+                if place == u'album':
+                    for child in pointer.children():
+                        child.update(meta)
+                    pointer.update()
+                elif place == u'track':
+                    for album in pointer.children():
+                        for track in child.children():
+                            track.update(meta)
+                        album.update()
+                    pointer.update()
+                else:
+                    pointer.update(meta)
+            elif isinstance(pointer, AlbumNode):
+                if place == u'track':
+                    for track in pointer.children():
+                        track.update(meta)
+                    pointer.update()
+                else:
+                    pointer.update(meta)
+                pointer.parent().update()
+            else:
+                pointer.update(meta)
+                album = pointer.parent()
+                album.update()
+                album.parent().update()
+        self._rootNode.updateHeaders()
         return QtCore.QPersistentModelIndex(index)
 
     def remove(self, index):
