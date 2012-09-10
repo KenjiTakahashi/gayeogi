@@ -87,113 +87,18 @@ class Bee(QThread):
                             if y1 == y2 and a1.lower() == a2.lower():
                                 a1 = a2
                     with self.rlock:
-                        pass  # TODO: upsert
-            added = False
-            albums = dict()
-            try:
-                pass
-            except NoBandError as e:
-                self.rlock.acquire()
-                try:
-                    del self.urls[artist][self.name]
-                except KeyError:
-                    pass
-                else:
-                    self.modified[0] = True
-                try:
-                    del self.processed[artist]
-                except KeyError:
-                    pass
-                self.rlock.release()
-                logger.warning([artist, e.message])
-            else:
-                for (album, year) in result[u'result']:
-                    if self.case and year in self.library[artist]:
-                        for alb in self.library[artist][year].iterkeys():
-                            key = artist + year + alb
-                            if(
-                                alb.lower() == album.lower()
-                                and self.avai[key][u'digital']
-                            ):
-                                album = alb
-                                break
-                    albums.setdefault(year, set([album])).add(album)
-                    self.rlock.acquire()
-                    partial = self.library[artist].setdefault(year, {})
-                    partial.setdefault(album, {})
-                    key = artist + year + album
-                    partial = self.avai.setdefault(key, {})
-                    if not partial:
-                        partial[u'analog'] = False
-                        partial[u'digital'] = False
-                        partial[u'remote'] = set([self.name])
-                        added = True
-                    elif self.name not in partial[u'remote']:
-                        partial[u'remote'].add(self.name)
-                        added = True
-                    self.urls.setdefault(artist,
-                        {self.name: result[u'choice']}
-                    )[self.name] = result[u'choice']
-                    self.processed[artist] = True
-                    self.rlock.release()
-            finally:
-                self.rlock.acquire()
-
-                def __internal(artist, year, album):
-                    key = artist + year + album
-                    if (
-                        not self.avai[key][u'digital'] and
-                        not self.avai[key][u'analog'] and
-                        self.avai[key][u'remote'] == set([self.name])
-                    ):
-                        __internal.torem.add((artist, year, album))
-                    else:
-                        try:
-                            self.avai[key][u'remote'].remove(self.name)
-                        except KeyError:
-                            pass
-                        else:
-                            __internal.norem = True
-                __internal.torem = set()
-                __internal.norem = False
-                for year, a in self.library[artist].iteritems():
-                    try:
-                        for album in set(a) ^ albums[year]:
-                            __internal(artist, year, album)
-                    except KeyError:
-                        for album in a:
-                            __internal(artist, year, album)
-                if added:
-                    logger.info(
-                        [artist, self.trUtf8('Something has been added.')]
-                    )
-                    self.modified[0] = True
-                if __internal.torem or __internal.norem:
-                    logger.info(
-                        [artist, self.trUtf8('Something has been removed.')]
-                    )
-                    self.modified[0] = True
-                elif not added:
-                    logger.info(
-                        [artist, self.trUtf8('Nothing has been changed.')]
-                    )
-                while __internal.torem:
-                    (artist, year, album) = __internal.torem.pop()
-                    del self.library[artist][year][album]
-                    del self.avai[artist + year + album]
-                    if not self.library[artist][year]:
-                        del self.library[artist][year]
-                    if not self.library[artist]:
-                        del self.library[artist]
-                        del self.urls[artist]
-                        try:
-                            self.processed[artist]
-                        except KeyError:
-                            pass
-                        else:
-                            del self.processed[artist]
-                self.rlock.release()
-                self.tasks.task_done()
+                        upsert((u'album', {
+                            u'year': y1,
+                            u'album': a1,
+                            u'__r__': [True]
+                        }))
+                for a, y in list(set(albums) - set(result[u'result'])):
+                    with self.rlock:
+                        upsert((u'album', {
+                            u'year': y,
+                            u'album': a,
+                            u'__r__': False
+                        }))
 
 
 class Distributor(QThread):

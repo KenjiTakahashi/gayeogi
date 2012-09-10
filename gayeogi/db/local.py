@@ -622,8 +622,8 @@ class BaseModel(QtCore.QAbstractItemModel):
         (u'artist', {}) will pass the metadata dict to the artist.
 
         For specified :index::
-            if :meta: is a tuple, as described above, it will update all
-            children[*] of :index:, which match the specified type.
+            if :meta: is a tuple, as described above, it will update matching
+            children[*] of :index:.
             if :meta: is a dict it will pass the specified meta to :index:.
 
         [*] That also (possibly) counts grand children.
@@ -644,10 +644,17 @@ class BaseModel(QtCore.QAbstractItemModel):
                     return child
             return None
 
-        def find_album(index, artist, name, year):
+        def find_album(artist, name, year):
             for child in artist.children():
                 meta = child.metadata
                 if meta[u'album'] == name and meta[u'year'] == year:
+                    return child
+            return None
+
+        def find_track(album, name, no):
+            for child in album.children():
+                meta = child.metadata
+                if meta[u'title'] == name and meta[u'tracknumber'] == no:
                     return child
             return None
         if isinstance(meta, tuple):
@@ -680,7 +687,7 @@ class BaseModel(QtCore.QAbstractItemModel):
                     m_year = meta[u'year']
                 except KeyError:
                     pass
-                album = find_album(index, artist, m_album, m_year)
+                album = find_album(artist, m_album, m_year)
                 albumPosition = artist.childCount()
                 if not album:
                     self.beginInsertRows(
@@ -712,21 +719,31 @@ class BaseModel(QtCore.QAbstractItemModel):
             pointer = index.internalPointer()
             if isinstance(pointer, ArtistNode):
                 if place == u'album':
-                    for child in pointer.children():
-                        child.update(meta)
+                    album = find_album(pointer, meta[u'album'], meta[u'year'])
+                    if not album:
+                        album = AlbumNode(parent=pointer)
+                    album.update(meta)
                     pointer.update()
                 elif place == u'track':
                     for album in pointer.children():
-                        for track in child.children():
-                            track.update(meta)
+                        track = find_track(
+                            album, meta[u'title'], meta[u'tracknumber']
+                        )
+                        if not track:
+                            track = TrackNode(parent=album)
+                        track.update(meta)
                         album.update()
                     pointer.update()
                 else:
                     pointer.update(meta)
             elif isinstance(pointer, AlbumNode):
                 if place == u'track':
-                    for track in pointer.children():
-                        track.update(meta)
+                    track = find_track(
+                        pointer, meta[u'title'], meta[u'tracknumber']
+                    )
+                    if not track:
+                        track = TrackNode(parent=pointer)
+                    track.update(meta)
                     pointer.update()
                 else:
                     pointer.update(meta)
