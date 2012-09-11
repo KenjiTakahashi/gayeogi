@@ -248,6 +248,15 @@ class TestUpsert(BaseTest):
             u'__a__': False, u'__d__': False, u'__r__': False
         }
 
+    def test_add_r_to_album_for_known_artist_index(self):
+        self.prepare_update()
+        self.db.upsert(self.artistIndex, (u'album', {
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'__r__': [True]
+        }))
+        assert self.album.adr[u'__r__']
+
     def test_add_r_to_all_albums(self):
         # This should update the artist to have 'r' too.
         self.prepare_update()

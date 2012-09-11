@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2012
+# Karol "Kenji Takahashi" Woźniak © 2010 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -51,7 +51,6 @@ class Bee(QThread):
         :albums: @todo
         :types: @todo
         :returns: @todo
-
         """
         try:
             result = work(artist, albums, url, types)
@@ -65,8 +64,8 @@ class Bee(QThread):
             return result[u'result']
 
     def run(self):
-        """Starts worker thread, fetches given artist releases
-        and appends them to the library.
+        """Starts worker thread, fetches releases for given artist
+        and upserts them to the library.
 
         @note: Use Bee.start method to run in a separate thread.
         """
