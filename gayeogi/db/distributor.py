@@ -71,6 +71,8 @@ class Bee(QThread):
         """
         while True:
             dbs, behaviour, (artist, urls, albums, upsert) = self.tasks.get()
+            if dbs is None:
+                break
             processed = False
             for db, types in dbs:
                 url = ""  # TODO: get url
@@ -80,7 +82,7 @@ class Bee(QThread):
                 else:
                     result = self.fetch(db, artist, url, albums, types)
             if result is not None:
-                for a1, y1 in result[u'result']:
+                for a1, y1 in result:
                     if self.case:
                         for a2, y2 in albums:
                             if y1 == y2 and a1.lower() == a2.lower():
@@ -91,12 +93,12 @@ class Bee(QThread):
                             u'album': a1,
                             u'__r__': [True]
                         }))
-                for a, y in list(set(albums) - set(result[u'result'])):
+                for a, y in list(set(albums) - set(result)):
                     with self.rlock:
                         upsert((u'album', {
                             u'year': y,
                             u'album': a,
-                            u'__r__': False
+                            u'__r__': [False]
                         }))
 
 
@@ -158,7 +160,8 @@ class Distributor(QThread):
             self.stepped.emit(artist)
             tasks.put((dbs, behaviour, artist))
         tasks.join()
-        # FIXME: It was here, but do we need it?
+        for _ in xrange(threadsnum):
+            tasks.put(None, None, (None, None, None, None))
         for t in threads:
             t.wait()
         self.finished.emit()

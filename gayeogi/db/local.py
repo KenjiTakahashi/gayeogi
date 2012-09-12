@@ -260,6 +260,7 @@ class ArtistNode(_Node):
         """
         super(ArtistNode, self).__init__(path, parent)
         self.adr = {u'__a__': True, u'__d__': True, u'__r__': True}
+        self.urls = list()
         if path:
             path = os.path.join(self._path, u'.meta')
             self.metadata = json.loads(open(path, 'r').read())
@@ -506,7 +507,7 @@ class BaseModel(QtCore.QAbstractItemModel):
             return True
         return False
 
-    def rowCount(self, parent):
+    def rowCount(self, parent=QtCore.QModelIndex()):
         """Reimplemented from QAbstractItemModel.rowCount."""
         if parent.column() > 0:
             return 0
@@ -599,7 +600,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         :returns: A tuple in form of (permanent index, Node).
         """
         index = self.index(row, column, parent)
-        return (QtCore.QPermanentModelIndex(index), index.internalPointer())
+        return (index, index.internalPointer())
 
     def getNode(self, index):
         """Returns Node for specified index.
