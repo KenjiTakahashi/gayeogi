@@ -69,6 +69,7 @@ class TestBeeRun(object):
         self.db.artists.upsert(self.db.artists.index(0, 0), (u'album', {
             u'album': u'test_album2',
             u'year': u'2010',
+            u'__d__': [True],
             u'__r__': [False]
         }))
         self.work(work1)
@@ -79,6 +80,7 @@ class TestBeeRun(object):
         self.db.artists.upsert(self.db.artists.index(0, 0), (u'album', {
             u'album': u'test_album2',
             u'year': u'2010',
+            u'__d__': [True],
             u'__r__': [True]
         }))
         self.work(work1)
@@ -110,4 +112,5 @@ class TestBeeRun(object):
         node = self.db.artists._rootNode.child(0)
         assert node.childCount() == 1
         album = node.child(0)
-        assert album.metadata == {u'album': u'test_album2', u'year': u'2010'}
+        assert album.metadata[u'album'] == u'test_album1'
+        assert album.metadata[u'year'] == u'2012'

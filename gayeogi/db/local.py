@@ -718,24 +718,24 @@ class BaseModel(QtCore.QAbstractItemModel):
             else:
                 artist.update(meta)
         else:
+            def _update(item, node, parent):
+                if not item:
+                    item = node(parent=parent)
+                item.update(meta)
+                self.remove(item)
+                parent.update()
             index = self.index(index.row(), index.column(), index.parent())
             pointer = index.internalPointer()
             if isinstance(pointer, ArtistNode):
                 if place == u'album':
                     album = find_album(pointer, meta[u'album'], meta[u'year'])
-                    if not album:
-                        album = AlbumNode(parent=pointer)
-                    album.update(meta)
-                    pointer.update()
+                    _update(album, AlbumNode, pointer)
                 elif place == u'track':
                     for album in pointer.children():
                         track = find_track(
                             album, meta[u'title'], meta[u'tracknumber']
                         )
-                        if not track:
-                            track = TrackNode(parent=album)
-                        track.update(meta)
-                        album.update()
+                        _update(track, TrackNode, album)
                     pointer.update()
                 else:
                     pointer.update(meta)
@@ -744,10 +744,7 @@ class BaseModel(QtCore.QAbstractItemModel):
                     track = find_track(
                         pointer, meta[u'title'], meta[u'tracknumber']
                     )
-                    if not track:
-                        track = TrackNode(parent=pointer)
-                    track.update(meta)
-                    pointer.update()
+                    _update(track, TrackNode, pointer)
                 else:
                     pointer.update(meta)
                 pointer.parent().update()
@@ -767,15 +764,18 @@ class BaseModel(QtCore.QAbstractItemModel):
 
         @note: To erase adr state, use appropriate BaseModel.upsert call.
 
-        :index: Index to remove.
+        :index: Index to remove. It can also be an internalPointer.
         """
         def _remove(item):
             parent = item.parent()
             parent.removeChild(pointer)
             parent.update()
             return parent
-        index = self.index(index.row(), index.column(), index.parent())
-        pointer = index.internalPointer()
+        if not isinstance(index, _Node):
+            index = self.index(index.row(), index.column(), index.parent())
+            pointer = index.internalPointer()
+        else:
+            pointer = index
         if isinstance(pointer, TrackNode):
             pointer = _remove(pointer)
 
@@ -1098,6 +1098,7 @@ class DB(QtCore.QThread):
                             if not self.isIgnored(path, ignores):
                                 tag = Tagger(path).readAll()
                                 if tag is not None:
+                                    # TODO: deal with __d__
                                     self.index[path] = self.upsert(
                                         self.getIndex(path)
                                     )(tag)

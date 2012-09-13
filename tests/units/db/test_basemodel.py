@@ -290,7 +290,6 @@ class TestRemove(BaseTest):
         self._add_and_remove_track()
         assert self.album.childCount() == 1
         track = self.album.child(0)
-        print(track.metadata)
         assert track.metadata == {
             u'artist': u'test_artist1',
             u'year': u'2012',
