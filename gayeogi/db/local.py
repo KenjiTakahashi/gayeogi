@@ -308,6 +308,8 @@ class ArtistNode(_Node):
         """@todo: Docstring for updateADR """
         oldadr = self.adr
         self.adr = {u'__a__': True, u'__d__': True, u'__r__': True}
+        if not self._children:
+            self.adr = {u'__a__': False, u'__d__': False, u'__r__': False}
         for child in self._children:
             for adr in [u'__a__', u'__d__', u'__r__']:
                 if not child.adr[adr]:
@@ -758,33 +760,44 @@ class BaseModel(QtCore.QAbstractItemModel):
         return QtCore.QPersistentModelIndex(index)
 
     def remove(self, index):
-        """Removes specified track's index and it's parents, as needed.
+        """Removes specified index and it's parents, if applicable.
 
-        :index: Track's index.
+        It is considered "secure", which means it will not remove album's
+        index if it has tracks or a or d or r. Same applies to artists.
+
+        @note: To erase adr state, use appropriate BaseModel.upsert call.
+
+        :index: Index to remove.
         """
+        def _remove(item):
+            parent = item.parent()
+            parent.removeChild(pointer)
+            parent.update()
+            return parent
         index = self.index(index.row(), index.column(), index.parent())
-        albumIndex = self.parent(index)
-        album = albumIndex.internalPointer()
-        album.removeChild(index.internalPointer())
-        if not album.childCount():
-            artistIndex = self.parent(albumIndex)
-            artist = artistIndex.internalPointer()
-            if album.adr[u'__a__'] or album.adr[u'__r__']:
-                album.adr[u'__d__'] = False
-                album.update()
-            else:
-                artist.removeChild(album)
-                if not artist.childCount():
-                    self._rootNode.removeChild(artist)
-                else:
-                    artist.update()
-            artist.updateADR()
-        else:
-            album.update()
+        pointer = index.internalPointer()
+        if isinstance(pointer, TrackNode):
+            pointer = _remove(pointer)
+
+        def _remove_(item):
+            adr = item.adr
+            parent = item.parent()
+            if(not pointer.childCount()
+               and not adr[u'__a__']
+               and not adr[u'__d__']
+               and not adr[u'__r__']
+            ):
+                _remove(item)
+            return parent
+        if isinstance(pointer, AlbumNode):
+            pointer = _remove_(pointer)
+            pointer.updateADR()
+        if isinstance(pointer, ArtistNode):
+            _remove_(pointer)
         self._rootNode.updateHeaders()
 
     def flush(self):
-        """@todo: Docstring for flush """
+        """Starts flushing db to permanent storage."""
         self._rootNode.flush()
 
 

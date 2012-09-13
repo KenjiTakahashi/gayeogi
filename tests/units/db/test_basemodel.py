@@ -301,16 +301,14 @@ class TestRemove(BaseTest):
 
     def test_remove_album(self):
         # Album gets removed when there are no tracks and
-        # it's not a and not r.
+        # it is not(a && d && r).
         self.prepare_update()
-        trackIndex = self.db.upsert(None, {
+        albumIndex = self.db.upsert(None, (u'album', {
             u'artist': u'test_artist1',
             u'year': u'2010',
-            u'album': u'test_album2',
-            u'tracknumber': u'12',
-            u'title': u'test_title1'
-        })
-        self.db.remove(trackIndex)
+            u'album': u'test_album2'
+        }))
+        self.db.remove(albumIndex)
         assert self.artist.childCount() == 1
         album = self.artist.child(0)
         assert album.metadata == {
@@ -321,30 +319,28 @@ class TestRemove(BaseTest):
             u'title': u'test_title1'
         }
 
-    def test_do_not_remove_a_album(self):
+    def do_not_remove_album(self, adr):
         self.prepare_update()
-        self.album.adr[u'__a__'] = True
+        self.album.adr[adr] = True
         self.db.remove(self.trackIndex)
         assert self.album.childCount() == 0
         assert self.artist.childCount() == 1
 
+    def test_do_not_remove_a_album(self):
+        self.do_not_remove_album(u'__a__')
+
+    def test_do_not_remove_d_album(self):
+        self.do_not_remove_album(u'__d__')
+
     def test_do_not_remove_r_album(self):
-        self.prepare_update()
-        self.album.adr[u'__r__'] = True
-        self.db.remove(self.trackIndex)
-        assert self.album.childCount() == 0
-        assert self.artist.childCount() == 1
+        self.do_not_remove_album(u'__r__')
 
     def test_remove_artist(self):
         # Artist gets removed when there are no albums.
         self.prepare_update()
-        artistIndex = self.db.upsert(None, {
-            u'artist': u'test_artist2',
-            u'year': u'2012',
-            u'album': u'test_album1',
-            u'tracknumber': u'12',
-            u'title': u'test_title1'
-        })
+        artistIndex = self.db.upsert(None, (u'artist', {
+            u'artist': u'test_artist2'
+        }))
         self.db.remove(artistIndex)
         assert self.root.childCount() == 1
         artist = self.root.child(0)
