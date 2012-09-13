@@ -17,3 +17,4 @@
 
 from filter import Filter
 from tagger import Tagger
+from reqread import reqread, ConnError

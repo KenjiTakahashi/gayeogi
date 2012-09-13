@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from threading import RLock
 from Queue import Queue
 from PyQt4.QtCore import QThread, QSettings, pyqtSignal
-from gayeogi.db.bees.beeexceptions import ConnError, NoBandError
+from gayeogi.utils import ConnError
+from gayeogi.db.bandsensor import Bandsensor
 import logging
 
 logger = logging.getLogger('gayeogi.remote')
@@ -42,26 +44,32 @@ class Bee(QThread):
         self.case = case
         self.start()
 
-    def fetch(self, work, artist, url, albums, types):
+    def fetch(self, db, artist, url, albums, types):
         """@todo: Docstring for fetch
 
-        :work: @todo
+        :db: @todo
         :artist: @todo
         :url: @todo
         :albums: @todo
         :types: @todo
         :returns: @todo
         """
+        if url:
+            url, albums = db.sense(url, types)
+            return (url, albums)
         try:
-            result = work(artist, albums, url, types)
-        except NoBandError as e:
-            pass  # TODO: remove url (no such artist in that db)
+            urls = db.urls(artist)
         except ConnError as e:
             pass  # TODO: log connection error
-        else:
-            for error in result[u'errors']:
-                pass  # TODO: log errors
-            return result[u'result']
+        if not urls:
+            return None
+        sensor = Bandsensor(db.sense, urls, albums, types)
+        data = sensor.run()
+        if not data:
+            return None
+        for error in sensor.errors:
+            pass  # TODO: log errors
+        return (data[0], data[1])
 
     def run(self):
         """Starts worker thread, fetches releases for given artist
@@ -75,12 +83,14 @@ class Bee(QThread):
                 break
             processed = False
             for db, types in dbs:
-                url = ""  # TODO: get url
+                url = urls  # TODO: get url
                 if not behaviour:
                     if not processed[0]:
-                        result = self.fetch(db, artist, url, albums, types)
+                        nurl, result = self.fetch(
+                            db, artist, url, albums, types
+                        )
                 else:
-                    result = self.fetch(db, artist, url, albums, types)
+                    nurl, result = self.fetch(db, artist, url, albums, types)
             if result is not None:
                 for a1, y1 in result:
                     if self.case:
@@ -139,7 +149,7 @@ class Distributor(QThread):
         for name, types in bases:
             try:
                 db = __import__(u'gayeogi.db.bees.' + name, globals(),
-                    locals(), [u'work', u'name', u'init'], -1)
+                    locals(), [u'sense', u'urls', u'name', u'init'], -1)
             except ImportError:  # it should not ever happen
                 logger.error(
                     [name, self.trUtf8('No such module has been found!!!')]
@@ -149,7 +159,7 @@ class Distributor(QThread):
                     db.init()
                 except AttributeError:
                     pass
-                dbs.append((db.work, types))
+                dbs.append((db, types))
         threadsnum = self.__settings.value(u'threads', 1).toInt()[0]
         behaviour = self.__settings.value(u'behaviour').toBool()
         tasks = Queue(threadsnum)

@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2011
+# Karol "Kenji Takahashi" Woźniak © 2010 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,11 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# -*- coding: utf-8 -*-
 
 from threading import Thread, RLock
 from Queue import Queue
-from gayeogi.db.bees.beeexceptions import ConnError
+from gayeogi.utils import ConnError
+
 
 class BandBee(Thread):
     def __init__(self, tasks, releases, rlock, elock):
@@ -28,10 +29,11 @@ class BandBee(Thread):
         self.elock = elock
         self.daemon = True
         self.start()
+
     def run(self):
         while True:
             sense, url, results, errors = self.tasks.get()
-            if(sense == False):
+            if sense is False:
                 break
             try:
                 result = sense(url, self.releases)
@@ -46,6 +48,7 @@ class BandBee(Thread):
                     self.rlock.release()
             finally:
                 self.tasks.task_done()
+
 
 class Bandsensor(object):
     def __init__(self, func, urls, albums, releases):
@@ -64,6 +67,7 @@ class Bandsensor(object):
         self.releases = releases
         self.errors = set()
         self.results = list()
+
     def run(self):
         """Starts sensor and returns best matched band.
 

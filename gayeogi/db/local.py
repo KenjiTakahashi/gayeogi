@@ -997,7 +997,12 @@ class DB(QtCore.QThread):
     albumsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
 
     def __init__(self, path):
-        """@todo: to be defined """
+        """Creates new DB instance.
+
+        @note: Although not explicitly stated, it is meant to be singleton.
+
+        :path: Path to the root of database's storage.
+        """
         super(DB, self).__init__()
         self.modified = False
         self.artists = BaseModel(path)
@@ -1013,7 +1018,7 @@ class DB(QtCore.QThread):
         )
 
     def save(self):
-        """@todo: Docstring for save """
+        """Save database and index to permanent storage."""
         cPickle.dump(self.index, open(self.path, u'wb'), -1)
         self.artists.flush()
 
@@ -1030,11 +1035,10 @@ class DB(QtCore.QThread):
         return False
 
     def getIndex(self, path):
-        """@todo: Docstring for getIndex
+        """Returns model index for specified :path:.
 
-        :path: @todo
-        :returns: @todo
-
+        :path: Path for which to get index.
+        :returns: A model index for given :path:.
         """
         try:
             return self.index[path]
@@ -1065,10 +1069,10 @@ class DB(QtCore.QThread):
             )
 
     def upsert(self, index):
-        """@todo: Docstring for upsert
+        """Creates an BaseModel.upsert closure.
 
-        :index: @todo
-        :returns: @todo
+        :index: Index at which to point the closure.
+        :returns: A closure with metadata as parameter and :index: as internal.
         """
         def _upsert(meta):
             self.artists.upsert(index, meta)
@@ -1098,7 +1102,7 @@ class DB(QtCore.QThread):
                             if not self.isIgnored(path, ignores):
                                 tag = Tagger(path).readAll()
                                 if tag is not None:
-                                    # TODO: deal with __d__
+                                    tag[u'__d__'] = [True]
                                     self.index[path] = self.upsert(
                                         self.getIndex(path)
                                     )(tag)

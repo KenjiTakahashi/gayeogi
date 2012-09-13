@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2011
+# Karol "Kenji Takahashi" Woźniak © 2011 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from lxml import etree
-from gayeogi.db.bandsensor import Bandsensor
-from gayeogi.db.utils import reqread
-from gayeogi.db.bees.beeexceptions import NoBandError
+from gayeogi.utils import reqread
 
 items = [[u'Full-length', u'Live album', u'Video'],
         [u'Best Of/Compilation', u'Single/EP']]
@@ -34,10 +33,13 @@ di = {
 name = u'progarchives.com'
 
 glob = dict()
+
+
 def init():
     res = reqread(
         u'http://www.progarchives.com/bands-alpha.asp?letter=*'
     ).decode(u'latin-1').encode(u'utf-8')
+
     def __internal(context, artist, url):
         glob[str(url[0])[14:]] = artist[0].text
         return False
@@ -47,25 +49,21 @@ def init():
     ns[u'test'] = __internal
     root.xpath(u'//td/a[pa:test(strong, @href)]')
 
-def __sense(url, releases):
+
+def sense(url, releases):
     """Retrieves releases for specified band id.
 
     Injected into Bandsensor.
 
-    Args:
-        url: ID of the current band
-        releases: types of releases to search for
-
-    Returns:
-        tuple -- (<url>, <list-of-tuples> -- (<album>, <year>))
-
-    Note: It is meant for internal usage only!
-
+    :url: ID of the current band (it is mbid format here).
+    :releases: Types of releases to search for.
+    :returns: Tuple in form of (url, [(album, year)]).
     """
     res = reqread(
         u'http://www.progarchives.com/artist.asp?id=' + url
     ).decode(u'latin-1').encode(u'utf-8')
     artist = glob[url]
+
     def __enabled(context, element):
         for release in releases:
             if element[0].text.lower().startswith(
@@ -74,6 +72,7 @@ def __sense(url, releases):
                 return True
         return False
     result = list()
+
     def __internal(context, albums, years):
         result.append((albums[0].text.strip(), years[0].text.strip()))
         return False
@@ -83,44 +82,20 @@ def __sense(url, releases):
     ns[u'test'] = __internal
     ns[u'enabled'] = __enabled
     root.xpath(
-        u'//h3[pa:enabled(.)]/following-sibling::*[1]//td[pa:test(a[2]/strong, span[3])]'
+        u"//h3[pa:enabled(.)]/following-sibling::*[1]"
+        u"//td[pa:test(a[2]/strong, span[3])]"
     )
     return (url, result)
 
-def work(artist, element, urls, releases):
-    """Retrieves new or updated info for specified artist.
 
-    Also fetches a list of all bands and urls if it doesn't exist yet.
+def urls(artist):
+    """Retrieves all possibly correct urls for specified :artist:.
 
-    Args:
-        artist: artist to check against
-        element: db element containing existing info (it is db[<artist_name>])
-        urls: urls previously retrieved for given artist
-        releases: types of releases to check for
-
-    Note: Should be threaded in real application.
-
+    :artist: Artist to search for.
+    :returns: List of urls.
     """
-    if urls and u'progarchives.com' in urls.keys():
-        (url, albums) = __sense(urls[u'progarchives'], releases)
-        return {
-            u'choice': url,
-            u'result': albums,
-            u'errors': set(),
-            u'artist': artist
-        }
-    artists = list()
-    for (url, a) in glob.iteritems():
+    urls = list()
+    for url, a in glob.iteritems():
         if a.lower().startswith(artist.lower()):
-            artists.append(url)
-    if not artists:
-        raise NoBandError()
-    sensor = Bandsensor(__sense, artists, element, releases)
-    data = sensor.run()
-    if not data:
-        raise NoBandError()
-    return {
-        u'choice': data[0],
-        u'result': data[1],
-        u'errors': sensor.errors
-    }
+            urls.append(url)
+    return urls

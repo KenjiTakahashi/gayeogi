@@ -24,14 +24,19 @@ from Queue import Queue
 from PyQt4.QtCore import QSettings
 
 
-def work1(artist, albums, url, types):
+class Mockup(object):
+    def __init__(self, work):
+        self.sense = work
+
+
+def work1(url, types):
     """Artificial worker function 1."""
-    return {u'errors': [], u'result': [(u'test_album1', u'2012')]}
+    return (None, [(u'test_album1', u'2012')])
 
 
-def work2(artist, albums, url, types):
+def work2(url, types):
     """Artificial worker function 2."""
-    return {u'errors': [], u'result': [(u'test_album2', u'2010')]}
+    return (None, [(u'test_album2', u'2010')])
 
 
 class TestBeeRun(object):
@@ -55,7 +60,8 @@ class TestBeeRun(object):
 
     def work(self, work):
         instance = list(self.db.iterator())[0]
-        self.queue.put(([(work, [])], True, instance))
+        instance = (instance[0], {u'mock': True}, instance[2], instance[3])
+        self.queue.put(([(Mockup(work), [])], True, instance))
         self.queue.put((None, None, (None, None, None, None)))
         self.bee = Bee(self.queue, RLock(), False)
         self.bee.wait()
