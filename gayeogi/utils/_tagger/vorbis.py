@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import os
 from mutagen.flac import FLAC
 from mutagen.asf import ASF
@@ -29,7 +30,7 @@ class Vorbis(object):
         ext = os.path.splitext(filename)[1].lower()
         if ext == u'.flac':
             self.file = FLAC(filename)
-        elif ext == u'.asf':
+        elif ext == u'.wma':
             self.file = ASF(filename)
         elif ext == u'.wv':
             self.file = WavPack(filename)

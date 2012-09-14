@@ -48,7 +48,7 @@ class TestTagger(object):
         self.readAllTest(u'flac', self.result_vorbis)
 
     def test_readAll_asf(self):
-        self.readAllTest(u'asf', self.result)
+        self.readAllTest(u'wma', self.result)
 
     def test_readAll_wavpack(self):
         result = self.result.copy()
@@ -56,7 +56,9 @@ class TestTagger(object):
         self.readAllTest(u'wv', result)
 
     def test_readAll_musepack(self):
-        self.readAllTest(u'mpc', self.result)
+        result = self.result.copy()
+        result[u'track'] = u'12'
+        self.readAllTest(u'mpc', result)
 
     def test_readAll_ogg(self):
         self.readAllTest(u'ogg', self.result_vorbis)

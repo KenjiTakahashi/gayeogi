@@ -27,13 +27,13 @@ class TestRun(object):
         self.path = os.path.normpath(self.path)
         os.mkdir(self.path)
         self.db = DB(self.path)
-        path = os.path.abspath(
+        self.rpath = os.path.abspath(
             os.path.join(os.path.dirname(__file__), u'..', u'data')
         )
         DB._DB__settings = QSettings(
-            os.path.join(path, u'db.conf'), QSettings.NativeFormat
+            os.path.join(self.rpath, u'db.conf'), QSettings.NativeFormat
         )
-        DB._DB__settings.setValue(u'directories', [(path, True)])
+        DB._DB__settings.setValue(u'directories', [(self.rpath, True)])
 
     def tearDown(self):
         os.rmdir(self.path)
@@ -45,4 +45,8 @@ class TestRun(object):
         artist = root.child(0)
         assert artist.childCount() == 1
         album = artist.child(0)
-        assert album.childCount() == 4
+        assert album.childCount() == len([
+            n for n in os.listdir(self.rpath)
+            if os.path.isfile(os.path.join(self.rpath, n)) and
+            n != u'db.conf'
+        ])
