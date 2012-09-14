@@ -76,8 +76,7 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         x += metrics.width(u'd')
         if index.data(345).toBool():
             painter.drawText(x, ry + self.ht - 6, u'r')
-        mouseOver = option.state & QtGui.QStyle.State_MouseOver
-        if self.buttonOver(mouseOver, rx):
+        if self.buttonOver(rx, ry):
             if self.buttoned:
                 if self.my >= ry + 1 and self.my <= ry + self.ht - 6:
                     self.rry = ry
@@ -102,11 +101,16 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
                 painter.setPen(QtGui.QPen(self.palette.highlightedText(), 0))
             else:
                 painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
-        painter.drawText(rx + 39, ry + pSize, index.data(987).toString())
+        painter.drawText(
+            rx + 39, ry + pSize, index.data(Qt.DisplayRole).toString()
+        )
         painter.restore()
 
-    def buttonOver(self, mo, x):
-        return self.mx >= x + 1 and self.mx <= x + 36 and mo
+    def buttonOver(self, x, y):
+        return (
+            self.mx >= x + 1 and self.mx <= x + 36 and
+            self.my >= y + 1 and self.my <= y + self.ht
+        )
 
     def sizeHint(self, option, index):
         return QSize(39 + option.fontMetrics.width(
@@ -141,9 +145,9 @@ class TableView(QtGui.QTableView):
         hheader.customContextMenuRequested.connect(self.showHeaderContextMenu)
         # This restores state over and over for every column added.
         # FIXME: Restore state once (somehow).
-        hheader.sectionCountChanged.connect(
-            lambda: self.horizontalHeader().restoreState(state)
-        )
+        #hheader.sectionCountChanged.connect(
+            #lambda: self.horizontalHeader().restoreState(state)
+        #)
 
     def showHeaderContextMenu(self):
         """@todo: Docstring for showHeaderContextMenu """
@@ -172,20 +176,18 @@ class TableView(QtGui.QTableView):
 
 
 class ADRTableView(TableView):
-    buttonClicked = pyqtSignal(QtGui.QTreeWidgetItem)
-
     def __init__(self, state, parent=None):
         super(ADRTableView, self).__init__(state, parent)
         self.setMouseTracking(True)
         self.delegate = ADRItemDelegate()
         self.delegate.buttonClicked.connect(self.callback)
-        #self.setItemDelegateForColumn(1, self.delegate)
+        self.setItemDelegateForColumn(1, self.delegate)
 
     def buttoned(self, mx, rx):
         return mx >= rx + 1 and mx <= rx + 36
 
     def callback(self, index):
-        self.buttonClicked.emit(self.itemFromIndex(index))
+        self.model().setData(index, not index.data(123).toBool(), 123)
 
     def mouseMoveEvent(self, event):
         if event.y() == 0 or self.delegate.rry + self.delegate.ht < event.y():
@@ -263,12 +265,11 @@ class Main(QtGui.QMainWindow):
         self.ui.artists = View(self.db.artists, TableView(
             self.__settings.value(u'artistsView').toByteArray()
         ), self.ui.splitter)
-        #delegate = ADRItemDelegate()
-        #self.ui.artists.setItemDelegateForColumn(0, delegate)
+        delegate = ADRItemDelegate()
+        self.ui.artists.view.setItemDelegateForColumn(0, delegate)
         self.ui.albums = View(self.db.albums, ADRTableView(
             self.__settings.value(u'albumsView').toByteArray()
         ), self.ui.splitter)
-        #self.ui.albums.view.buttonClicked.connect(self.setAnalog)
         self.ui.tracks = View(self.db.tracks, TableView(
             self.__settings.value(u'tracksView').toByteArray()
         ), self.ui.splitter)
@@ -407,7 +408,6 @@ class Main(QtGui.QMainWindow):
             if type(directory) != list:
                 directory = [(unicode(directory), 2)]
             self.ignores = self.__settings.value(u'ignores', []).toPyObject()
-            self.fs.actualize(directory, self.ignores)
             self.removePluginsTranslators()
             self.loadPluginsTranslators()
             self.loadPlugins()
@@ -421,37 +421,6 @@ class Main(QtGui.QMainWindow):
             self.statusBar().showMessage(self.trUtf8('Saved'))
         else:
             self.statusBar().showMessage(self.trUtf8('Nothing to save'))
-
-    def setAnalog(self, item):
-        data = not item.data(1, 123).toBool()
-        item.setData(1, 123, data)
-        self.library[4][item.artist + unicode(item.text(0))
-                + unicode(item.data(1, 987).toString())][u'analog'] = data
-        if data:
-            self.statistics[u'albums'][0] += 1
-            switch = True
-            for y, d in self.library[1][item.artist].iteritems():
-                for a in d.keys():
-                    if not self.library[4][item.artist + y + a][u'analog']:
-                        switch = False
-                        break
-                if not switch:
-                    break
-            if switch:
-                self.statistics[u'artists'][0] += 1
-                self.ui.artistsGreen.setText(
-                        unicode(self.statistics[u'artists'][0]))
-                self.statistics[u'detailed'][item.artist][u'a'] = True
-                self.ui.artists.topLevelItem(item.aIndex).setData(0, 123, True)
-        else:
-            self.statistics[u'albums'][0] -= 1
-            if self.ui.artists.topLevelItem(item.aIndex).data(0, 123).toBool():
-                self.statistics[u'artists'][0] -= 1
-                self.ui.artistsGreen.setText(
-                        unicode(self.statistics[u'artists'][0]))
-                self.statistics[u'detailed'][item.artist][u'a'] = False
-                self.ui.artists.topLevelItem(item.aIndex).setData(0, 123, False)
-        self.ui.albumsGreen.setText(unicode(self.statistics[u'albums'][0]))
 
     def updateArtistsStatistics(self, a, d, r):
         """@todo: Docstring for updateArtistsStatistics

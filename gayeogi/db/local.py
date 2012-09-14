@@ -56,6 +56,7 @@ class LegacyDB(object):
             else:
                 avai[key][u'remote'] = set()
 
+
 logger = logging.getLogger('gayeogi.local')
 
 
@@ -135,6 +136,7 @@ class _Node(QtCore.QObject):
         _Node.headers |= set(self.metadata.keys())
         for child in self._children:
             _Node.headers |= set(child.metadata.keys())
+        _Node.headers -= set([u'artist', u'album'])
 
     @staticmethod
     def header(section):
@@ -161,12 +163,16 @@ class _Node(QtCore.QObject):
         else:
             if artists:
                 _Node.stats[0][adr] += value
+                if _Node.stats[0][adr] < 0:
+                    _Node.stats[0][adr] = 0
                 stats = _Node.stats[0]
                 self.artistsStatisticsChanged.emit(
                     stats[u'__a__'], stats[u'__d__'], stats[u'__r__']
                 )
             else:
                 _Node.stats[1][adr] += value
+                if _Node.stats[1][adr] < 0:
+                    _Node.stats[1][adr] = 0
                 stats = _Node.stats[1]
                 self.albumsStatisticsChanged.emit(
                     stats[u'__a__'], stats[u'__d__'], stats[u'__r__']
@@ -558,13 +564,35 @@ class BaseModel(QtCore.QAbstractItemModel):
         """Reimplemented from QAbstractItemModel.data."""
         if not index.isValid():
             return None
+        node = index.internalPointer()
         if role == QtCore.Qt.DisplayRole:
-            node = index.internalPointer()
+            column = index.column()
             try:
-                header = _Node.header(index.column())
+                if column == 0:
+                    header = u'artist'
+                elif column == 1:
+                    header = u'album'
+                else:
+                    header = _Node.header(column - 2)
                 return node.metadata[header]
             except KeyError:
                 return ""
+        elif role == 123:  # a
+            return node.adr[u'__a__']
+        elif role == 234:  # d
+            return node.adr[u'__d__']
+        elif role == 345:  # r
+            return node.adr[u'__r__']
+
+    def setData(self, index, value):
+        """@todo: Docstring for setData
+
+        :index: @todo
+        :value: @todo
+        :returns: @todo
+        """
+        self.upsert(index, (u'album', {u'__a__': [value]}))
+        return True
 
     def headerData(
         self, section,
@@ -572,8 +600,12 @@ class BaseModel(QtCore.QAbstractItemModel):
     ):
         """Reimplemented from QAbstractItemModel.headerData. """
         if role == QtCore.Qt.DisplayRole and o == QtCore.Qt.Horizontal:
-            if section >= 0:
-                header = _Node.header(section)
+            if section == 0:
+                return u'artist'
+            elif section == 1:
+                return u'album'
+            elif section > 1:
+                header = _Node.header(section - 2)
                 if header == u'tracknumber':
                     return u'#'
                 return header
@@ -749,10 +781,15 @@ class BaseModel(QtCore.QAbstractItemModel):
                     pointer.update(meta)
                 pointer.parent().update()
             else:
-                pointer.update(meta)
-                album = pointer.parent()
-                album.update()
-                album.parent().update()
+                if place == u'album':
+                    pointer = pointer.parent()
+                    pointer.update(meta)
+                    pointer.parent().update()
+                else:
+                    pointer.update(meta)
+                    album = pointer.parent()
+                    album.update()
+                    album.parent().update()
         self._rootNode.updateHeaders()
         return QtCore.QPersistentModelIndex(index)
 
@@ -900,33 +937,24 @@ class Model(QtGui.QAbstractProxyModel):
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         """Reimplemented from QAbstractProxyModel.data."""
-        if not index.isValid():
-            return None
-        if role == QtCore.Qt.DisplayRole:
-            node = index.internalPointer()
-            try:
-                header = _Node.header(index.column())
-                return node.metadata[header]
-            except KeyError:
-                return ""
+        return self.sourceModel.data(self.mapToSource(index), role)
 
-    def headerData(self, section, _=None, role=QtCore.Qt.DisplayRole):
-        """Reimplemented from QAbstractProxyModel.headerData.
+    def setData(self, index, value, role):
+        """@todo: Docstring for setData
 
-        @note: _ (orientation) is not used, as there's only horizontal header.
+        :index: @todo
+        :role: @todo
+        :value: @todo
+        :returns: @todo
         """
-        if role == QtCore.Qt.DisplayRole:
-            if section >= 0:
-                # When changing selection, the view sometimes calls this before
-                # columnCount, thus trying to get headerData for columns which
-                # might no longer exist.
-                try:
-                    header = _Node.header(section)
-                    if header == u'tracknumber':
-                        return u'#'
-                    return header
-                except IndexError:
-                    pass
+        return self.sourceModel.setData(self.mapToSource(index), value)
+
+    def headerData(
+        self, section,
+        o=QtCore.Qt.Horizontal, role=QtCore.Qt.DisplayRole
+    ):
+        """Reimplemented from QAbstractProxyModel.headerData."""
+        return self.sourceModel.headerData(section, o, role)
 
     def parent(self, _):
         """Reimplemented from QAbstractProxyModel.parent.
@@ -1075,7 +1103,7 @@ class DB(QtCore.QThread):
         :returns: A closure with metadata as parameter and :index: as internal.
         """
         def _upsert(meta):
-            self.artists.upsert(index, meta)
+            return self.artists.upsert(index, meta)
         return _upsert
 
     def run(self):
@@ -1102,8 +1130,11 @@ class DB(QtCore.QThread):
                             if not self.isIgnored(path, ignores):
                                 tag = Tagger(path).readAll()
                                 if tag is not None:
-                                    tag[u'__d__'] = [True]
-                                    self.index[path] = self.upsert(
+                                    index = self.upsert(
                                         self.getIndex(path)
                                     )(tag)
+                                    self.upsert(index)(
+                                        (u'album', {u'__d__': [True]})
+                                    )
+                                    self.index[path] = index
         self.finished.emit()
