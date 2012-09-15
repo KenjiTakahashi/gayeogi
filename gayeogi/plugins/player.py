@@ -292,9 +292,9 @@ class Main(QtGui.QWidget):
         layout.addWidget(progress)
         layout.addWidget(self.playlist)
         self.setLayout(layout)
-        self.parent.artists.itemActivated.connect(self.addItem)
-        self.parent.albums.itemActivated.connect(self.addItem)
-        self.parent.tracks.itemActivated.connect(self.addItem)
+        self.parent.artists.view.activated.connect(self.addIndex)
+        self.parent.albums.view.activated.connect(self.addIndex)
+        self.parent.tracks.view.activated.connect(self.addIndex)
         self.addWidget(u'horizontalLayout_2', self, 'end')
         self.mediaobject = Phonon.MediaObject()
         self.mediaobject.tick.connect(self.tick)
@@ -392,6 +392,7 @@ class Main(QtGui.QWidget):
             else:
                 button.setPlaying(False)
                 self.mediaobject.pause()
+
     def addByButton(self):
         def addItems(items):
             if items:
@@ -407,47 +408,37 @@ class Main(QtGui.QWidget):
         for item in self.playlist.selectedItems():
             self.playlist.remove(item)
 
-    def addItem(self, item, column = -1):
-        if column != -1:
-            self.stop()
-            self.playlist.activeItem = None
-            self.playlist.clear()
+    def addIndex(self, index):
+        self.stop()
+        self.playlist.activeItem = None
+        self.playlist.clear()
+        model = self.sender().model()
+        index = model.mapToSource(index)
         try:
-            item.album
+            index = model.sourceModel().mapToSource(index)
         except AttributeError:
-            try:
-                item.artist
-            except AttributeError:
-                items = []
-                for i in range(self.parent.albums.topLevelItemCount()):
-                    item_ = self.parent.albums.topLevelItem(i)
-                    year = unicode(item_.text(0))
-                    album = unicode(item_.data(1, 987).toString())
-                    items_ = [self.__createItem((tracknumber, title, album,
-                        item.data(0, 987).toString(), d[u'path']))
-                        for tracknumber, tracks
-                        in self.library[1][item_.artist][year]\
-                            [album].iteritems() for title, d in 
-                            tracks.iteritems()]
-                    items_.sort(self.__compare)
-                    items.extend(items_)
-                for i in items:
-                    self.playlist.addItem(i)
-            else:
-                for i in range(self.parent.tracks.topLevelItemCount()):
-                    item_ = self.parent.tracks.topLevelItem(i)
-                    path = self.library[1][item_.artist][item_.year]\
-                        [item_.album][unicode(item_.text(0))]\
-                        [unicode(item_.text(1))][u'path']
-                    self.playlist.addItem(self.__createItem((item_.text(0),
-                        item_.text(1), item_.album, item_.artist, path)))
-        else:
-            path = self.library[1][item.artist][item.year][item.album]\
-                [unicode(item.text(0))][unicode(item.text(1))][u'path']
-            self.playlist.addItem(self.__createItem((item.text(0),
-                item.text(1), item.album, item.artist, path)))
-        if column != -1 and self.playlist.count():
+            pass
+        pointer = index.internalPointer()
+        self.addItem(pointer)
+        if self.playlist.count():
             self.playByButton()
+
+    def addItem(self, pointer):
+        try:
+            path = pointer.filename
+        except AttributeError:
+            for child in pointer.children():
+                self.addItem(child)
+        else:
+            metadata = pointer.metadata
+            self.playlist.addItem(self.__createItem((
+                metadata[u'tracknumber'],
+                metadata[u'title'],
+                metadata[u'album'],
+                metadata[u'artist'],
+                path
+            )))
+
     def state(self, state):
         if state == Phonon.ErrorState:
             def getErrorMessage():

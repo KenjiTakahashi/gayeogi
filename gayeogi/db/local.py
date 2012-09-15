@@ -227,8 +227,8 @@ class _Node(QtCore.QObject):
 
     def children(self):
         """@todo: Docstring for children
-        :returns: @todo
 
+        :returns: @todo
         """
         return self._children
 
@@ -387,8 +387,6 @@ class AlbumNode(_Node):
         """@todo: Docstring for update
 
         :meta: @todo
-        :returns: @todo
-
         """
         if meta:
             for adr in [u"__a__", u"__d__", u"__r__"]:
@@ -409,10 +407,7 @@ class AlbumNode(_Node):
         super(AlbumNode, self).update(meta)
 
     def flush(self):
-        """@todo: Docstring for flush
-        :returns: @todo
-
-        """
+        """@todo: Docstring for flush."""
         self._fclear((self.metadata[u'year'], self.metadata[u'album']))
         metadata = self.metadata.copy()
         del metadata[u'year']
@@ -455,19 +450,41 @@ class TrackNode(_Node):
             self.metadata = json.loads(open(path, 'r').read())
             (self.metadata[u"tracknumber"],
             self.metadata[u"title"]) = self.fn_decode(self._path)
+            _ = self.metadata[u'__filename__']
+            if len(_) > 1:
+                self.metadata[u'__filename__'] = _[1]
+            else:
+                del self.metadata[u'__filename__']
+            self.filename = _[0]
             self.updateHeaders()
         else:
             self.metadata = dict()
 
-    def flush(self):
-        """@todo: Docstring for flush
-        :returns: @todo
+    def update(self, meta=None):
+        """@todo: Docstring for update
 
+        :meta: @todo
         """
+        if meta:
+            _ = meta[u'__filename__']
+            self.filename = _[0]
+            if len(_) > 1:
+                meta[u'__filename__'] = _[1]
+            else:
+                del meta[u'__filename__']
+        super(TrackNode, self).update(meta)
+
+    def flush(self):
+        """@todo: Docstring for flush."""
         self._fclear((self.metadata[u'tracknumber'], self.metadata[u'title']))
         metadata = self.metadata.copy()
         del metadata[u'tracknumber']
         del metadata[u'title']
+        try:
+            _ = metadata[u'__filename__']
+            metadata[u'__filename__'] = [self.filename, _]
+        except KeyError:
+            metadata[u'__filename__'] = [self.filename]
         self._fsave(metadata)
 
     def fn_encode(self, fn):
@@ -598,7 +615,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         self, section,
         o=QtCore.Qt.Horizontal, role=QtCore.Qt.DisplayRole
     ):
-        """Reimplemented from QAbstractItemModel.headerData. """
+        """Reimplemented from QAbstractItemModel.headerData."""
         if role == QtCore.Qt.DisplayRole and o == QtCore.Qt.Horizontal:
             if section == 0:
                 return u'artist'
@@ -626,7 +643,7 @@ class BaseModel(QtCore.QAbstractItemModel):
             return self.createIndex(row, column, child)
         return QtCore.QModelIndex()
 
-    def permanentIndex(self, row, column, parent=QtCore.QModelIndex()):
+    def persistentIndex(self, row, column, parent=QtCore.QModelIndex()):
         """Returns permanent index and Node for given location.
 
         @note: Arguments as in BaseModel.index.
@@ -917,20 +934,15 @@ class Model(QtGui.QAbstractProxyModel):
     def hasChildren(self, parent):
         """Reimplemented from QAbstractProxyModel.hasChildren.
 
-        It returns True for top-level, because otherwise the model would
-        ignore AlbumNodes, as they're root's children.
-
-        :returns: True for top-level Node, False otherwise.
+        :returns: False.
         """
-        if not parent.isValid():
-            return True
         return False
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
         """Reimplemented from QAbstractProxyModel.index."""
-        if not self.hasIndex(row, column, parent) or parent.column() > 0:
+        if parent.column() > 0:
             return QtCore.QModelIndex()
-        source = QtCore.QModelIndex(self._mapper[row])
+        source = self._mapper[row]
         return self.mapFromSource(
             self.sourceModel.index(source.row(), column, source.parent())
         )
@@ -973,13 +985,8 @@ class Model(QtGui.QAbstractProxyModel):
         return len(self._mapper)
 
     def columnCount(self, _=QtCore.QModelIndex()):
-        """Reimplemented from QAbstractProxyModel.columnCount.
-
-        @note: _ (parent) parameter is not used.
-
-        :returns: Sum of the length of all rows headers data.
-        """
-        return len(_Node.headers)
+        """Reimplemented from QAbstractProxyModel.columnCount."""
+        return self.sourceModel.columnCount(_)
 
     def mapFromSource(self, source):
         """Reimplemented from QAbstractProxyModel.mapFromSource.
@@ -1049,6 +1056,7 @@ class DB(QtCore.QThread):
         """Save database and index to permanent storage."""
         cPickle.dump(self.index, open(self.path, u'wb'), -1)
         self.artists.flush()
+        self.modified = False
 
     def isIgnored(self, path, ignores):
         """Checks if specified folder is to be ignored.
@@ -1083,10 +1091,10 @@ class DB(QtCore.QThread):
                   (artist name, albums, urls, upsert)
         """
         for i in xrange(self.artists.rowCount()):
-            index, node = self.artists.permanentIndex(i, 0)
+            index, node = self.artists.persistentIndex(i, 0)
             albums = list()
             for j in xrange(self.artists.rowCount(index)):
-                _, albumNode = self.artists.permanentIndex(j, 0, index)
+                _, albumNode = self.artists.persistentIndex(j, 0, index)
                 metadata = albumNode.metadata
                 albums.append((metadata[u'album'], metadata[u'year']))
             yield (
@@ -1103,6 +1111,7 @@ class DB(QtCore.QThread):
         :returns: A closure with metadata as parameter and :index: as internal.
         """
         def _upsert(meta):
+            self.modified = True
             return self.artists.upsert(index, meta)
         return _upsert
 

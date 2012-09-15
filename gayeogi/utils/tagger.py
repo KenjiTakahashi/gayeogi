@@ -42,6 +42,14 @@ class Tagger(object):
         :returns: @todo
         """
         try:
-            return self.type(self.filename).readAll()
+            meta = self.type(self.filename).readAll()
         except TypeError:
             return None
+        else:
+            try:
+                _ = meta[u'__filename__']
+            except KeyError:
+                meta[u'__filename__'] = [self.filename]
+            else:
+                meta[u'__filename__'] = [self.filename, _]
+            return meta

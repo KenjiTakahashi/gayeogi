@@ -297,8 +297,8 @@ class Main(QtGui.QMainWindow):
         self.statusBar()
         self.setWindowTitle(u'gayeogi ' + __version__)
         self.translators = list()
-        #self.loadPluginsTranslators()
-        #self.loadPlugins()
+        self.loadPluginsTranslators()
+        self.loadPlugins()
 
     def disableButtons(self):
         """Disable some buttons one mustn't use during the update."""
@@ -341,7 +341,7 @@ class Main(QtGui.QMainWindow):
             __settings_ = QSettings(u'gayeogi', class_.name)
             option = __settings_.value(u'enabled', 0).toInt()[0]
             if option and not class_.loaded:
-                class__ = class_(self.ui, self.library, self.appendPlugin,
+                class__ = class_(self.ui, self.db.artists, self.appendPlugin,
                         self.removePlugin)
                 class__.load()
                 self.ui.plugins[plugin] = class__
@@ -417,10 +417,8 @@ class Main(QtGui.QMainWindow):
 
     def save(self):
         u"""Save database to file."""
-        if self.db.save():
-            self.statusBar().showMessage(self.trUtf8('Saved'))
-        else:
-            self.statusBar().showMessage(self.trUtf8('Nothing to save'))
+        self.db.save()
+        self.statusBar().showMessage(self.trUtf8('Saved'))
 
     def updateArtistsStatistics(self, a, d, r):
         """@todo: Docstring for updateArtistsStatistics
@@ -463,16 +461,11 @@ class Main(QtGui.QMainWindow):
                 self.ui.tracks.view.horizontalHeader().saveState()
             )
         if self.db.modified:
-            def save():
-                self.save()
-
-            def reject():
-                event.ignore()
             from interfaces.confirmation import ConfirmationDialog
             dialog = ConfirmationDialog()
-            dialog.buttons.accepted.connect(save)
+            dialog.buttons.accepted.connect(self.save)
             dialog.buttons.accepted.connect(unload)
-            dialog.buttons.rejected.connect(reject)
+            dialog.buttons.rejected.connect(event.ignore)
             dialog.buttons.helpRequested.connect(unload)
             dialog.exec_()
         else:
