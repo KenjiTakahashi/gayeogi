@@ -546,7 +546,10 @@ class BaseModel(QtCore.QAbstractItemModel):
         """Reimplemented from QAbstractItemModel.columnCount."""
         if parent.column() > 0:
             return 0
-        return len(_Node.headers)
+        count = len(_Node.headers)
+        if count:
+            return count + 2
+        return 0
 
     def canFetchMore(self, parent=QtCore.QModelIndex()):
         """Reimplemented from QAbstractItemModel.canFetchMore."""
