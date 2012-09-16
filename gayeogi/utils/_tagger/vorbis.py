@@ -42,11 +42,4 @@ class Vorbis(object):
             raise TypeError
 
     def readAll(self):
-        data = {k: v[0] for k, v in self.file.iteritems()}
-        for pkey, nkey in [(u'year', u'date'), (u'tracknumber', u'track')]:
-            if pkey not in data:
-                try:
-                    data[pkey] = data[nkey]
-                except KeyError:
-                    pass
-        return data
+        return {k: v[0] for k, v in self.file.iteritems()}

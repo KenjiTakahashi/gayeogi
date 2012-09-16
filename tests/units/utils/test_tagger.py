@@ -31,7 +31,7 @@ class TestTagger(object):
             u'tracknumber': u'12',
             u'title': u'test_title1'
         }
-        self.result_vorbis = {
+        self.result2 = {
             u'artist': u'test_artist1',
             u'date': u'2012',
             u'year': u'2012',
@@ -47,7 +47,7 @@ class TestTagger(object):
         assert tag.readAll() == result
 
     def test_readAll_flac(self):
-        self.readAllTest(u'flac', self.result_vorbis)
+        self.readAllTest(u'flac', self.result2)
 
     def test_readAll_asf(self):
         self.readAllTest(u'wma', self.result)
@@ -63,7 +63,7 @@ class TestTagger(object):
         self.readAllTest(u'mpc', result)
 
     def test_readAll_ogg(self):
-        self.readAllTest(u'ogg', self.result_vorbis)
+        self.readAllTest(u'ogg', self.result2)
 
     def test_readAll_ape(self):
         result = self.result.copy()
@@ -71,7 +71,7 @@ class TestTagger(object):
         self.readAllTest(u'ape', result)
 
     def test_readAll_mp3(self):
-        self.readAllTest(u'mp3', self.result)
+        self.readAllTest(u'mp3', self.result2)
 
     def test_readAll_mp4(self):
         self.readAllTest(u'mp4', self.result)

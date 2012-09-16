@@ -46,6 +46,12 @@ class Tagger(object):
         except TypeError:
             return None
         else:
+            for pkey, nkey in [(u'year', u'date'), (u'tracknumber', u'track')]:
+                if pkey not in meta:
+                    try:
+                        meta[pkey] = meta[nkey]
+                    except KeyError:
+                        pass
             try:
                 _ = meta[u'__filename__']
             except KeyError:
