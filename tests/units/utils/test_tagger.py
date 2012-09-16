@@ -74,4 +74,4 @@ class TestTagger(object):
         self.readAllTest(u'mp3', self.result2)
 
     def test_readAll_mp4(self):
-        self.readAllTest(u'mp4', self.result)
+        self.readAllTest(u'mp4', self.result2)

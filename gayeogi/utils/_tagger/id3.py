@@ -23,7 +23,7 @@ class ID3(object):
     def __init__(self, filename):
         self.filename = filename
         self.file = id3.ID3(filename)
-        self.ids = {
+        self._ids = {
             "TIT1": "grouping",
             "TIT2": "title",
             "TIT3": "version",
@@ -61,5 +61,5 @@ class ID3(object):
         }
 
     def readAll(self):
-        return {self.ids[k]: unicode(v.text[0])
+        return {self._ids[k]: unicode(v.text[0])
                 for k, v in self.file.iteritems()}

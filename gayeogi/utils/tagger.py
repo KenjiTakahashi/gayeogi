@@ -31,7 +31,7 @@ class Tagger(object):
         ext = os.path.splitext(self.filename)[1].lower()
         if ext == u'.mp3':
             self.type = ID3
-        elif ext in [u'.mp4', u'.m4a', u'.mpeg4', u'.aac']:
+        elif ext in [u'.mp4', u'.m4a', u'.mpeg4', u'.aac', u'.m4v']:
             self.type = MP4
         else:
             self.type = Vorbis

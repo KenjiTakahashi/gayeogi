@@ -42,4 +42,4 @@ class Vorbis(object):
             raise TypeError
 
     def readAll(self):
-        return {k: v[0] for k, v in self.file.iteritems()}
+        return {k: unicode(v[0]) for k, v in self.file.iteritems()}

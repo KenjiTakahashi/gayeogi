@@ -16,9 +16,46 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from mutagen import mp4
+
+
 class MP4(object):
     def __init__(self, filename):
         self.filename = filename
+        self.file = mp4.MP4(filename)
+        self._ids = {
+            "\xa9nam": "title",
+            "\xa9alb": "album",
+            "\xa9ART": "artist",
+            "aART": "albumartist",
+            "\xa9wrt": "composer",
+            "\xa9day": "date",
+            "\xa9cmt": "comment",
+            "\xa9grp": "grouping",
+            "\xa9gen": "genre",
+            "tmpo": "bpm",
+            "\xa9too": "encodedby",
+            "cprt": "copyright",
+            "soal": "albumsort",
+            "soaa": "albumartistsort",
+            "soar": "artistsort",
+            "sonm": "titlesort",
+            "soco": "composersort"
+        }
+        self._tupleids = {
+            "disk": "discnumber",
+            "trkn": "tracknumber"
+        }
 
     def readAll(self):
-        pass
+        meta = dict()
+        for k, v in self.file.iteritems():
+            if k in self._tupleids:
+                current, total = v[0]
+                if total:
+                    meta[self._tupleids[k]] = "{0}/{1}".format(current, total)
+                else:
+                    meta[self._tupleids[k]] = unicode(current)
+            else:
+                meta[self._ids[k]] = unicode(v[0])
+        return meta
