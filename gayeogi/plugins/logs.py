@@ -203,6 +203,11 @@ class Main(QtGui.QWidget):
 
         """
         levels = QtGui.QListWidget()
+        # TODO: add this somehow as globalText
+        #self.info.setText(self.trUtf8(
+            #"Here you can choose what kind of log messages should be"
+            #" displayed in the main window."
+        #))
         for level in Main.__levels:
             item = QtGui.QListWidgetItem(level)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)

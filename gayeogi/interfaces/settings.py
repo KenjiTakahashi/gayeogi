@@ -110,6 +110,11 @@ class DatabasesTab(QtGui.QWidget):
         :parent: Parent object.
         """
         super(DatabasesTab, self).__init__(parent)
+        self.globalText = self.trUtf8(
+            "Here you can choose which databases should be searched,"
+            " what releases to search for and how the search should"
+            "behave."
+        )
         self.settings = settings
         self.dbs = QtGui.QTreeWidget()
         self.dbs.setColumnCount(1)
@@ -375,7 +380,12 @@ class LocalTab(QtGui.QWidget):
             parent (QWidget): widget's parent
 
         """
-        QtGui.QWidget.__init__(self, parent)
+        super(LocalTab, self).__init__(parent)
+        self.globalText = self.trUtf8(
+            "Here you can choose in which directories your files lie and"
+            " which files to ignore while searching (you can use wilcards,"
+            " like '*' or '?')"
+        )
         self.directories = QtGui.QListWidget()
         self.directories.setSelectionMode(QtGui.QListWidget.ExtendedSelection)
         for d in directories:
@@ -471,13 +481,14 @@ class PluginsTab(QtGui.QWidget):
     selected = pyqtSignal(unicode, QtGui.QWidget)
 
     def __init__(self, parent=None):
-        """Contructs new PluginsTab instance.
+        """Creates new PluginsTab instance.
 
-        Kwargs:
-            parent (QWidget): widget's parent
-
+        :parent: Parent object.
         """
-        QtGui.QWidget.__init__(self, parent)
+        super(PluginsTab, self).__init__(parent)
+        self.globalText = self.trUtf8(
+            "Here you can choose additional plugins."
+        )
         self.parent = parent
         self.plugins = QtGui.QListWidget()
         self.plugins.itemChanged.connect(self.checkDependencies)
@@ -504,13 +515,12 @@ class PluginsTab(QtGui.QWidget):
         """Checks whether selected plugin's dependencies are available.
 
         If they are, they are automatically selected.
-        If an dependant is being deselected, it's parent(s) will be deselected as well.
+        If an dependant is being deselected, it's parent(s) will be
+        deselected as well.
 
         Also adds/removes appropriate settings tabs.
 
-        Args:
-            item (QListWidgetItem): selected item
-
+        :item: Selected item.
         """
         if item.checkState() != 0:
             ref = self.__plugins[unicode(item.text())]
@@ -550,48 +560,44 @@ class PluginsTab(QtGui.QWidget):
 class Settings(QtGui.QDialog):
     """Main settings dialog window.
 
-    Attributes:
-        __settings (QSettings): reference to the main settings
-        __dbsettings (QSettings): reference to the DB settings
-
+    @attr:__settings: Reference to the main settings.
+    @attr:__dbsettings: Reference to the DB settings.
     """
     __settings = QSettings(u'gayeogi', u'gayeogi')
     __dbsettings = QSettings(u'gayeogi', u'Databases')
 
     def __init__(self, parent=None):
-        """Constructs new Settings instance.
+        """Creates new Settings instance.
 
-        Kwargs:
-            parent (QWidget): widget's parent
-
+        :parent: Parent object.
         """
         QtGui.QDialog.__init__(self, parent)
         self.info = QtGui.QLabel()
         self.info.setWordWrap(True)
         self.tabs = QtGui.QTabWidget()
         self.tabs.currentChanged.connect(self.globalMessage)
-        # Databases
-        order = self.__dbsettings.value(u'order', []).toPyObject()
-        if order == None:
-            order = []
-        self.dbs = DatabasesTab(order, self.__dbsettings)
-        self.dbs.hovered.connect(self.info.setText)
-        self.dbs.unhovered.connect(self.globalMessage)
-        self.tabs.addTab(self.dbs, self.trUtf8('&Databases'))
         # Local
         directory = self.__settings.value(u'directory', []).toPyObject()
         if type(directory) != list:
             directory = [(unicode(directory), 2)]
         ignores = self.__settings.value(u'ignores', []).toPyObject()
-        if ignores == None:
+        if ignores is None:
             ignores = []
         self.directories = LocalTab(directory, ignores)
         self.tabs.addTab(self.directories, self.trUtf8('&Local'))
+        # Databases
+        order = self.__dbsettings.value(u'order', []).toPyObject()
+        if order is None:
+            order = []
+        self.dbs = DatabasesTab(order, self.__dbsettings)
+        self.dbs.hovered.connect(self.info.setText)
+        self.dbs.unhovered.connect(self.globalMessage)
+        self.tabs.addTab(self.dbs, self.trUtf8('&Databases'))
         # Plugins
         self.plugins = PluginsTab(self.tabs)
         self.tabs.insertTab(2, self.plugins, self.trUtf8('&Plugins'))
         # Main
-        self.globalMessage(0)
+        self.globalMessage()
         layout = QtGui.QVBoxLayout()
         layout.addWidget(self.tabs)
         layout.addWidget(self.info)
@@ -629,29 +635,12 @@ class Settings(QtGui.QDialog):
             self.plugins.save()
             self.close()
 
-    def globalMessage(self, i):
+    def globalMessage(self, i=0):
         """Displays global help message.
 
         :i: Current tab number.
         """
-        if i == 0:
-            self.info.setText(self.trUtf8(
-                "Here you can choose which databases should be searched,"
-                " what releases to search for and how the search should"
-                "behave."
-            ))
-        elif i == 1:
-            self.info.setText(self.trUtf8(
-                "Here you can choose in which directory you files lies and"
-                " which files to ignore while searching (you can use wilcards,"
-                " like '*' or '?')"
-            ))
-        elif i == 2:
-            self.info.setText(self.trUtf8(
-                "Here you can choose what kind of log messages should be"
-                " displayed in the main window."
-            ))
-        elif i == 3:
-            self.info.setText(self.trUtf8(
-                "Here you can choose and configure additional plugins."
-            ))
+        try:
+            self.info.setText(self.tabs.widget(i).globalText)
+        except AttributeError:
+            self.info.clear()
