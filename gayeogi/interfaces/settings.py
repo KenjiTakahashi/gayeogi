@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2010 - 2012
+# Karol "Kenji Takahashi" Woźniak © 2010 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import (
@@ -95,32 +96,25 @@ class QHoveringCheckBox(QtGui.QCheckBox, QHovering):
 class DatabasesTab(QtGui.QWidget):
     """Databases management widget.
 
-    Signals:
-        hovered (unicode): emitted when behaviour gets hovered
-        unhovered (int): emitted when behaviour gets unhovered
-
+    @signal:hovered: Emitted when behaviour gets hovered.
+    @signal:unhovered: Emitted when behaviour gets unhovered.
     """
     hovered = pyqtSignal(unicode)
     unhovered = pyqtSignal(int)
 
     def __init__(self, order, settings, parent=None):
-        """Constructs new DatabasesTab instance.
+        """Creates new DatabasesTab instance.
 
-        Args:
-            order (list): in which order databases are searched
-            settings (QSettings): reference to DB settings
-
-        Kwargs:
-            parent(QWidget): widget's parent
-
+        :order: Order in which databases are searched.
+        :settings: Reference to DB settings.
+        :parent: Parent object.
         """
-        QtGui.QWidget.__init__(self, parent)
+        super(DatabasesTab, self).__init__(parent)
         self.settings = settings
         self.dbs = QtGui.QTreeWidget()
-        self.dbs.setColumnCount(2)
+        self.dbs.setColumnCount(1)
         self.dbs.setIndentation(0)
-        self.dbs.setHeaderLabels(QStringList([
-            self.trUtf8('Name'), self.trUtf8('Threads')]))
+        self.dbs.setHeaderLabels(QStringList([self.trUtf8('Name')]))
         self.dbs.currentItemChanged.connect(self.displayOptions)
         from gayeogi.db.bees import __names__, __all__
         for (o, m) in zip(__names__, __all__):
@@ -141,10 +135,6 @@ class DatabasesTab(QtGui.QWidget):
                 item.setCheckState(0, settings.value(
                     o + u'/Enabled', 0).toInt()[0])
                 self.dbs.addTopLevelItem(item)
-                spin = QtGui.QSpinBox()
-                spin.setRange(1, 20)
-                spin.setValue(settings.value(o + u'/size', 1).toInt()[0])
-                self.dbs.setItemWidget(item, 1, spin)
                 self.__checkStates[unicode(o)] = settings.value(
                         o + u'/types', {}).toPyObject()
         self.dbs.resizeColumnToContents(0)
@@ -160,7 +150,10 @@ class DatabasesTab(QtGui.QWidget):
         self.crossed.hovered.connect(self.hovered)
         self.crossed.unhovered.connect(self.unhovered)
         oneByOne = QHoveringRadioButton(0, self.trUtf8('O&ne-by-one'),
-            self.trUtf8('Search databases in order and in every next database, search only for bands not yet found elsewhere.')
+            self.trUtf8(
+                "Search databases in order and in every next database"
+                ", search only for bands not yet found elsewhere."
+            )
         )
         oneByOne.hovered.connect(self.hovered)
         oneByOne.unhovered.connect(self.unhovered)
@@ -169,7 +162,10 @@ class DatabasesTab(QtGui.QWidget):
         else:
             self.crossed.setChecked(True)
         self.case = QHoveringCheckBox(0, self.trUtf8('Ignore case'),
-            self.trUtf8("Ignore the case of album names when merging remote with local. Note that it won't change anything until next Remote call.")
+            self.trUtf8(
+                "Ignore the case of album names when merging remote with local"
+                ". Note that it won't change anything until next Remote call."
+            )
         )
         self.case.setCheckState(settings.value(u'case', 0).toInt()[0])
         self.case.hovered.connect(self.hovered)
@@ -179,9 +175,17 @@ class DatabasesTab(QtGui.QWidget):
         behaviourL.addWidget(self.crossed)
         behaviour.setLayout(behaviourL)
         behaviour.setFixedHeight(80)
+        self.spin = QtGui.QSpinBox()
+        self.spin.setRange(1, 20)
+        self.spin.setValue(settings.value(u'threads', 1).toInt()[0])
+        threadsLabel = QtGui.QLabel(self.trUtf8('Threads:'))
+        threadsL = QtGui.QHBoxLayout()
+        threadsL.addWidget(threadsLabel)
+        threadsL.addWidget(self.spin)
         arrowsL = QtGui.QVBoxLayout()
         arrowsL.addWidget(up)
         arrowsL.addWidget(down)
+        arrowsL.addLayout(threadsL)
         arrowsL.addWidget(behaviour)
         arrowsL.addWidget(self.case)
         arrowsL.addStretch()
@@ -203,7 +207,6 @@ class DatabasesTab(QtGui.QWidget):
         Args:
             item (QListWidgetItem): selected item
             _: whatever
-
         """
         text = item.text(0)
         module = unicode(self.settings.value(
@@ -261,9 +264,7 @@ class DatabasesTab(QtGui.QWidget):
     def changeState(self, state):
         """Changes current database's specific option state.
 
-        Args:
-            state: new state
-
+        :state: New state.
         """
         self.__checkStates[
             unicode(self.dbs.currentItem().text(0))
@@ -272,7 +273,7 @@ class DatabasesTab(QtGui.QWidget):
     def values(self):
         """Gets appropriate values (for saving).
 
-        Returns:
+        :returns:
             tuple. Looks like this (indices)::
 
                 0 -- behaviour state
@@ -281,9 +282,8 @@ class DatabasesTab(QtGui.QWidget):
                     1 -- values::
                         0 -- check state
                         1 -- options states
-                        2 -- threads number
                 2 -- databases order
-
+                3 -- threads number
         """
         result = list()
         order = list()
@@ -294,11 +294,10 @@ class DatabasesTab(QtGui.QWidget):
             result.append((text, (
                 item.checkState(0),
                 self.__checkStates[unicode(text)],
-                self.dbs.itemWidget(item, 1).value()
             )))
         return (
             self.crossed.isChecked(), result,
-            order, self.case.checkState()
+            order, self.case.checkState(), self.spin.value()
         )
 
 
@@ -611,35 +610,48 @@ class Settings(QtGui.QDialog):
         """Saves settings to file."""
         if self.directories.isEmpty():
             dialog = QtGui.QMessageBox()
-            dialog.setText(self.trUtf8('There should be at least one directory supplied!'))
+            dialog.setText(self.trUtf8(
+                "There should be at least one directory supplied!"
+            ))
             dialog.exec_()
         else:
-            (directories, ignores) = self.directories.values()
+            directories, ignores = self.directories.values()
             self.__settings.setValue(u'directory', directories)
             self.__settings.setValue(u'ignores', ignores)
-            (checked, data, order, case) = self.dbs.values()
+            checked, data, order, case, threads = self.dbs.values()
             self.__dbsettings.setValue(u'behaviour', checked)
             self.__dbsettings.setValue(u'order', order)
             self.__dbsettings.setValue(u'case', case)
-            for (text, (checkState, __checkState, itemWidget)) in data:
+            for text, (checkState, __checkState) in data:
                 self.__dbsettings.setValue(text + u'/Enabled', checkState)
                 self.__dbsettings.setValue(text + u'/types', __checkState)
-                self.__dbsettings.setValue(text + u'/size', itemWidget)
+            self.__dbsettings.setValue(u'threads', threads)
             self.plugins.save()
             self.close()
 
     def globalMessage(self, i):
         """Displays global help message.
 
-        Args:
-            i (int): current tab number
-
+        :i: Current tab number.
         """
         if i == 0:
-            self.info.setText(self.trUtf8('Here you can choose which databases should be searched, what releases to search for and how the search should behave.'))
+            self.info.setText(self.trUtf8(
+                "Here you can choose which databases should be searched,"
+                " what releases to search for and how the search should"
+                "behave."
+            ))
         elif i == 1:
-            self.info.setText(self.trUtf8("Here you can choose in which directory you files lies and which files to ignore while searching (you can use wilcards, like '*' or '?')"))
+            self.info.setText(self.trUtf8(
+                "Here you can choose in which directory you files lies and"
+                " which files to ignore while searching (you can use wilcards,"
+                " like '*' or '?')"
+            ))
         elif i == 2:
-            self.info.setText(self.trUtf8('Here you can choose what kind of log messages should be displayed in the main window.'))
+            self.info.setText(self.trUtf8(
+                "Here you can choose what kind of log messages should be"
+                " displayed in the main window."
+            ))
         elif i == 3:
-            self.info.setText(self.trUtf8('Here you can choose and configure additional plugins.'))
+            self.info.setText(self.trUtf8(
+                "Here you can choose and configure additional plugins."
+            ))
