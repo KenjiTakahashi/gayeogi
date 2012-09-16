@@ -394,32 +394,44 @@ class Main(QtGui.QWidget):
                 self.mediaobject.pause()
 
     def addByButton(self):
-        def addItems(items):
+        def addItems(items, model):
             if items:
                 for item in items:
-                    self.addItem(item)
+                    self.addItem(self.getItemFromIndex(item, model))
                 return True
             return False
-        if not addItems(self.parent.tracks.selectedItems()):
-            if not addItems(self.parent.albums.selectedItems()):
-                addItems(self.parent.artists.selectedItems())
+        tracksView = self.parent.tracks.view
+        tracks = tracksView.selectionModel().selectedRows(0)
+        if not addItems(tracks, tracksView.model()):
+            albumsView = self.parent.albums.view
+            albums = albumsView.selectionModel().selectedRows(0)
+            if not addItems(albums, albumsView.model()):
+                artistsView = self.parent.artists.view
+                artists = artistsView.selectionModel().selectedRows(0)
+                addItems(artists, artistsView.model())
 
     def removeByButton(self):
         for item in self.playlist.selectedItems():
             self.playlist.remove(item)
 
-    def addIndex(self, index):
-        self.stop()
-        self.playlist.activeItem = None
-        self.playlist.clear()
-        model = self.sender().model()
+    def getItemFromIndex(self, index, model):
+        """@todo: Docstring for getItemFromIndex
+
+        :index: @todo
+        :returns: @todo
+        """
         index = model.mapToSource(index)
         try:
             index = model.sourceModel().mapToSource(index)
         except AttributeError:
             pass
-        pointer = index.internalPointer()
-        self.addItem(pointer)
+        return index.internalPointer()
+
+    def addIndex(self, index):
+        self.stop()
+        self.playlist.activeItem = None
+        self.playlist.clear()
+        self.addItem(self.getItemFromIndex(index), self.sender().model())
         if self.playlist.count():
             self.playByButton()
 
