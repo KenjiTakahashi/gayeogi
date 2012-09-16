@@ -649,16 +649,6 @@ class BaseModel(QtCore.QAbstractItemModel):
             return self.createIndex(row, column, child)
         return QtCore.QModelIndex()
 
-    def persistentIndex(self, row, column, parent=QtCore.QModelIndex()):
-        """Returns permanent index and Node for given location.
-
-        @note: Arguments as in BaseModel.index.
-
-        :returns: A tuple in form of (permanent index, Node).
-        """
-        index = self.index(row, column, parent)
-        return (index, index.internalPointer())
-
     def getNode(self, index):
         """Returns Node for specified index.
 
@@ -1097,10 +1087,12 @@ class DB(QtCore.QThread):
                   (artist name, albums, urls, upsert)
         """
         for i in xrange(self.artists.rowCount()):
-            index, node = self.artists.persistentIndex(i, 0)
+            index = self.artists.index(i, 0)
+            node = index.internalPointer()
             albums = list()
             for j in xrange(self.artists.rowCount(index)):
-                _, albumNode = self.artists.persistentIndex(j, 0, index)
+                _ = self.artists.index(j, 0, index)
+                albumNode = _.internalPointer()
                 metadata = albumNode.metadata
                 albums.append((metadata[u'album'], metadata[u'year']))
             yield (
