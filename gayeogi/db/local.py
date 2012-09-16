@@ -466,12 +466,15 @@ class TrackNode(_Node):
         :meta: @todo
         """
         if meta:
-            _ = meta[u'__filename__']
-            self.filename = _[0]
-            if len(_) > 1:
-                meta[u'__filename__'] = _[1]
-            else:
-                del meta[u'__filename__']
+            try:
+                _ = meta[u'__filename__']
+                self.filename = _[0]
+                if len(_) > 1:
+                    meta[u'__filename__'] = _[1]
+                else:
+                    del meta[u'__filename__']
+            except KeyError:
+                pass
         super(TrackNode, self).update(meta)
 
     def flush(self):

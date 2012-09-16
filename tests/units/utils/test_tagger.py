@@ -41,7 +41,9 @@ class TestTagger(object):
         }
 
     def readAllTest(self, ext, result):
-        tag = Tagger(os.path.join(self.path, u'test.{0}'.format(ext)))
+        path = os.path.join(self.path, u'test.{0}'.format(ext))
+        tag = Tagger(path)
+        result[u'__filename__'] = [path]
         assert tag.readAll() == result
 
     def test_readAll_flac(self):
