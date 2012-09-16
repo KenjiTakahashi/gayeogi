@@ -22,20 +22,24 @@ import re
 
 class Filter(QSortFilterProxyModel):
     def __init__(self, model, parent=None):
-        """@todo: Docstring for __init__
+        """Creates new Filter instance.
 
-        :model: @todo
-        :parent: @todo
-        :returns: @todo
-
+        :model: Source model.
+        :parent: Parent object.
         """
         super(Filter, self).__init__(parent)
         self.arguments = dict()
+        self.adr = dict()
+        self._num_adr = {
+            u'a': 123,
+            u'd': 234,
+            u'r': 345
+        }
         self.setSourceModel(model)
         self.setDynamicSortFilter(True)
 
     def setSelection(self, selected, deselected):
-        """@todo: Docstring for setSelection."""
+        """Middleware for Model.setSelection."""
         self.sourceModel().setSelection(
             [e.model().mapToSource(e) for e in selected.indexes()],
             [e.model().mapToSource(e) for e in deselected.indexes()]
@@ -46,16 +50,10 @@ class Filter(QSortFilterProxyModel):
 
         :filter: @todo
         :returns: @todo
-
         """
         self.arguments = dict()
-        adr = [u'a', u'd', u'r', u'not a', u'not d', u'not r']
         self.adr = dict()
-        __num_adr = {
-            u'a': 123,
-            u'd': 234,
-            u'r': 345
-        }
+        adr = [u'a', u'd', u'r', u'not a', u'not d', u'not r']
         for a in unicode(filter).split(u'|'):
             temp = a.split(u':')
             if len(temp) == 1 and temp[0] in adr:
@@ -71,34 +69,32 @@ class Filter(QSortFilterProxyModel):
         self.invalidateFilter()
 
     def filterAcceptsRow(self, row, parent):
-        """@todo: Docstring for filterAcceptsRow
-
-        :row: @todo
-        :parent: @todo
-        :returns: @todo
-
-        """
+        """Reimplemented from QSortFilterProxyModel.filterAcceptsRow."""
         if self.arguments:
             for k, v in self.arguments.iteritems():
                 for i in xrange(self.columnCount()):
-                    column = self.sourceModel().headerData(i).lower()
-                    index = self.sourceModel().index(row, i, parent).lower()
-                    row = self.sourceModel().data(index)
+                    sourceModel = self.sourceModel()
+                    column = sourceModel.headerData(i).lower()
+                    index = sourceModel.index(row, i, parent)
+                    data = sourceModel.data(index).lower()
                     if not column == k:
                         break
-                    if re.search(v, unicode(row)):
+                    if re.search(v, unicode(data)):
+                        return True
+            return False
+        if self.adr:
+            for k, v in self.adr.iteritems():
+                for i in xrange(self.columnCount()):
+                    sourceModel = self.sourceModel()
+                    index = sourceModel.index(row, i, parent)
+                    data = sourceModel.data(index, self._num_adr[k])
+                    if data == v:
                         return True
             return False
         return True
 
     def lessThan(self, left, right):
-        """@todo: Docstring for lessThan
-
-        :left: @todo
-        :right: @todo
-        :returns: @todo
-
-        """
+        """Reimplemented from QSortFilterProxyModel.lessThan."""
         source = self.sourceModel()
         lcolumn = source.headerData(left.column())
         rcolumn = source.headerData(right.column())
@@ -107,9 +103,7 @@ class Filter(QSortFilterProxyModel):
         if lcolumn == u'#' and rcolumn == u'#':
             track1 = int(leftd.split(u'/')[0])
             track2 = int(rightd.split(u'/')[0])
-            source2 = source.sourceModel()
-            # FIXME: get album names properly
-            album1 = source.data(source2.parent(left))
-            album2 = source.data(source2.parent(right))
+            album1 = source.data(source.index(left.row(), 1, left.parent()))
+            album2 = source.data(source.index(right.row(), 1, right.parent()))
             return album1 < album2 or track1 < track2
         return leftd < rightd
