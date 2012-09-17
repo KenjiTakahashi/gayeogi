@@ -246,7 +246,6 @@ class Main(QtGui.QMainWindow):
 
     def __init__(self):
         super(Main, self).__init__()
-        self.statistics = None
         if not os.path.exists(dbPath):
             os.mkdir(dbPath)
             if os.path.exists(os.path.join(dbPath[:-3], u'db.pkl')):
@@ -308,6 +307,9 @@ class Main(QtGui.QMainWindow):
         self.ui.settings.setDisabled(True)
 
     def enableButtons(self):
+        """Enable buttons disabled by Main.disableButtons.
+        Also shows the "Done" message.
+        """
         self.ui.local.setEnabled(True)
         self.ui.remote.setEnabled(True)
         self.ui.save.setEnabled(True)
@@ -404,10 +406,6 @@ class Main(QtGui.QMainWindow):
     def showSettings(self):
         u"""Show settings dialog and then update accordingly."""
         def __save():
-            directory = self.__settings.value(u'directory', []).toPyObject()
-            if type(directory) != list:
-                directory = [(unicode(directory), 2)]
-            self.ignores = self.__settings.value(u'ignores', []).toPyObject()
             self.removePluginsTranslators()
             self.loadPluginsTranslators()
             self.loadPlugins()
@@ -421,24 +419,20 @@ class Main(QtGui.QMainWindow):
         self.statusBar().showMessage(self.trUtf8('Saved'))
 
     def updateArtistsStatistics(self, a, d, r):
-        """@todo: Docstring for updateArtistsStatistics
+        """Updates global artists' statistics.
 
-        :a: @todo
-        :d: @todo
-        :r: @todo
-        :returns: @todo
+        :a: A statistics.
+        :d: D statistics.
+        :r: R statistics.
         """
         self.ui.artistsGreen.setText(unicode(a))
         self.ui.artistsYellow.setText(unicode(d))
         self.ui.artistsRed.setText(unicode(r))
 
     def updateAlbumsStatistics(self, a, d, r):
-        """@todo: Docstring for updateAlbumsStatistics
+        """Updated global albums' statistics.
 
-        :a: @todo
-        :d: @todo
-        :r: @todo
-        :returns: @todo
+        @note: Attributes as in Main.updateArtistsStatistics.
         """
         self.ui.albumsGreen.setText(unicode(a))
         self.ui.albumsYellow.setText(unicode(d))
