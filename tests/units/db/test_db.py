@@ -17,6 +17,7 @@
 
 
 import os
+import shutil
 from gayeogi.db.local import DB
 from PyQt4.QtCore import QSettings
 
@@ -37,16 +38,37 @@ class TestRun(object):
 
     def tearDown(self):
         os.rmdir(self.path)
+        try:
+            shutil.move(
+                os.path.abspath(os.path.join(self.rpath, u'..', u'test.mp3')),
+                os.path.join(self.rpath, u'test.mp3')
+            )
+        except IOError:
+            pass
 
-    def test_add_files(self):
-        self.db.run()
+    def check_db(self):
         root = self.db.artists._rootNode
         assert root.childCount() == 1
         artist = root.child(0)
         assert artist.childCount() == 1
         album = artist.child(0)
-        assert album.childCount() == len([
+        length = len([
             n for n in os.listdir(self.rpath)
             if os.path.isfile(os.path.join(self.rpath, n)) and
             n != u'db.conf'
         ])
+        assert album.childCount() == length
+        assert len(self.db.index) == length
+
+    def test_add_files(self):
+        self.db.run()
+        self.check_db()
+
+    def test_remove_files(self):
+        self.db.run()
+        shutil.move(
+            os.path.join(self.rpath, u'test.mp3'),
+            os.path.abspath(os.path.join(self.rpath, u'..', u'test.mp3'))
+        )
+        self.db.run()
+        self.check_db()
