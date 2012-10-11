@@ -63,6 +63,7 @@ _settings = QtCore.QSettings(u'gayeogi', u'Databases')
 
 class _Node(QtCore.QObject):
     headers = set()
+    staticHeaders = [u'artist', u'album']
     stats = [{u'__a__': 0, u'__d__': 0, u'__r__': 0} for _ in xrange(2)]
     artistsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
     albumsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
@@ -137,7 +138,7 @@ class _Node(QtCore.QObject):
         _Node.headers |= set(self.metadata.keys())
         for child in self._children:
             _Node.headers |= set(child.metadata.keys())
-        _Node.headers -= set([u'artist', u'album'])
+        _Node.headers -= set(_Node.staticHeaders)
 
     @staticmethod
     def header(section):
@@ -147,6 +148,18 @@ class _Node(QtCore.QObject):
         :returns: @todo
         """
         return list(_Node.headers)[section]
+
+    @staticmethod
+    def staticHeader(section):
+        """@todo: Docstring for staticHeader
+
+        :section: @todo
+        :returns: @todo
+        """
+        try:
+            return _Node.staticHeaders[section]
+        except IndexError:
+            return None
 
     def updateStatistics(self, artists, adr, value):
         """Updates global statistics count and emits appropriate singal
@@ -195,7 +208,8 @@ class _Node(QtCore.QObject):
 
         @note: Usually reimplemented in specific type Nodes.
         """
-        ArtistNode(path=self._data.pop(), parent=self)
+        while self._data:
+            ArtistNode(path=self._data.pop(), parent=self).fetch()
 
     def addChild(self, child):
         self._children.append(child)
@@ -330,7 +344,8 @@ class ArtistNode(_Node):
                     self.updateStatistics(True, k, -1)
 
     def fetch(self):
-        AlbumNode(self._data.pop(), self)
+        while self._data:
+            AlbumNode(self._data.pop(), self).fetch()
 
     def fn_encode(self, fn):
         return urlsafe_b64encode(fn.encode(u'utf-8'))
@@ -423,7 +438,8 @@ class AlbumNode(_Node):
         super(AlbumNode, self).flush()
 
     def fetch(self):
-        TrackNode(self._data.pop(), self)
+        while self._data:
+            TrackNode(self._data.pop(), self).fetch()
 
     def fn_encode(self, fn):
         fn1, fn2 = fn
@@ -550,9 +566,9 @@ class BaseModel(QtCore.QAbstractItemModel):
         """Reimplemented from QAbstractItemModel.columnCount."""
         if parent.column() > 0:
             return 0
-        count = len(_Node.headers)
-        if count:
-            return count + 2
+        length = len(_Node.headers)
+        if length:
+            return length + len(_Node.staticHeaders)
         return 0
 
     def canFetchMore(self, parent=QtCore.QModelIndex()):
@@ -569,16 +585,6 @@ class BaseModel(QtCore.QAbstractItemModel):
             node = parent.internalPointer()
         self.beginInsertRows(parent, 0, 0)
         node.fetch()
-        count = node.childCount()
-        for i in xrange(count):
-            child = node.child(i)
-            while child.canFetchMore():
-                child.fetch()
-            count = child.childCount()
-            for j in xrange(count):
-                child_ = child.child(j)
-                while child_.canFetchMore():
-                    child_.fetch()
         self.endInsertRows()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
@@ -589,12 +595,9 @@ class BaseModel(QtCore.QAbstractItemModel):
         if role == QtCore.Qt.DisplayRole:
             column = index.column()
             try:
-                if column == 0:
-                    header = u'artist'
-                elif column == 1:
-                    header = u'album'
-                else:
-                    header = _Node.header(column - 2)
+                header = _Node.staticHeader(column)
+                if header is None:
+                    header = _Node.header(column - len(_Node.staticHeaders))
                 return node.metadata[header]
             except KeyError:
                 return ""
@@ -621,15 +624,12 @@ class BaseModel(QtCore.QAbstractItemModel):
     ):
         """Reimplemented from QAbstractItemModel.headerData."""
         if role == QtCore.Qt.DisplayRole and o == QtCore.Qt.Horizontal:
-            if section == 0:
-                return u'artist'
-            elif section == 1:
-                return u'album'
-            elif section > 1:
-                header = _Node.header(section - 2)
+            header = _Node.staticHeader(section)
+            if header is None:
+                header = _Node.header(section - len(_Node.staticHeaders))
                 if header == u'tracknumber':
                     return u'#'
-                return header
+            return header
 
     def parent(self, index):
         """Reimplemented from QAbstractItemModel.parent."""
