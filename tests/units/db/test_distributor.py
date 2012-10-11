@@ -18,7 +18,7 @@
 
 import os
 from gayeogi.db.distributor import Distributor, Bee
-from gayeogi.db.local import DB
+from gayeogi.db import local
 from threading import RLock
 from Queue import Queue
 from PyQt4.QtCore import QSettings
@@ -44,14 +44,14 @@ class TestBeeRun(object):
         self.path = os.path.join(__file__, u'..', u'..', u'data', u'empty')
         self.path = os.path.normpath(self.path)
         os.mkdir(self.path)
-        self.db = DB(self.path)
+        self.db = local.DB(self.path)
         path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), u'..', u'data')
         )
-        DB._DB__settings = QSettings(
+        local._settings = QSettings(
             os.path.join(path, u'db.conf'), QSettings.NativeFormat
         )
-        DB._DB__settings.setValue(u'directories', [(path, True)])
+        local._settings.setValue(u'directories', [(path, True)])
         self.db.run()
         self.queue = Queue(2)
 
