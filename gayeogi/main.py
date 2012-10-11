@@ -68,17 +68,21 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         self.ht = option.rect.height()
         self.ry = ry
         self.rx = rx
+        metrics = option.fontMetrics
+        lineHeight = metrics.lineSpacing()
+        linePos = ry + (self.ht - lineHeight) / 2
         painter.drawRoundedRect(
-            rx + 1, ry + 2, 36, self.ht - 5, 20, 60, Qt.RelativeSize
+            rx + 1, linePos,
+            36, lineHeight,
+            20, 60, Qt.RelativeSize
         )
         painter.setPen(QtGui.QPen())
-        metrics = option.fontMetrics
         x = rx + 8 + metrics.width(u'a')
         if index.data(234).toBool():
-            painter.drawText(x, ry + self.ht - 6, u'd')
+            painter.drawText(x, linePos + lineHeight - 3, u'd')
         x += metrics.width(u'd')
         if index.data(345).toBool():
-            painter.drawText(x, ry + self.ht - 6, u'r')
+            painter.drawText(x, linePos + lineHeight - 3, u'r')
         if self.buttonOver(rx, ry):
             if self.buttoned:
                 if self.my >= ry + 1 and self.my <= ry + self.ht - 6:
@@ -88,11 +92,11 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
             elif ry != self.rry:
                 painter.setPen(QtGui.QPen(self.palette.brightText(), 0))
                 self.rry = -1
-                painter.drawText(rx + 8, ry + self.ht - 6, u'a')
+                painter.drawText(rx + 8, linePos + lineHeight - 3, u'a')
             elif index.data(123).toBool():
-                painter.drawText(rx + 8, ry + self.ht - 6, u'a')
+                painter.drawText(rx + 8, linePos + lineHeight - 3, u'a')
         elif index.data(123).toBool():
-            painter.drawText(rx + 8, ry + self.ht - 6, u'a')
+            painter.drawText(rx + 8, linePos - lineHeight - 3, u'a')
         painter.restore()
         pSize = self.ht / 2 + option.font.pointSize() / 2
         if pSize % 2 == 0:
@@ -168,8 +172,6 @@ class TableView(QtGui.QTableView):
         """@todo: Docstring for showHideColumn
 
         :action: @todo
-        :returns: @todo
-
         """
         column = action.property(u'column').toInt()[0]
         self.setColumnHidden(column, not self.isColumnHidden(column))
@@ -221,8 +223,6 @@ class View(QtGui.QWidget):
         :view: @todo
         :pixmap: @todo
         :parent: @todo
-        :returns: @todo
-
         """
         super(View, self).__init__(parent)
         self.model = Filter(model)
@@ -234,14 +234,14 @@ class View(QtGui.QWidget):
             u"(a or d or r). Case insensitive, regexp allowed."
         )))
         self.view = view
-        self.view.setModel(self.model)
         vheader = self.view.verticalHeader()
-        if pixmap is not None:
+        if pixmap:
             vheader.setDefaultSectionSize(80)
         else:
             vheader.setDefaultSectionSize(
                 self.view.fontMetrics().lineSpacing()
             )
+        self.view.setModel(self.model)
         layout = QtGui.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.filter)
