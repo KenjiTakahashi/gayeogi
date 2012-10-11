@@ -102,10 +102,9 @@ class DatabasesTab(QtGui.QWidget):
     hovered = pyqtSignal(unicode)
     unhovered = pyqtSignal(int)
 
-    def __init__(self, order, settings, parent=None):
+    def __init__(self, settings, parent=None):
         """Creates new DatabasesTab instance.
 
-        :order: Order in which databases are searched.
         :settings: Reference to DB settings.
         :parent: Parent object.
         """
@@ -122,6 +121,9 @@ class DatabasesTab(QtGui.QWidget):
         self.dbs.setHeaderLabels(QStringList([self.trUtf8('Name')]))
         self.dbs.currentItemChanged.connect(self.displayOptions)
         from gayeogi.db.bees import __names__, __all__
+        order = self.settings.value(u'order', []).toPyObject()
+        if order is None:
+            order = list()
         for (o, m) in zip(__names__, __all__):
             if o not in order:
                 order.append(o)
@@ -369,16 +371,13 @@ class QValueWidget(QtGui.QWidget):
 
 class LocalTab(QtGui.QWidget):
     """Local options management widget."""
-    def __init__(self, directories, ignores, parent=None):
-        """Constructs new LocalTab instance.
+    def __init__(self, directories, ignores, images, parent=None):
+        """Creates new LocalTab instance.
 
-        Args:
-            directories (list): directories already present in settings
-            ignores (list): patterns to ignores
-
-        Kwargs:
-            parent (QWidget): widget's parent
-
+        :directories: Directories already present in settings.
+        :ignores: Patterns to ignore.
+        :images: Images names.
+        :parent: Parent object.
         """
         super(LocalTab, self).__init__(parent)
         self.globalText = self.trUtf8(
@@ -413,15 +412,28 @@ class LocalTab(QtGui.QWidget):
         value.added.connect(self.add)
         value.removed.connect(self.remove)
         layout.addWidget(value)
+        layout.addWidget(QtGui.QLabel(self.trUtf8('Image files:')))
+        l = QtGui.QFormLayout()
+        self.images = list()
+        for label in [u'Album:', u'Artist:']:
+            line = QtGui.QLineEdit(",".join(
+                [unicode(i) for i in images[label[:-1]]]
+            ))
+            self.images.append(line)
+            l.addRow(label, line)
+        layout.addLayout(l)
+        self.precedence = QtGui.QCheckBox(self.trUtf8(
+            'Files take precedence over in-file image tags.'
+        ))
+        self.precedence.setCheckState(images[u'p'])
+        layout.addWidget(self.precedence)
         self.setLayout(layout)
 
     def add(self, name, text):
         """Adds new entry to directories/ignores list.
 
-        Args:
-            name (unicode): sender's name ('directories'/'ignores')
-            text (unicode): text to add
-
+        :name: Sender's name ('directories'/'ignores').
+        :text: Text to add.
         """
         item = QtGui.QListWidgetItem(text)
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -434,9 +446,7 @@ class LocalTab(QtGui.QWidget):
     def remove(self, name):
         """Removes selected entries from directories/ignores list.
 
-        Args:
-            name (unicode): sender's name ('directories'/'ignores')
-
+        :name: Sender's name ('directories'/'ignores').
         """
         if name == 'directories':
             widget = self.directories
@@ -450,30 +460,29 @@ class LocalTab(QtGui.QWidget):
     def isEmpty(self):
         """Checks whether there are some directories present.
 
-        Returns:
-            bool -- True if there are no directories specified, False otherwise
-
+        :returns: True if there are no directories specified, False otherwise.
         """
         return not bool(self.directories.count())
 
     def values(self):
         """Gets appropriate values (for saving).
 
-        Returns:
-            tuple. It looks like (indices)::
-                0 (list) -- directories names
-                1 (list) -- ignores patterns
-
+        :returns: Tuple in form of (directories, ignores, image names).
         """
         directories = list()
         ignores = list()
-        for i in range(self.directories.count()):
+        for i in xrange(self.directories.count()):
             item = self.directories.item(i)
             directories.append((unicode(item.text()), item.checkState()))
-        for i in range(self.ignores.count()):
+        for i in xrange(self.ignores.count()):
             item = self.ignores.item(i)
             ignores.append((unicode(item.text()), item.checkState()))
-        return (directories, ignores)
+        images = {
+            u'Album': self.images[0].text().split(u','),
+            u'Artist': self.images[0].text().split(u','),
+            u'p': self.precedence.checkState()
+        }
+        return (directories, ignores, images)
 
 
 class PluginsTab(QtGui.QWidget):
@@ -577,19 +586,25 @@ class Settings(QtGui.QDialog):
         self.tabs = QtGui.QTabWidget()
         self.tabs.currentChanged.connect(self.globalMessage)
         # Local
-        directory = self.__settings.value(u'directory', []).toPyObject()
-        if type(directory) != list:
-            directory = [(unicode(directory), 2)]
+        directories = self.__dbsettings.value(u'directories', []).toPyObject()
+        if not isinstance(directories, list):
+            directories = [(unicode(directories), 2)]
         ignores = self.__settings.value(u'ignores', []).toPyObject()
         if ignores is None:
-            ignores = []
-        self.directories = LocalTab(directory, ignores)
+            ignores = list()
+        images = {
+            u'Album': self.__settings.value(
+                u'image/album', [u'Folder.jpg']
+            ).toPyObject(),
+            u'Artist': self.__settings.value(
+                u'image/artist', [u'Artist.jpg']
+            ).toPyObject(),
+            u'p': self.__settings.value(u'image/precedence', 2).toInt()[0]
+        }
+        self.directories = LocalTab(directories, ignores, images)
         self.tabs.addTab(self.directories, self.trUtf8('&Local'))
         # Databases
-        order = self.__dbsettings.value(u'order', []).toPyObject()
-        if order is None:
-            order = []
-        self.dbs = DatabasesTab(order, self.__dbsettings)
+        self.dbs = DatabasesTab(self.__dbsettings)
         self.dbs.hovered.connect(self.info.setText)
         self.dbs.unhovered.connect(self.globalMessage)
         self.tabs.addTab(self.dbs, self.trUtf8('&Databases'))
@@ -621,9 +636,12 @@ class Settings(QtGui.QDialog):
             ))
             dialog.exec_()
         else:
-            directories, ignores = self.directories.values()
-            self.__settings.setValue(u'directory', directories)
-            self.__settings.setValue(u'ignores', ignores)
+            directories, ignores, images = self.directories.values()
+            self.__dbsettings.setValue(u'directories', directories)
+            self.__dbsettings.setValue(u'ignores', ignores)
+            self.__dbsettings.setValue(u'image/album', images[u'Album'])
+            self.__dbsettings.setValue(u'image/artist', images[u'Artist'])
+            self.__dbsettings.setValue(u'image/precedence', images[u'p'])
             checked, data, order, case, threads = self.dbs.values()
             self.__dbsettings.setValue(u'behaviour', checked)
             self.__dbsettings.setValue(u'order', order)

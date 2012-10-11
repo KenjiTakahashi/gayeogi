@@ -58,6 +58,7 @@ class LegacyDB(object):
 
 
 logger = logging.getLogger('gayeogi.local')
+_settings = QtCore.QSettings(u'gayeogi', u'Databases')
 
 
 class _Node(QtCore.QObject):
@@ -209,7 +210,7 @@ class _Node(QtCore.QObject):
         return self._parent._children.index(self)
 
     def column(self):
-        return 0  # FIXME
+        return 0
 
     def childCount(self):
         return len(self._children)
@@ -568,7 +569,6 @@ class BaseModel(QtCore.QAbstractItemModel):
             node = parent.internalPointer()
         self.beginInsertRows(parent, 0, 0)
         node.fetch()
-        self.endInsertRows()
         count = node.childCount()
         for i in xrange(count):
             child = node.child(i)
@@ -579,9 +579,7 @@ class BaseModel(QtCore.QAbstractItemModel):
                 child_ = child.child(j)
                 while child_.canFetchMore():
                     child_.fetch()
-        hlen = len(_Node.headers) - 1
-        self.beginMoveColumns(parent, 0, hlen, parent, hlen + 2)
-        self.endMoveColumns()
+        self.endInsertRows()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         """Reimplemented from QAbstractItemModel.data."""
@@ -709,6 +707,7 @@ class BaseModel(QtCore.QAbstractItemModel):
             place, meta = meta
         else:
             place = None
+        self.layoutAboutToBeChanged.emit()
         if not index:
             try:
                 artist = find_artist(meta[u'artist'])
@@ -804,6 +803,10 @@ class BaseModel(QtCore.QAbstractItemModel):
                     album.update()
                     album.parent().update()
         self._rootNode.updateHeaders()
+        self.layoutChanged.emit()
+        #hlen = len(_Node.headers) - 1
+        #self.beginMoveColumns(parent, 0, hlen, parent, hlen + 2)
+        #self.endMoveColumns()
         return QtCore.QPersistentModelIndex(index)
 
     def remove(self, index):
@@ -948,13 +951,7 @@ class Model(QtGui.QAbstractProxyModel):
         return self.sourceModel.data(self.mapToSource(index), role)
 
     def setData(self, index, value, role):
-        """@todo: Docstring for setData
-
-        :index: @todo
-        :role: @todo
-        :value: @todo
-        :returns: @todo
-        """
+        """Reimplemented from QAbstractProxyModel.setData."""
         return self.sourceModel.setData(self.mapToSource(index), value)
 
     def headerData(
@@ -1022,7 +1019,6 @@ class TracksModel(Model):
 
 class DB(QtCore.QThread):
     """Local filesystem watcher and DB holder/updater."""
-    __settings = QtCore.QSettings(u'gayeogi', u'db')
     finished = QtCore.pyqtSignal()
     artistsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
     albumsStatisticsChanged = QtCore.pyqtSignal(int, int, int)
@@ -1115,8 +1111,8 @@ class DB(QtCore.QThread):
 
     def run(self):
         """@todo: Docstring for run"""
-        directories = DB.__settings.value(u'directories', []).toPyObject()
-        ignores = DB.__settings.value(u'ignores', []).toPyObject()
+        directories = _settings.value(u'directories', []).toPyObject()
+        ignores = _settings.value(u'ignores', []).toPyObject()
         if ignores is None:
             ignores = list()
         if self.index is None:

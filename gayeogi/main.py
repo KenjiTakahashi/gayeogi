@@ -27,6 +27,7 @@ from gayeogi.interfaces.settings import Settings
 from gayeogi.utils import Filter
 import gayeogi.plugins
 
+
 __version__ = '0.6.3'
 locale = QLocale.system().name()
 if sys.platform == 'win32':
