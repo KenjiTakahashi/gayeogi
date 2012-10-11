@@ -19,7 +19,7 @@
 import sys
 import os
 from PyQt4 import QtGui
-from PyQt4.QtCore import Qt, QSettings, QLocale, QTranslator, QSize
+from PyQt4.QtCore import Qt, QSettings, QLocale, QTranslator
 from PyQt4.QtCore import pyqtSignal, QModelIndex
 from gayeogi.db.local import DB
 from gayeogi.db.distributor import Distributor
@@ -64,11 +64,13 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
         painter.setBrush(self.palette.mid())
         ry = option.rect.y()
         rx = option.rect.x()
+        width = option.rect.width()
         self.ht = option.rect.height()
         self.ry = ry
         self.rx = rx
-        painter.drawRoundedRect(rx + 1, ry + 2, 36,
-                self.ht - 5, 20, 60, Qt.RelativeSize)
+        painter.drawRoundedRect(
+            rx + 1, ry + 2, 36, self.ht - 5, 20, 60, Qt.RelativeSize
+        )
         painter.setPen(QtGui.QPen())
         metrics = option.fontMetrics
         x = rx + 8 + metrics.width(u'a')
@@ -106,16 +108,15 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
             rx + 39, ry + pSize, index.data(Qt.DisplayRole).toString()
         )
         painter.restore()
+        pixmap = index.data(666).toPyObject()
+        if pixmap:
+            painter.drawPixmap(rx + width - 80, ry, pixmap)
 
     def buttonOver(self, x, y):
         return (
             self.mx >= x + 1 and self.mx <= x + 36 and
             self.my >= y + 1 and self.my <= y + self.ht
         )
-
-    def sizeHint(self, option, index):
-        return QSize(39 + option.fontMetrics.width(
-            index.data(987).toString()), option.fontMetrics.height() + 2)
 
 
 class TableView(QtGui.QTableView):
@@ -135,8 +136,6 @@ class TableView(QtGui.QTableView):
         self.setWordWrap(False)
         vheader = self.verticalHeader()
         vheader.setHidden(True)
-        # this is slow as hell :/
-        #vheader.setResizeMode(vheader.ResizeToContents)
         hheader = self.horizontalHeader()
         hheader.setStretchLastSection(True)
         hheader.setDefaultAlignment(Qt.AlignLeft)
@@ -215,10 +214,12 @@ class ADRTableView(TableView):
 
 
 class View(QtGui.QWidget):
-    def __init__(self, model, view, parent=None):
+    def __init__(self, model, view, pixmap, parent=None):
         """@todo: Docstring for __init__
 
         :model: @todo
+        :view: @todo
+        :pixmap: @todo
         :parent: @todo
         :returns: @todo
 
@@ -234,6 +235,13 @@ class View(QtGui.QWidget):
         )))
         self.view = view
         self.view.setModel(self.model)
+        vheader = self.view.verticalHeader()
+        if pixmap is not None:
+            vheader.setDefaultSectionSize(80)
+        else:
+            vheader.setDefaultSectionSize(
+                self.view.fontMetrics().lineSpacing()
+            )
         layout = QtGui.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.filter)
@@ -244,6 +252,7 @@ class View(QtGui.QWidget):
 
 class Main(QtGui.QMainWindow):
     __settings = QSettings(u'gayeogi', u'gayeogi')
+    __dbsettings = QSettings(u'gayeogi', u'Databases')
 
     def __init__(self):
         super(Main, self).__init__()
@@ -264,15 +273,20 @@ class Main(QtGui.QMainWindow):
         self.ui.setupUi(widget)
         self.ui.artists = View(self.db.artists, TableView(
             self.__settings.value(u'artistsView').toByteArray()
-        ), self.ui.splitter)
+        ), Main.__dbsettings.value(
+            u'image/artist/enabled', 2
+        ).toBool(), self.ui.splitter)
         delegate = ADRItemDelegate()
         self.ui.artists.view.setItemDelegateForColumn(0, delegate)
         self.ui.albums = View(self.db.albums, ADRTableView(
             self.__settings.value(u'albumsView').toByteArray()
-        ), self.ui.splitter)
+        ), Main.__dbsettings.value(
+            u'image/album/enabled', 2
+        ).toBool(), self.ui.splitter)
         self.ui.tracks = View(self.db.tracks, TableView(
             self.__settings.value(u'tracksView').toByteArray()
-        ), self.ui.splitter)
+        ), None, self.ui.splitter)
+        self.ui.tracks.view.setAlternatingRowColors(True)
         self.ui.artists.view.selectionModel().selectionChanged.connect(
             self.ui.albums.model.setSelection
         )

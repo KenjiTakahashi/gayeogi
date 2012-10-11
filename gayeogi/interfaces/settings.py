@@ -416,11 +416,12 @@ class LocalTab(QtGui.QWidget):
         l = QtGui.QFormLayout()
         self.images = list()
         for label in [u'Album:', u'Artist:']:
-            line = QtGui.QLineEdit(",".join(
-                [unicode(i) for i in images[label[:-1]]]
-            ))
-            self.images.append(line)
-            l.addRow(label, line)
+            state, img = images[label[:-1]]
+            box = QtGui.QCheckBox(label)
+            box.setCheckState(state)
+            line = QtGui.QLineEdit(",".join([unicode(i) for i in img]))
+            self.images.append((box, line))
+            l.addRow(box, line)
         layout.addLayout(l)
         self.precedence = QtGui.QCheckBox(self.trUtf8(
             'Files take precedence over in-file image tags.'
@@ -478,8 +479,14 @@ class LocalTab(QtGui.QWidget):
             item = self.ignores.item(i)
             ignores.append((unicode(item.text()), item.checkState()))
         images = {
-            u'Album': self.images[0].text().split(u','),
-            u'Artist': self.images[0].text().split(u','),
+            u'Album': (
+                self.images[0][0].checkState(),
+                self.images[0][1].text().split(u',')
+            ),
+            u'Artist': (
+                self.images[1][0].checkState(),
+                self.images[1][1].text().split(u',')
+            ),
             u'p': self.precedence.checkState()
         }
         return (directories, ignores, images)
@@ -593,12 +600,22 @@ class Settings(QtGui.QDialog):
         if ignores is None:
             ignores = list()
         images = {
-            u'Album': self.__settings.value(
-                u'image/album', [u'Folder.jpg']
-            ).toPyObject(),
-            u'Artist': self.__settings.value(
-                u'image/artist', [u'Artist.jpg']
-            ).toPyObject(),
+            u'Album': (
+                Settings.__settings.value(
+                    u'image/album/enabled', 2
+                ).toInt()[0],
+                Settings.__settings.value(
+                    u'image/album', [u'Folder.jpg']
+                ).toPyObject()
+            ),
+            u'Artist': (
+                Settings.__settings.value(
+                    u'image/artist/enabled', 2
+                ).toInt()[0],
+                Settings.__settings.value(
+                    u'image/artist', [u'Artist.jpg']
+                ).toPyObject()
+            ),
             u'p': self.__settings.value(u'image/precedence', 2).toInt()[0]
         }
         self.directories = LocalTab(directories, ignores, images)
@@ -639,8 +656,13 @@ class Settings(QtGui.QDialog):
             directories, ignores, images = self.directories.values()
             self.__dbsettings.setValue(u'directories', directories)
             self.__dbsettings.setValue(u'ignores', ignores)
-            self.__dbsettings.setValue(u'image/album', images[u'Album'])
-            self.__dbsettings.setValue(u'image/artist', images[u'Artist'])
+            for k in [u'Album', u'Artist']:
+                enabled, v = images[k]
+                k = k.lower()
+                self.__dbsettings.setValue(u'image/{0}'.format(k), list(v))
+                self.__dbsettings.setValue(
+                    u'image/{0}/enabled'.format(k), enabled
+                )
             self.__dbsettings.setValue(u'image/precedence', images[u'p'])
             checked, data, order, case, threads = self.dbs.values()
             self.__dbsettings.setValue(u'behaviour', checked)

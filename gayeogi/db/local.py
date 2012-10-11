@@ -281,6 +281,7 @@ class ArtistNode(_Node):
         """
         super(ArtistNode, self).__init__(path, parent)
         self.adr = {u'__a__': True, u'__d__': True, u'__r__': True}
+        self.images = [None, None]
         self.urls = list()
         if path:
             path = os.path.join(self._path, u'.meta')
@@ -345,7 +346,9 @@ class ArtistNode(_Node):
 
     def fetch(self):
         while self._data:
-            AlbumNode(self._data.pop(), self).fetch()
+            node = AlbumNode(self._data.pop(), self)
+            node.fetch()
+            self.images[0] = os.path.dirname(node.images[0])
 
     def fn_encode(self, fn):
         return urlsafe_b64encode(fn.encode(u'utf-8'))
@@ -373,6 +376,7 @@ class AlbumNode(_Node):
         """
         super(AlbumNode, self).__init__(path, parent)
         self.adr = {u'__a__': False, u'__d__': False, u'__r__': False}
+        self.images = [None, None]
         if path:
             path = os.path.join(self._path, u'.meta')
             self.metadata = json.loads(open(path, 'r').read())
@@ -439,7 +443,9 @@ class AlbumNode(_Node):
 
     def fetch(self):
         while self._data:
-            TrackNode(self._data.pop(), self).fetch()
+            node = TrackNode(self._data.pop(), self)
+            node.fetch()
+            self.images[0] = os.path.dirname(node.filename)
 
     def fn_encode(self, fn):
         fn1, fn2 = fn
@@ -607,6 +613,25 @@ class BaseModel(QtCore.QAbstractItemModel):
             return node.adr[u'__d__']
         elif role == 345:  # r
             return node.adr[u'__r__']
+        elif role == 666:
+            try:
+                images = node.images
+                if _settings.value('image/precedence', 2).toBool():
+                    k = index.column() and u'image/album' or u'image/artist'
+                    enabled = _settings.value(
+                        u'{0}/enabled'.format(k), 2
+                    ).toBool()
+                    names = _settings.value(k, [u'Folder.jpg']).toPyObject()
+                    if enabled and names and images[0] is not None:
+                        for name in names:
+                            img = QtGui.QPixmap(os.path.join(
+                                unicode(images[0]), unicode(name)
+                            ))
+                            if not img.isNull():
+                                return img.scaledToHeight(80)
+                return None  # try internal images
+            except AttributeError:
+                return None
 
     def setData(self, index, value):
         """@todo: Docstring for setData
