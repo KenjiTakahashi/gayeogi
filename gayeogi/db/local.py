@@ -348,7 +348,7 @@ class ArtistNode(_Node):
         while self._data:
             node = AlbumNode(self._data.pop(), self)
             node.fetch()
-            self.images[0] = os.path.dirname(node.images[0])
+            self.images[0] = node.images[0].copy()
 
     def fn_encode(self, fn):
         return urlsafe_b64encode(fn.encode(u'utf-8'))
@@ -381,7 +381,7 @@ class AlbumNode(_Node):
             path = os.path.join(self._path, u'.meta')
             self.metadata = json.loads(open(path, 'r').read())
             (self.metadata[u"year"],
-            self.metadata[u"album"]) = self.fn_decode(self._path)
+             self.metadata[u"album"]) = self.fn_decode(self._path)
             for adr in [u"__a__", u"__d__", u"__r__"]:
                 try:
                     _ = self.metadata[adr]
@@ -453,8 +453,8 @@ class AlbumNode(_Node):
 
     def fn_decode(self, fn):
         fn = unicode(
-            urlsafe_b64decode(os.path.basename(fn.encode(u'utf-8'))
-        )).split(u'.')
+            urlsafe_b64decode(os.path.basename(fn.encode(u'utf-8')))
+        ).split(u'.')
         return (fn[0], fn[1])
 
 
@@ -472,7 +472,7 @@ class TrackNode(_Node):
             path = os.path.join(self._path, u'.meta')
             self.metadata = json.loads(open(path, 'r').read())
             (self.metadata[u"tracknumber"],
-            self.metadata[u"title"]) = self.fn_decode(self._path)
+             self.metadata[u"title"]) = self.fn_decode(self._path)
             _ = self.metadata[u'__filename__']
             if len(_) > 1:
                 self.metadata[u'__filename__'] = _[1]
@@ -519,8 +519,8 @@ class TrackNode(_Node):
 
     def fn_decode(self, fn):
         fn = unicode(
-            urlsafe_b64decode(os.path.basename(fn.encode(u'utf-8'))
-        )).split(u'.')
+            urlsafe_b64decode(os.path.basename(fn.encode(u'utf-8')))
+        ).split(u'.')
         return (fn[0], fn[1])
 
 
@@ -863,8 +863,7 @@ class BaseModel(QtCore.QAbstractItemModel):
             if(not pointer.childCount()
                and not adr[u'__a__']
                and not adr[u'__d__']
-               and not adr[u'__r__']
-            ):
+               and not adr[u'__r__']):
                 _remove(item)
             return parent
         if isinstance(pointer, AlbumNode):
