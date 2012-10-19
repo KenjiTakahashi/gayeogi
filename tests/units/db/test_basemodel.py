@@ -350,3 +350,17 @@ class TestRemove(BaseTest):
             u'tracknumber': u'12',
             u'title': u'test_title1'
         }
+
+
+class TestRemoveByFilename(BaseTest):
+    def test_remove_by_filename(self):
+        self.db.upsert(None, {
+            u'artist': u'test_artist1',
+            u'year': u'2012',
+            u'album': u'test_album1',
+            u'tracknumber': u'11',
+            u'title': u'test_title2',
+            u'__filename__': (u'/an/path/to/file.ext',)
+        })
+        self.db.removeByFilename(u'/an/path/to/file.ext')
+        assert self.root.childCount() == 0

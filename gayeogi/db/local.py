@@ -348,7 +348,7 @@ class ArtistNode(_Node):
         while self._data:
             node = AlbumNode(self._data.pop(), self)
             node.fetch()
-            self.images[0] = node.images[0].copy()
+            self.images[0] = node.images[0][:]
 
     def fn_encode(self, fn):
         return urlsafe_b64encode(fn.encode(u'utf-8'))
@@ -361,6 +361,16 @@ class ArtistNode(_Node):
 
 class AlbumNode(_Node):
     """Album node."""
+
+    @property
+    def images(self):
+        return self._images
+
+    @images.setter
+    def images(self, value):
+        self._images[0] = value
+        if self._images[0] is not None:
+            self._parent.images[0] = self._images[0][:]
 
     def __init__(self, path=None, parent=None):
         """Creates a new Album Node.
@@ -376,7 +386,7 @@ class AlbumNode(_Node):
         """
         super(AlbumNode, self).__init__(path, parent)
         self.adr = {u'__a__': False, u'__d__': False, u'__r__': False}
-        self.images = [None, None]
+        self._images = [None, None]
         if path:
             path = os.path.join(self._path, u'.meta')
             self.metadata = json.loads(open(path, 'r').read())
@@ -424,6 +434,8 @@ class AlbumNode(_Node):
                         del meta[adr]
                 except KeyError:
                     pass
+            if self._images[0] is not None:
+                self._parent.images[0] = self._images[0][:]
         super(AlbumNode, self).update(meta)
 
     def flush(self):
@@ -443,9 +455,7 @@ class AlbumNode(_Node):
 
     def fetch(self):
         while self._data:
-            node = TrackNode(self._data.pop(), self)
-            node.fetch()
-            self.images[0] = os.path.dirname(node.filename)
+            TrackNode(self._data.pop(), self).fetch()
 
     def fn_encode(self, fn):
         fn1, fn2 = fn
@@ -479,6 +489,7 @@ class TrackNode(_Node):
             else:
                 del self.metadata[u'__filename__']
             self.filename = _[0]
+            self._parent.images = os.path.dirname(self.filename)
             self.updateHeaders()
         else:
             self.metadata = dict()
@@ -491,11 +502,12 @@ class TrackNode(_Node):
         if meta:
             try:
                 _ = meta[u'__filename__']
-                self.filename = _[0]
                 if len(_) > 1:
                     meta[u'__filename__'] = _[1]
                 else:
                     del meta[u'__filename__']
+                self.filename = _[0]
+                self._parent.images = os.path.dirname(self.filename)
             except KeyError:
                 pass
         super(TrackNode, self).update(meta)
@@ -841,6 +853,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         index if it has tracks or a or d or r. Same applies to artists.
 
         @note: To erase adr state, use appropriate BaseModel.upsert call.
+        @see: BaseModel.removeByFilename.
 
         :index: Index to remove. It can also be an internalPointer.
         """
@@ -872,6 +885,56 @@ class BaseModel(QtCore.QAbstractItemModel):
         if isinstance(pointer, ArtistNode):
             _remove_(pointer)
         self._rootNode.updateHeaders()
+
+    def removeByFilename(self, filename):
+        """Removes Model entry pointing at :filename:.
+
+        @see: BaseModel.remove.
+
+        :filename: @todo
+        """
+        index = self._indexByFilename(filename)
+        if index is not None:
+            self.remove(index)
+
+    def upsertByFilename(self, filename, meta):
+        """@todo: Docstring for upsertByFilename
+
+        @see: BaseModel.upsert.
+
+        :filename: @todo
+        :meta: @todo
+        :returns: @todo
+        """
+        return self.upsert(self._indexByFilename(filename), meta)
+
+    def _indexByFilename(self, filename):
+        """@todo: Docstring for _indexByFilename
+
+        :filename: @todo
+        :returns: @todo
+        """
+        def startswith(row):
+            pointer = row.internalPointer()
+            try:
+                return filename.startswith(pointer.filename)
+            except AttributeError:
+                fn = pointer.images[0]
+                if fn is not None:
+                    return filename.startswith(fn)
+                return False
+        empty = QtCore.QModelIndex()
+        for rowi in xrange(self.rowCount(empty)):
+            row = self.index(rowi, 0, empty)
+            if startswith(row):
+                for row2i in xrange(self.rowCount(row)):
+                    row2 = self.index(row2i, 0, row)
+                    if startswith(row2):
+                        for row3i in xrange(self.rowCount(row2)):
+                            row3 = self.index(row3i, 0, row2)
+                            if row3.internalPointer().filename == filename:
+                                return row3
+        return None
 
     def flush(self):
         """Starts flushing db to permanent storage."""
@@ -1086,17 +1149,6 @@ class DB(QtCore.QThread):
                 return True
         return False
 
-    def getIndex(self, path):
-        """Returns model index for specified :path:.
-
-        :path: Path for which to get index.
-        :returns: A model index for given :path:.
-        """
-        try:
-            return self.index[path]
-        except KeyError:
-            return None
-
     def iterator(self):
         """Returns an iterator over the library, suitable for remote updating.
 
@@ -1125,12 +1177,15 @@ class DB(QtCore.QThread):
     def upsert(self, index):
         """Creates an BaseModel.upsert closure.
 
-        :index: Index at which to point the closure.
+        :index: Index or path at which to point the closure.
         :returns: A closure with metadata as parameter and :index: as internal.
         """
         def _upsert(meta):
             self.modified = True
-            return self.artists.upsert(index, meta)
+            if isinstance(index, basestring):
+                return self.artists.upsertByFilename(index, meta)
+            else:
+                return self.artists.upsert(index, meta)
         return _upsert
 
     def run(self):
@@ -1143,11 +1198,11 @@ class DB(QtCore.QThread):
             if os.path.exists(self.path):
                 self.index = cPickle.load(open(self.path, u'rb'))
             else:
-                self.index = dict()
-        for path, index in self.index.copy().iteritems():
+                self.index = set()
+        for path in self.index.copy():
             if not os.path.exists(path):
-                self.artists.remove(index)
-                del self.index[path]
+                self.artists.removeByFilename(path)
+                self.index.remove(path)
         for directory, enabled in directories:
             if enabled:
                 for root, _, filenames in os.walk(directory):
@@ -1157,11 +1212,9 @@ class DB(QtCore.QThread):
                             if not self.isIgnored(path, ignores):
                                 tag = Tagger(path).readAll()
                                 if tag is not None:
-                                    index = self.upsert(
-                                        self.getIndex(path)
-                                    )(tag)
+                                    index = self.upsert(path)(tag)
                                     self.upsert(index)(
                                         (u'album', {u'__d__': [True]})
                                     )
-                                    self.index[path] = index
+                                    self.index.add(path)
         self.finished.emit()
