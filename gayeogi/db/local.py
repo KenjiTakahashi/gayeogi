@@ -828,7 +828,7 @@ class BaseModel(QtCore.QAbstractItemModel):
         #hlen = len(_Node.headers) - 1
         #self.beginMoveColumns(parent, 0, hlen, parent, hlen + 2)
         #self.endMoveColumns()
-        return QtCore.QPersistentModelIndex(index)
+        return index
 
     def remove(self, index):
         """Removes specified index and it's parents, if applicable.
@@ -839,35 +839,35 @@ class BaseModel(QtCore.QAbstractItemModel):
         @note: To erase adr state, use appropriate BaseModel.upsert call.
         @see: BaseModel.removeByFilename.
 
-        :index: Index to remove. It can also be an internalPointer.
+        :index: Index to remove.
         """
-        def _remove(item):
-            parent = item.parent()
-            parent.removeChild(pointer)
-            parent.update()
+        def _remove(node):
+            parent = self.parent(node)
+            if parent.isValid():
+                ppointer = parent.internalPointer()
+            else:
+                ppointer = self._rootNode
+            self.beginRemoveRows(parent, node.row(), node.row())
+            ppointer.removeChild(node.internalPointer())
+            self.endRemoveRows()
             return parent
-        if not isinstance(index, _Node):
-            index = self.index(index.row(), index.column(), index.parent())
-            pointer = index.internalPointer()
-        else:
-            pointer = index
-        if isinstance(pointer, TrackNode):
-            pointer = _remove(pointer)
+        if isinstance(index.internalPointer(), TrackNode):
+            index = _remove(index)
 
-        def _remove_(item):
-            adr = item.adr
-            parent = item.parent()
-            if(not pointer.childCount()
+        def _remove_(node):
+            adr = node.internalPointer().adr
+            parent = self.parent(node)
+            if(not self.rowCount(node)
                and not adr[u'__a__']
                and not adr[u'__d__']
                and not adr[u'__r__']):
-                _remove(item)
+                _remove(node)
             return parent
-        if isinstance(pointer, AlbumNode):
-            pointer = _remove_(pointer)
-            pointer.updateADR()
-        if isinstance(pointer, ArtistNode):
-            _remove_(pointer)
+        if isinstance(index.internalPointer(), AlbumNode):
+            index = _remove_(index)
+            index.internalPointer().updateADR()
+        if isinstance(index.internalPointer(), ArtistNode):
+            _remove_(index)
         self._rootNode.updateHeaders()
 
     def removeByFilename(self, filename):
