@@ -346,9 +346,7 @@ class ArtistNode(_Node):
 
     def fetch(self):
         while self._data:
-            node = AlbumNode(self._data.pop(), self)
-            node.fetch()
-            self.images[0] = node.images[0][:]
+            AlbumNode(self._data.pop(), self).fetch()
 
     def fn_encode(self, fn):
         return urlsafe_b64encode(fn.encode(u'utf-8'))
@@ -721,23 +719,14 @@ class BaseModel(QtCore.QAbstractItemModel):
         :meta: Metadata to put into the database.
         :returns: New persistent index pointing at inserted/updated entry.
         """
-        def find_artist(name):
-            for child in self._rootNode.children():
-                if child.metadata[u'artist'] == name:
-                    return child
-            return None
-
-        def find_album(artist, name, year):
-            for child in artist.children():
-                meta = child.metadata
-                if meta[u'album'] == name and meta[u'year'] == year:
-                    return child
-            return None
-
-        def find_track(album, name, no):
-            for child in album.children():
-                meta = child.metadata
-                if meta[u'title'] == name and meta[u'tracknumber'] == no:
+        def find(node, values):
+            for child in node.children():
+                truth = True
+                for k, v in values.iteritems():
+                    if child.metadata[k] != v:
+                        truth = False
+                        break
+                if truth:
                     return child
             return None
         if isinstance(meta, tuple):
@@ -746,41 +735,27 @@ class BaseModel(QtCore.QAbstractItemModel):
             place = None
         self.layoutAboutToBeChanged.emit()
         if not index:
-            try:
-                artist = find_artist(meta[u'artist'])
-            except KeyError:
-                artist = find_artist(u'unknown')
-            artistPosition = self._rootNode.childCount()
-            if not artist:
-                self.beginInsertRows(
-                    QtCore.QModelIndex(), artistPosition, artistPosition
-                )
-                artist = ArtistNode(parent=self._rootNode)
-                self.endInsertRows()
-            else:
-                artistPosition -= 1
-            index = self.index(artistPosition, 0)
-            if not place or place == u'album' or place == u'track':
-                m_album = u'unknown'
-                try:
-                    m_album = meta[u'album']
-                except KeyError:
-                    pass
-                m_year = u'0000'
-                try:
-                    m_year = meta[u'year']
-                except KeyError:
-                    pass
-                album = find_album(artist, m_album, m_year)
-                albumPosition = artist.childCount()
-                if not album:
+            def _update_(node, values, Class):
+                newNode = find(node, values)
+                position = node.childCount()
+                if not newNode:
                     self.beginInsertRows(
-                        index, albumPosition, albumPosition
+                        QtCore.QModelIndex(), position, position
                     )
-                    album = AlbumNode(parent=artist)
+                    newNode = Class(parent=node)
                     self.endInsertRows()
                 else:
-                    albumPosition -= 1
+                    position -= 1
+                return (newNode, position)
+            artist, artistPosition = _update_(self._rootNode, {
+                u'artist': meta.get(u'artist') or u'unknown'
+            }, ArtistNode)
+            index = self.index(artistPosition, 0)
+            if not place or place == u'album' or place == u'track':
+                album, albumPosition = _update_(artist, {
+                    u'album': meta.get(u'album') or u'unknown',
+                    u'year': meta.get(u'year') or u'0000'
+                }, AlbumNode)
                 index = self.index(albumPosition, 0, index)
                 if not place or place == u'track':
                     trackPosition = album.childCount()
@@ -809,22 +784,27 @@ class BaseModel(QtCore.QAbstractItemModel):
             pointer = index.internalPointer()
             if isinstance(pointer, ArtistNode):
                 if place == u'album':
-                    album = find_album(pointer, meta[u'album'], meta[u'year'])
+                    album = find(pointer, {
+                        u'album': meta[u'album'],
+                        u'year': meta[u'year']
+                    })
                     _update(album, AlbumNode, pointer)
                 elif place == u'track':
                     for album in pointer.children():
-                        track = find_track(
-                            album, meta[u'title'], meta[u'tracknumber']
-                        )
+                        track = find(album, {
+                            u'title': meta[u'title'],
+                            u'tracknumber': meta[u'tracknumber']
+                        })
                         _update(track, TrackNode, album)
                     pointer.update()
                 else:
                     pointer.update(meta)
             elif isinstance(pointer, AlbumNode):
                 if place == u'track':
-                    track = find_track(
-                        pointer, meta[u'title'], meta[u'tracknumber']
-                    )
+                    track = find(pointer, {
+                        u'title': meta[u'title'],
+                        u'tracknumber': meta[u'tracknumber']
+                    })
                     _update(track, TrackNode, pointer)
                 else:
                     pointer.update(meta)
