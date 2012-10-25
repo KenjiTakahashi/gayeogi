@@ -774,38 +774,36 @@ class BaseModel(QtCore.QAbstractItemModel):
             else:
                 artist.update(meta)
         else:
-            def _update(item, node, parent):
-                if not item:
-                    item = node(parent=parent)
-                item.update(meta)
-                self.remove(item)
-                parent.update()
+            def _update(node, values, Class):
+                newNode = find(node, values)
+                if not newNode:
+                    newNode = Class(parent=node)
+                newNode.update(meta)
+                self.remove(newNode)
+                node.update()
             index = self.index(index.row(), index.column(), index.parent())
             pointer = index.internalPointer()
             if isinstance(pointer, ArtistNode):
                 if place == u'album':
-                    album = find(pointer, {
+                    _update(pointer, {
                         u'album': meta[u'album'],
                         u'year': meta[u'year']
-                    })
-                    _update(album, AlbumNode, pointer)
+                    }, AlbumNode)
                 elif place == u'track':
                     for album in pointer.children():
-                        track = find(album, {
+                        _update(album, {
                             u'title': meta[u'title'],
                             u'tracknumber': meta[u'tracknumber']
-                        })
-                        _update(track, TrackNode, album)
+                        }, TrackNode)
                     pointer.update()
                 else:
                     pointer.update(meta)
             elif isinstance(pointer, AlbumNode):
                 if place == u'track':
-                    track = find(pointer, {
+                    _update(pointer, {
                         u'title': meta[u'title'],
                         u'tracknumber': meta[u'tracknumber']
-                    })
-                    _update(track, TrackNode, pointer)
+                    }, TrackNode)
                 else:
                     pointer.update(meta)
                 pointer.parent().update()
