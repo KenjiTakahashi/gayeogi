@@ -851,8 +851,6 @@ class BaseModel(QtCore.QAbstractItemModel):
             ppointer.removeChild(node.internalPointer())
             self.endRemoveRows()
             return parent
-        if isinstance(index.internalPointer(), TrackNode):
-            index = _remove(index)
 
         def _remove_(node):
             adr = node.internalPointer().adr
@@ -863,12 +861,16 @@ class BaseModel(QtCore.QAbstractItemModel):
                and not adr[u'__r__']):
                 _remove(node)
             return parent
+        self.layoutAboutToBeChanged.emit()
+        if isinstance(index.internalPointer(), TrackNode):
+            index = _remove(index)
         if isinstance(index.internalPointer(), AlbumNode):
             index = _remove_(index)
             index.internalPointer().updateADR()
         if isinstance(index.internalPointer(), ArtistNode):
             _remove_(index)
         self._rootNode.updateHeaders()
+        self.layoutChanged.emit()
 
     def removeByFilename(self, filename):
         """Removes Model entry pointing at :filename:.
