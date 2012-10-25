@@ -720,14 +720,17 @@ class BaseModel(QtCore.QAbstractItemModel):
         :returns: New persistent index pointing at inserted/updated entry.
         """
         def find(node, values):
-            for child in node.children():
+            for rowi in xrange(self.rowCount(node)):
+                row = self.index(rowi, 0, node)
+                child = row.internalPointer()
+            #for child in node.children():
                 truth = True
                 for k, v in values.iteritems():
                     if child.metadata[k] != v:
                         truth = False
                         break
                 if truth:
-                    return child
+                    return row
             return None
         if isinstance(meta, tuple):
             place, meta = meta
@@ -737,60 +740,63 @@ class BaseModel(QtCore.QAbstractItemModel):
         if not index:
             def _update_(node, values, Class):
                 newNode = find(node, values)
-                position = node.childCount()
                 if not newNode:
-                    self.beginInsertRows(
-                        QtCore.QModelIndex(), position, position
-                    )
-                    newNode = Class(parent=node)
+                    position = self.rowCount(node)
+                    self.beginInsertRows(node, position, position)
+                    if not node.isValid():
+                        Class(parent=self._rootNode)
+                    else:
+                        Class(parent=node.internalPointer())
                     self.endInsertRows()
-                else:
-                    position -= 1
-                return (newNode, position)
-            artist, artistPosition = _update_(self._rootNode, {
+                    newNode = self.index(position, 0, node)
+                return newNode
+            artist = _update_(QtCore.QModelIndex(), {
                 u'artist': meta.get(u'artist') or u'unknown'
             }, ArtistNode)
-            index = self.index(artistPosition, 0)
             if not place or place == u'album' or place == u'track':
-                album, albumPosition = _update_(artist, {
+                album = _update_(artist, {
                     u'album': meta.get(u'album') or u'unknown',
                     u'year': meta.get(u'year') or u'0000'
                 }, AlbumNode)
-                index = self.index(albumPosition, 0, index)
                 if not place or place == u'track':
-                    trackPosition = album.childCount()
-                    self.beginInsertRows(
-                        index, trackPosition, trackPosition
-                    )
-                    track = TrackNode(parent=album)
+                    position = self.rowCount(album)
+                    self.beginInsertRows(album, position, position)
+                    track = TrackNode(parent=album.internalPointer())
                     self.endInsertRows()
                     track.update(meta)
-                    album.update()
-                    artist.update()
-                    index = self.index(trackPosition, 0, index)
+                    album.internalPointer().update()
+                    artist.internalPointer().update()
+                    index = self.index(position, 0, album)
                 else:
-                    album.update(meta)
-                    artist.update()
+                    album.internalPointer().update(meta)
+                    artist.internalPointer().update()
+                    index = album
             else:
-                artist.update(meta)
+                artist.internalPointer().update(meta)
+                index = artist
         else:
             def _update(node, values, Class):
                 newNode = find(node, values)
                 if not newNode:
-                    newNode = Class(parent=node)
-                newNode.update(meta)
+                    position = self.rowCount(node)
+                    self.beginInsertRows(node, position, position)
+                    Class(parent=node.internalPointer())
+                    self.endInsertRows()
+                    newNode = self.index(position, 0, node)
+                newNode.internalPointer().update(meta)
                 self.remove(newNode)
-                node.update()
+                node.internalPointer().update()
             index = self.index(index.row(), index.column(), index.parent())
             pointer = index.internalPointer()
             if isinstance(pointer, ArtistNode):
                 if place == u'album':
-                    _update(pointer, {
+                    _update(index, {
                         u'album': meta[u'album'],
                         u'year': meta[u'year']
                     }, AlbumNode)
                 elif place == u'track':
-                    for album in pointer.children():
+                    for albumi in xrange(self.rowCount(index)):
+                        album = self.index(albumi, 0, index)
                         _update(album, {
                             u'title': meta[u'title'],
                             u'tracknumber': meta[u'tracknumber']
@@ -800,7 +806,7 @@ class BaseModel(QtCore.QAbstractItemModel):
                     pointer.update(meta)
             elif isinstance(pointer, AlbumNode):
                 if place == u'track':
-                    _update(pointer, {
+                    _update(index, {
                         u'title': meta[u'title'],
                         u'tracknumber': meta[u'tracknumber']
                     }, TrackNode)
