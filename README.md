@@ -5,13 +5,11 @@ At the moment, these features are considered *working*:
 
 - Library
 - Internet DB checking
-
     - metal-archives.com
     - musicbrainz.org
     - progarchives.com
 
 - Playback
-
     - last.fm/libre.fm scrobbling
     - MPRIS (2.1 with partial TrackList support, not available on Windows)
 
@@ -33,9 +31,9 @@ lxml >= 2.3 (metal-archives.com, musicbrainz.org, progarchives.com)
 - Versions specified here are "known to work", but it may be possible that and older one will fit too.
 - Due to the name change during update to 0.6 you'll have to execute following commands if you want to keep your db and settings:
 ```sh
-mkdir ~/.config/gayeogi
-cp ~/.config/fetcher/* ~/.config/gayeogi/
-mv ~/.config/gayeogi/Fetcher.conf ~/.config/gayeogi/gayeogi.conf
+$ mkdir ~/.config/gayeogi
+$ cp ~/.config/fetcher/* ~/.config/gayeogi/
+$ mv ~/.config/gayeogi/Fetcher.conf ~/.config/gayeogi/gayeogi.conf
 ```
 
 ## LINUX
@@ -61,11 +59,11 @@ There is an ebuild available in [overlays][overlays] thanks to <someone> (if you
 
 Through [PyPI][pypi]
 ```sh
-$ pip install gayeogi
+# pip install gayeogi
 ```
 or directly from source
 ```sh
-$ python2 setup.py install
+# python2 setup.py install
 ```
 
 [pypi]: http://pypi.python.org/pypi/gayeogi/
