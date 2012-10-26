@@ -72,3 +72,10 @@ class TestRun(object):
         )
         self.db.run()
         self.check_db()
+
+    def test_files_not_changed(self):
+        # Will implement those when logging is in place.
+        raise NotImplementedError
+
+    def test_files_changed(self):
+        raise NotImplementedError

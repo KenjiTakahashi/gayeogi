@@ -1184,23 +1184,25 @@ class DB(QtCore.QThread):
             if os.path.exists(self.path):
                 self.index = cPickle.load(open(self.path, u'rb'))
             else:
-                self.index = set()
-        for path in self.index.copy():
+                self.index = dict()
+        for path, _ in self.index.copy().iteritems():
             if not os.path.exists(path):
                 self.artists.removeByFilename(path)
-                self.index.remove(path)
+                del self.index[path]
         for directory, enabled in directories:
             if enabled:
                 for root, _, filenames in os.walk(directory):
                     if not self.isIgnored(root, ignores):
                         for filename in filenames:
                             path = os.path.join(root, filename)
-                            if not self.isIgnored(path, ignores):
+                            time = self.index.get(path) or 0
+                            if(not self.isIgnored(path, ignores)
+                               and os.stat(path).st_mtime != time):
                                 tag = Tagger(path).readAll()
                                 if tag is not None:
                                     index = self.upsert(path)(tag)
                                     self.upsert(index)(
                                         (u'album', {u'__d__': [True]})
                                     )
-                                    self.index.add(path)
+                                    self.index[path] = os.stat(path).st_mtime
         self.finished.emit()
