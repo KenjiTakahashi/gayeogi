@@ -1,5 +1,5 @@
 include CHANGELOG
 include LICENSE
 include setup.nsi
-include README.rst
+include README.md
 include scripts/gayeogi.desktop

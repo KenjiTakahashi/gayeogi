@@ -34,7 +34,7 @@ setup(
         'gayeogi.utils',
         'gayeogi.plugins'
     ],
-    package_data={'': ['langs/*.qm', '*/*.rst']},
+    package_data={'': ['langs/*.qm', '*/*.md']},
     scripts=['scripts/gayeogi'],
     install_requires=['mutagen'],
     extras_require={
