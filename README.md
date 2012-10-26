@@ -8,7 +8,6 @@ At the moment, these features are considered *working*:
     - metal-archives.com
     - musicbrainz.org
     - progarchives.com
-
 - Playback
     - last.fm/libre.fm scrobbling
     - MPRIS (2.1 with partial TrackList support, not available on Windows)
@@ -30,9 +29,11 @@ lxml >= 2.3 (metal-archives.com, musicbrainz.org, progarchives.com)
 - Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
 - Versions specified here are "known to work", but it may be possible that and older one will fit too.
 - Due to the name change during update to 0.6 you'll have to execute following commands if you want to keep your db and settings:
-```sh
+```
 $ mkdir ~/.config/gayeogi
+
 $ cp ~/.config/fetcher/* ~/.config/gayeogi/
+
 $ mv ~/.config/gayeogi/Fetcher.conf ~/.config/gayeogi/gayeogi.conf
 ```
 

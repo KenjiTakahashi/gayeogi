@@ -1,0 +1,10 @@
+*~
+*pyc
+*swp
+releases/*
+.todo
+dist/*
+MANIFEST
+build/*
+gayeogi.egg-info/*
+gprof2dot.py
