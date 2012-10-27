@@ -23,7 +23,7 @@ from PyQt4.QtCore import Qt, QSettings, QLocale, QTranslator
 from PyQt4.QtCore import pyqtSignal, QModelIndex
 from gayeogi.db.local import DB
 from gayeogi.db.distributor import Distributor
-from gayeogi.interfaces.settings import Settings
+from gayeogi.interfaces import Settings, TableView
 from gayeogi.utils import Filter
 import gayeogi.plugins
 
@@ -121,60 +121,6 @@ class ADRItemDelegate(QtGui.QStyledItemDelegate):
             self.mx >= x + 1 and self.mx <= x + 36 and
             self.my >= y + 1 and self.my <= y + self.ht
         )
-
-
-class TableView(QtGui.QTableView):
-    """Docstring for TableView """
-
-    def __init__(self, state, parent=None):
-        """@todo: to be defined
-
-        :parent: @todo
-        """
-        super(TableView, self).__init__(parent)
-        self.setSelectionMode(self.ExtendedSelection)
-        self.setSelectionBehavior(self.SelectRows)
-        self.setEditTriggers(self.NoEditTriggers)
-        self.setShowGrid(False)
-        self.setCornerButtonEnabled(False)
-        self.setWordWrap(False)
-        vheader = self.verticalHeader()
-        vheader.setHidden(True)
-        hheader = self.horizontalHeader()
-        hheader.setStretchLastSection(True)
-        hheader.setDefaultAlignment(Qt.AlignLeft)
-        hheader.setHighlightSections(False)
-        hheader.setMovable(True)
-        hheader.setContextMenuPolicy(Qt.CustomContextMenu)
-        hheader.customContextMenuRequested.connect(self.showHeaderContextMenu)
-        # This restores state over and over for every column added.
-        # FIXME: Restore state once (somehow).
-        #hheader.sectionCountChanged.connect(
-            #lambda: self.horizontalHeader().restoreState(state)
-        #)
-
-    def showHeaderContextMenu(self):
-        """@todo: Docstring for showHeaderContextMenu """
-        menu = QtGui.QMenu()
-        model = self.model()
-        for i in xrange(model.columnCount()):
-            action = menu.addAction(
-                model.headerData(i, Qt.Horizontal, Qt.DisplayRole).toString()
-            )
-            action.setProperty(u'column', i)
-            action.setCheckable(True)
-            if not self.isColumnHidden(i):
-                action.setChecked(True)
-        menu.triggered.connect(self.showHideColumn)
-        menu.exec_(QtGui.QCursor.pos())
-
-    def showHideColumn(self, action):
-        """@todo: Docstring for showHideColumn
-
-        :action: @todo
-        """
-        column = action.property(u'column').toInt()[0]
-        self.setColumnHidden(column, not self.isColumnHidden(column))
 
 
 class ADRTableView(TableView):
