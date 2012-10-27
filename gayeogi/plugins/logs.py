@@ -55,21 +55,29 @@ class Handler(QObject, logging.Handler):
 
 class LogFilter(logging.Filter):
     """Logs filter."""
-    __levels = {
-        u'Critical': logging.CRITICAL,
+    ADDED = 60
+    REMOVED = 70
+    allLevels = {
         u'Error': logging.ERROR,
-        u'Warning': logging.WARNING,
-        u'Info': logging.INFO,
-        u'Debug': logging.DEBUG
+        u'Debug': logging.DEBUG,
+        u'Added': ADDED,
+        u'Removed': REMOVED
     }
 
     def __init__(self):
         """Construcs new LogFilter instance."""
         super(LogFilter, self).__init__()
         self.levels = set()
+        for name in [u'added', u'removed']:
+            level = LogFilter.allLevels[name.capitalize()]
+            logging.addLevelName(level, name.upper())
+
+            def func(self, msg, *args, **kwargs):
+                self._log(level, msg, args, **kwargs)
+            setattr(logging.Logger, name, func)
 
     def filter(self, record):
-        """LogFilters incoming records according to their enabled state.
+        """Filters incoming records according to their enabled state.
 
         :record: Log record received from Logger.
 
@@ -77,20 +85,20 @@ class LogFilter(logging.Filter):
         return record.levelno in self.levels
 
     def addLevel(self, level):
-        """Adds specified level to enabled.
+        """Enabled specified level.
 
         :level: Human readable level's name.
 
         """
-        self.levels.add(self.__levels[level])
+        self.levels.add(self.allLevels[level])
 
     def removeLevel(self, level):
-        """Removes specified level from enabled.
+        """Disables specified level.
 
-        :level: Human readable lavel's name.
+        :level: Human readable level's name.
 
         """
-        self.levels.discard(self.__levels[level])
+        self.levels.discard(self.allLevels[level])
 
 
 logfilter = LogFilter()
@@ -102,7 +110,6 @@ class Main(QtGui.QWidget):
     loaded = False
     depends = []
     __settings = QSettings(u'gayeogi', u'Logs')
-    __levels = [u'Critical', u'Error', u'Warning', u'Info', u'Debug']
 
     def __init__(self, parent, ___, addWidget, removeWidget):
         """Constructs new Main instance.
@@ -170,7 +177,7 @@ class Main(QtGui.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         self.addWidget(u'horizontalLayout_2', self, 'start')
-        for level in self.__levels:
+        for level in LogFilter.allLevels.keys():
             if self.__settings.value(level, 0).toInt()[0]:
                 logfilter.addLevel(level)
         handler = Handler(self.update)
@@ -205,7 +212,7 @@ class Main(QtGui.QWidget):
             #"Here you can choose what kind of log messages should be"
             #" displayed in the main window."
         #))
-        for level in Main.__levels:
+        for level in LogFilter.allLevels.keys():
             item = QtGui.QListWidgetItem(level)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(Main.__settings.value(level, 0).toInt()[0])
