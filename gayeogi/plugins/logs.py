@@ -19,7 +19,8 @@
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, QObject, pyqtSignal
 import logging
-import re
+from gayeogi.interfaces import TableView
+from gayeogi.utils import Filter
 
 
 class Handler(QObject, logging.Handler):
@@ -52,7 +53,7 @@ class Handler(QObject, logging.Handler):
         self.signal.emit([record.name, record.levelname] + record.msg)
 
 
-class Filter(logging.Filter):
+class LogFilter(logging.Filter):
     """Logs filter."""
     __levels = {
         u'Critical': logging.CRITICAL,
@@ -63,12 +64,12 @@ class Filter(logging.Filter):
     }
 
     def __init__(self):
-        """Construcs new Filter instance."""
-        logging.Filter.__init__(self)
+        """Construcs new LogFilter instance."""
+        super(LogFilter, self).__init__()
         self.levels = set()
 
     def filter(self, record):
-        """Filters incoming records according to their enabled state.
+        """LogFilters incoming records according to their enabled state.
 
         :record: Log record received from Logger.
 
@@ -92,7 +93,7 @@ class Filter(logging.Filter):
         self.levels.discard(self.__levels[level])
 
 
-logfilter = Filter()
+logfilter = LogFilter()
 
 
 class Main(QtGui.QWidget):
@@ -123,65 +124,48 @@ class Main(QtGui.QWidget):
         Also creates appropriate widgets and adds them to main window.
 
         """
-        self.filter = QtGui.QLineEdit()
-        self.filter.textEdited.connect(self.filter_)
-        self.filter.setStatusTip(QtGui.QApplication.translate(
-            'Logs',
-            """Pattern: <pair>|<pair>, where <pair> is"""
-            """<column_name>:<searching_phrase>. Case insensitive,"""
-            """ regexp allowed."""
-        ))
-        self.logs = QtGui.QTreeWidget()
-        self.logs.setIndentation(0)
-        self.logs.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
-        self.logs.setSortingEnabled(True)
-        self.logs.setContextMenuPolicy(Qt.ActionsContextMenu)
-        copy = QtGui.QAction(
-            QtGui.QApplication.translate('Logs', '&Copy'),
-            self.logs
-        )
-        copy.triggered.connect(self.copy)
-        remove = QtGui.QAction(
-            QtGui.QApplication.translate('Logs', '&Remove'),
-            self.logs
-        )
-        remove.triggered.connect(self.remove)
-        self.logs.addAction(copy)
-        self.logs.addAction(remove)
-        self.logs.setHeaderLabels([
+        self.logs = QtGui.QStandardItemModel(0, 4)
+        self.logs.setHorizontalHeaderLabels([
             QtGui.QApplication.translate('Logs', 'Module'),
             QtGui.QApplication.translate('Logs', 'Type'),
             QtGui.QApplication.translate('Logs', 'File/Entry'),
             QtGui.QApplication.translate('Logs', 'Message')
         ])
-        header = self.logs.header()
-        header.setContextMenuPolicy(Qt.ActionsContextMenu)
-        header.restoreState(self.__settings.value('state').toByteArray())
-        for i, label in enumerate(['Module', 'Type', 'File/Entry', 'Message']):
-            checked = self.__settings.value(label, True).toBool()
-            action = QtGui.QAction(
-                QtGui.QApplication.translate('Logs', label),
-                self.logs
-            )
-            action.i = i
-            action.setCheckable(True)
-            action.setChecked(checked)
-            action.toggled.connect(self.hideColumn)
-            header.addAction(action)
-            self.logs.setColumnHidden(i, not checked)
+        self.view = TableView(None)  # TODO: provide state
+        self.view.setContextMenuPolicy(Qt.ActionsContextMenu)
+        copy = QtGui.QAction(
+            QtGui.QApplication.translate('Logs', '&Copy'), self.view
+        )
+        copy.triggered.connect(self.copy)
+        remove = QtGui.QAction(
+            QtGui.QApplication.translate('Logs', '&Remove'), self.view
+        )
+        remove.triggered.connect(self.remove)
+        self.view.addAction(copy)
+        self.view.addAction(remove)
         clear = QtGui.QPushButton(QtGui.QApplication.translate(
             'Logs', 'Cle&ar'))
         clear.clicked.connect(self.logs.clear)
         save = QtGui.QPushButton(QtGui.QApplication.translate(
             'Logs', 'Sa&ve'))
         save.clicked.connect(self.save)
+        self.filter = QtGui.QLineEdit()
+        self.filter.setStatusTip(QtGui.QApplication.translate(
+            'Logs',
+            """Pattern: <pair>|<pair>, where <pair> is"""
+            """<column_name>:<searching_phrase>. Case insensitive,"""
+            """ regexp allowed."""
+        ))
+        f = Filter(self.logs)
+        self.filter.textEdited.connect(f.setFilter)
+        self.view.setModel(f)
         buttonL = QtGui.QHBoxLayout()
         buttonL.addWidget(clear)
         buttonL.addWidget(save)
         buttonL.addStretch()
         layout = QtGui.QVBoxLayout()
         layout.addWidget(self.filter)
-        layout.addWidget(self.logs)
+        layout.addWidget(self.view)
         layout.addLayout(buttonL)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
@@ -202,7 +186,9 @@ class Main(QtGui.QWidget):
         Also removes appropriate widgets from main window, if needed.
 
         """
-        self.__settings.setValue('state', self.logs.header().saveState())
+        self.__settings.setValue(
+            'state', self.view.horizontalHeader().saveState()
+        )
         self.removeWidget(u'horizontalLayout_2', self, 'start')
         Main.loaded = False
 
@@ -250,46 +236,7 @@ class Main(QtGui.QWidget):
         :data: List of entries for appropriate columns.
 
         """
-        self.logs.addTopLevelItem(QtGui.QTreeWidgetItem(data))
-
-    def filter_(self, text):
-        """Filters log messages.
-
-        :text: Filter pattern (regexp).
-
-        """
-        columns = list()
-        arguments = list()
-        for a in unicode(text).split(u'|'):
-            temp = a.split(u':')
-            if len(temp) != 2 or temp[1] == u'':
-                break
-            columns.append(temp[0].lower())
-            arguments.append(temp[1].lower())
-        tree = self.sender().parent().children()[2]
-        if len(columns) != 0 and len(columns) == len(arguments):
-            header = tree.header().model()
-            num_columns = [i for i in range(tree.columnCount())
-                if not tree.isColumnHidden(i) and unicode(header.headerData(i,
-                    Qt.Horizontal).toString()).lower() in columns]
-            for i in range(tree.topLevelItemCount()):
-                item = tree.topLevelItem(i)
-                hidden = list()
-                for j, c in enumerate(num_columns):
-                    try:
-                        if item not in hidden:
-                            if not re.search(arguments[j],
-                            unicode(item.text(c)).lower()):
-                                item.setHidden(True)
-                                item.setSelected(False)
-                                hidden.append(item)
-                            else:
-                                item.setHidden(False)
-                    except:
-                        pass
-        else:
-            for i in range(tree.topLevelItemCount()):
-                tree.topLevelItem(i).setHidden(False)
+        self.logs.appendRow([QtGui.QStandardItem(d) for d in data])
 
     def copy(self, _):
         """Copies selected messages to the clipboard.
@@ -298,11 +245,11 @@ class Main(QtGui.QWidget):
 
         """
         text = ''
-        for item in self.logs.selectedItems():
+        for index in self.view.selectedIndexes():
             for c in range(self.logs.columnCount()):
                 if c != 0:
                     text += ':'
-                text += item.text(c)
+                text += index.data(c)
             text += '\n'
         QtGui.QApplication.clipboard().setText(text)
 
@@ -312,19 +259,8 @@ class Main(QtGui.QWidget):
         :_: whatever (signal compatibility).
 
         """
-        for item in self.logs.selectedItems():
-            item = self.logs.takeTopLevelItem(
-                self.logs.indexOfTopLevelItem(item))
-
-    def hideColumn(self, checked):
-        """Hides or reveals a column.
-
-        :checked: Whether to hide or to reveal.
-
-        """
-        sender = self.sender()
-        self.logs.setColumnHidden(sender.i, not checked)
-        self.__settings.setValue(str(sender.text()), checked)
+        for index in self.view.selectedIndexes():
+            self.logs.takeRow(index.row())
 
     def save(self):
         """Saves logs to file.
