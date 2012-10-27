@@ -159,9 +159,8 @@ class Main(QtGui.QWidget):
         self.filter = QtGui.QLineEdit()
         self.filter.setStatusTip(QtGui.QApplication.translate(
             'Logs',
-            """Pattern: <pair>|<pair>, where <pair> is"""
-            """<column_name>:<searching_phrase>. Case insensitive,"""
-            """ regexp allowed."""
+            "Pattern: <pair>|<pair>, where <pair> is <column_name>"
+            ":<searching_phrase>. Case insensitive, regexp allowed."
         ))
         f = Filter(self.logs)
         self.filter.textEdited.connect(f.setFilter)
@@ -207,11 +206,6 @@ class Main(QtGui.QWidget):
 
         """
         levels = QtGui.QListWidget()
-        # TODO: add this somehow as globalText
-        #self.info.setText(self.trUtf8(
-            #"Here you can choose what kind of log messages should be"
-            #" displayed in the main window."
-        #))
         for level in LogFilter.allLevels.keys():
             item = QtGui.QListWidgetItem(level)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -234,7 +228,12 @@ class Main(QtGui.QWidget):
                     logfilter.addLevel(level)
                 else:
                     logfilter.removeLevel(level)
-        widget.save = lambda y: save(y)
+        widget.save = save
+        widget.globalText = QtGui.QApplication.translate(
+            'Logs',
+            "Here you can choose what kind of log messages"
+            " should be displayed in the main window."
+        )
         return widget
 
     def update(self, data):
