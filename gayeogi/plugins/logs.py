@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Wozniak (C) 2011
+# Karol "Kenji Takahashi" Wozniak © 2011 - 2012
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,39 +15,42 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from PyQt4 import QtGui
 from PyQt4.QtCore import QSettings, Qt, QObject, pyqtSignal
 import logging
 import re
 
+
 class Handler(QObject, logging.Handler):
     """Logs handler.
 
-    Signals:
-        signal (object): propagates log to the widget.
+    @signal: signal (object): propagates log to the widget.
 
     """
+
     signal = pyqtSignal(object)
-    def __init__(self, update, level = logging.DEBUG):
+
+    def __init__(self, update, level=logging.DEBUG):
         """Constructs new Handler instance.
 
-        Args:
-            update (function): function used to update widget
-            levels (set): enabled levels list
-            level (int): logging level
+        :update: Function used to update widget.
+        :levels: Enabled levels list.
+        :level: Logging level.
 
         """
         QObject.__init__(self)
         logging.Handler.__init__(self, level)
         self.signal.connect(update)
+
     def emit(self, record):
         """Emits signal.
 
-        Args:
-            record (LogRecord): log record
+        :record: Log record.
 
         """
         self.signal.emit([record.name, record.levelname] + record.msg)
+
 
 class Filter(logging.Filter):
     """Logs filter."""
@@ -58,36 +61,39 @@ class Filter(logging.Filter):
         u'Info': logging.INFO,
         u'Debug': logging.DEBUG
     }
+
     def __init__(self):
         """Construcs new Filter instance."""
         logging.Filter.__init__(self)
         self.levels = set()
+
     def filter(self, record):
         """Filters incoming records according to their enabled state.
 
-        Args:
-            record (LogRecord): a log record received from Logger
+        :record: Log record received from Logger.
 
         """
         return record.levelno in self.levels
+
     def addLevel(self, level):
         """Adds specified level to enabled.
 
-        Args:
-            level (unicode): human readable level's name
+        :level: Human readable level's name.
 
         """
         self.levels.add(self.__levels[level])
+
     def removeLevel(self, level):
         """Removes specified level from enabled.
 
-        Args:
-            level (unicode): human readable lavel's name
+        :level: Human readable lavel's name.
 
         """
         self.levels.discard(self.__levels[level])
 
+
 logfilter = Filter()
+
 
 class Main(QtGui.QWidget):
     """Logs plugin widget."""
@@ -96,20 +102,21 @@ class Main(QtGui.QWidget):
     depends = []
     __settings = QSettings(u'gayeogi', u'Logs')
     __levels = [u'Critical', u'Error', u'Warning', u'Info', u'Debug']
+
     def __init__(self, parent, ___, addWidget, removeWidget):
         """Constructs new Main instance.
 
-        Args:
-            parent: parent widget
-            ___: whatever
-            addWidget: function for adding widget to main window
-            removeWidget: function for removing widget from main window
+        :parent: Parent widget.
+        :___: Whatever.
+        :addWidget: Function used to add widget to main window.
+        :removeWidget: Function used to remove widget from main window.
 
         """
         QtGui.QWidget.__init__(self, None)
         self.parent = parent
         self.addWidget = addWidget
         self.removeWidget = removeWidget
+
     def load(self):
         """Loads the plugin in.
 
@@ -118,9 +125,12 @@ class Main(QtGui.QWidget):
         """
         self.filter = QtGui.QLineEdit()
         self.filter.textEdited.connect(self.filter_)
-        self.filter.setStatusTip(
-            QtGui.QApplication.translate('Logs', 'Pattern: <pair>|<pair>, where <pair> is <column_name>:<searching_phrase>. Case insensitive, regexp allowed.')
-        )
+        self.filter.setStatusTip(QtGui.QApplication.translate(
+            'Logs',
+            """Pattern: <pair>|<pair>, where <pair> is"""
+            """<column_name>:<searching_phrase>. Case insensitive,"""
+            """ regexp allowed."""
+        ))
         self.logs = QtGui.QTreeWidget()
         self.logs.setIndentation(0)
         self.logs.setSelectionMode(QtGui.QTreeWidget.ExtendedSelection)
@@ -185,6 +195,7 @@ class Main(QtGui.QWidget):
         logger.setLevel(logging.DEBUG)
         logger.addHandler(handler)
         Main.loaded = True
+
     def unload(self):
         """Unloads the plugin.
 
@@ -194,12 +205,12 @@ class Main(QtGui.QWidget):
         self.__settings.setValue('state', self.logs.header().saveState())
         self.removeWidget(u'horizontalLayout_2', self, 'start')
         Main.loaded = False
+
     @staticmethod
     def QConfiguration():
         """Creates configuration widget.
 
-        Returns:
-            QWidget -- config widget used in settings dialog.
+        :returns: Config widget used in settings dialog.
 
         """
         levels = QtGui.QListWidget()
@@ -218,6 +229,7 @@ class Main(QtGui.QWidget):
         widget = QtGui.QWidget()
         widget.setLayout(layout)
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
+
         def save(y):
             Main.__settings.setValue(u'enabled', y)
             for i in range(levels.count()):
@@ -231,19 +243,19 @@ class Main(QtGui.QWidget):
                     logfilter.removeLevel(level)
         widget.save = lambda y: save(y)
         return widget
+
     def update(self, data):
         """Updates logs widget with new logs.
 
-        Args:
-            data (list): list of entries for appropriate columns
+        :data: List of entries for appropriate columns.
 
         """
         self.logs.addTopLevelItem(QtGui.QTreeWidgetItem(data))
+
     def filter_(self, text):
         """Filters log messages.
 
-        Args:
-            text (unicode): filter pattern (regexp)
+        :text: Filter pattern (regexp).
 
         """
         columns = list()
@@ -278,11 +290,11 @@ class Main(QtGui.QWidget):
         else:
             for i in range(tree.topLevelItemCount()):
                 tree.topLevelItem(i).setHidden(False)
+
     def copy(self, _):
         """Copies selected messages to the clipboard.
 
-        Args:
-            _: whatever (signal comp.)
+        :_: whatever (signal compatibility).
 
         """
         text = ''
@@ -293,26 +305,27 @@ class Main(QtGui.QWidget):
                 text += item.text(c)
             text += '\n'
         QtGui.QApplication.clipboard().setText(text)
+
     def remove(self, _):
         """Removes selected messages from the logs.
 
-        Args:
-            _: whatever (signal comp.)
+        :_: whatever (signal compatibility).
 
         """
         for item in self.logs.selectedItems():
             item = self.logs.takeTopLevelItem(
                 self.logs.indexOfTopLevelItem(item))
+
     def hideColumn(self, checked):
         """Hides or reveals a column.
 
-        Args:
-            checked (bool): whether to hide or to reveal
+        :checked: Whether to hide or to reveal.
 
         """
         sender = self.sender()
         self.logs.setColumnHidden(sender.i, not checked)
         self.__settings.setValue(str(sender.text()), checked)
+
     def save(self):
         """Saves logs to file.
 
