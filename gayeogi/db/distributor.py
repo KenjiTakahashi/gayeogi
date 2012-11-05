@@ -23,7 +23,7 @@ from gayeogi.utils import ConnError
 from gayeogi.db.bandsensor import Bandsensor
 import logging
 
-logger = logging.getLogger('gayeogi.remote')
+logger = logging.getLogger('gayeogi')
 
 
 class Bee(QThread):
@@ -60,7 +60,10 @@ class Bee(QThread):
         try:
             urls = db.urls(artist)
         except ConnError as e:
-            pass  # TODO: log connection error
+            logger.error({
+                u'artist': artist,
+                u'message': e.message
+            })
         if not urls:
             return None
         sensor = Bandsensor(db.sense, urls, albums, types)
@@ -68,7 +71,10 @@ class Bee(QThread):
         if not data:
             return None
         for error in sensor.errors:
-            pass  # TODO: log errors
+            logger.error({
+                u'artist': artist,
+                u'message': e.message
+            })
         return (data[0], data[1])
 
     def run(self):
@@ -96,7 +102,7 @@ class Bee(QThread):
                     if self.case:
                         for a2, y2 in albums:
                             if y1 == y2 and a1.lower() == a2.lower():
-                                a1 = a2
+                                a1 = a2  # FIXME
                     with self.rlock:
                         upsert((u'album', {
                             u'year': y1,
@@ -148,8 +154,10 @@ class Distributor(QThread):
         dbs = list()
         for name, types in bases:
             try:
-                db = __import__(u'gayeogi.db.bees.' + name, globals(),
-                    locals(), [u'sense', u'urls', u'name', u'init'], -1)
+                db = __import__(
+                    u'gayeogi.db.bees.' + name, globals(),
+                    locals(), [u'sense', u'urls', u'name', u'init'], -1
+                )
             except ImportError:  # it should not ever happen
                 logger.error(
                     [name, self.trUtf8('No such module has been found!!!')]

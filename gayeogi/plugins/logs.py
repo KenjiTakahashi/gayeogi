@@ -17,20 +17,14 @@
 
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QSettings, Qt, QObject, pyqtSignal
+from PyQt4.QtCore import QSettings, Qt
 import logging
 from gayeogi.interfaces import TableView
 from gayeogi.utils import Filter
 
 
-class Handler(QObject, logging.Handler):
-    """Logs handler.
-
-    @signal: signal (object): propagates log to the widget.
-
-    """
-
-    signal = pyqtSignal(object)
+class Handler(logging.Handler):
+    """Logs handler."""
 
     def __init__(self, update, level=logging.DEBUG):
         """Constructs new Handler instance.
@@ -40,17 +34,20 @@ class Handler(QObject, logging.Handler):
         :level: Logging level.
 
         """
-        QObject.__init__(self)
-        logging.Handler.__init__(self, level)
-        self.signal.connect(update)
+        super(Handler, self).__init__(level)
+        self.update = update
 
     def emit(self, record):
-        """Emits signal.
+        """Adds received record to the model.
 
         :record: Log record.
 
         """
-        self.signal.emit([record.name, record.levelname] + record.msg)
+        self.update([
+            record.levelname.capitalize(),
+            record.msg.get(u'artist') or record.msg.get(u'file'),
+            record.msg.get(u'message')
+        ])
 
 
 class LogFilter(logging.Filter):
@@ -63,11 +60,13 @@ class LogFilter(logging.Filter):
         u'Added': ADDED,
         u'Removed': REMOVED
     }
+    allScopes = [u'Artist', u'Album', u'Track']
 
     def __init__(self):
         """Construcs new LogFilter instance."""
         super(LogFilter, self).__init__()
         self.levels = set()
+        self.scopes = set()
         for name in [u'added', u'removed']:
             level = LogFilter.allLevels[name.capitalize()]
             logging.addLevelName(level, name.upper())
@@ -82,6 +81,7 @@ class LogFilter(logging.Filter):
         :record: Log record received from Logger.
 
         """
+        # TODO: Filter using scopes
         return record.levelno in self.levels
 
     def addLevel(self, level):
@@ -99,6 +99,22 @@ class LogFilter(logging.Filter):
 
         """
         self.levels.discard(self.allLevels[level])
+
+    def addScope(self, scope):
+        """Enables specified scope.
+
+        :scope: @todo
+
+        """
+        self.scopes.add(scope)
+
+    def removeScope(self, scope):
+        """Disables specified scope.
+
+        :scope: @todo
+
+        """
+        self.scopes.discard(scope)
 
 
 logfilter = LogFilter()
@@ -120,7 +136,7 @@ class Main(QtGui.QWidget):
         :removeWidget: Function used to remove widget from main window.
 
         """
-        QtGui.QWidget.__init__(self, None)
+        super(Main, self).__init__(None)
         self.parent = parent
         self.addWidget = addWidget
         self.removeWidget = removeWidget
@@ -133,7 +149,6 @@ class Main(QtGui.QWidget):
         """
         self.logs = QtGui.QStandardItemModel(0, 4)
         self.logs.setHorizontalHeaderLabels([
-            QtGui.QApplication.translate('Logs', 'Module'),
             QtGui.QApplication.translate('Logs', 'Type'),
             QtGui.QApplication.translate('Logs', 'File/Entry'),
             QtGui.QApplication.translate('Logs', 'Message')
@@ -179,6 +194,9 @@ class Main(QtGui.QWidget):
         for level in LogFilter.allLevels.keys():
             if self.__settings.value(level, 0).toInt()[0]:
                 logfilter.addLevel(level)
+        for scope in LogFilter.allScopes:
+            if self.__settings.value(scope, 0).toInt()[0]:
+                logfilter.addScope(scope)
         handler = Handler(self.update)
         handler.addFilter(logfilter)
         logger = logging.getLogger('gayeogi')
@@ -205,22 +223,39 @@ class Main(QtGui.QWidget):
         :returns: Config widget used in settings dialog.
 
         """
-        levels = QtGui.QListWidget()
+        levels = list()
+        levelsW = QtGui.QGroupBox(QtGui.QApplication.translate(
+            u'Logs', 'Levels'
+        ))
+        levelsL = QtGui.QVBoxLayout()
+        levelsW.setLayout(levelsL)
         for level in LogFilter.allLevels.keys():
-            item = QtGui.QListWidgetItem(level)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item = QtGui.QCheckBox(level)
             item.setCheckState(Main.__settings.value(level, 0).toInt()[0])
-            levels.addItem(item)
-        layout = QtGui.QHBoxLayout()
-        layout.addWidget(levels)
+            levels.append(item)
+            levelsL.addWidget(item)
+        scopes = list()
+        scopesW = QtGui.QGroupBox(QtGui.QApplication.translate(
+            u'Logs', 'Scopes'
+        ))
+        scopesL = QtGui.QVBoxLayout()
+        scopesW.setLayout(scopesL)
+        for scope in LogFilter.allScopes:
+            item = QtGui.QCheckBox(scope)
+            item.setCheckState(Main.__settings.value(scope, 0).toInt()[0])
+            scopes.append(item)
+            scopesL.addWidget(item)
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(levelsW)
+        layout.addWidget(scopesW)
+        layout.addStretch()
         widget = QtGui.QWidget()
         widget.setLayout(layout)
         widget.enabled = Main.__settings.value(u'enabled', 0).toInt()[0]
 
         def save(y):
             Main.__settings.setValue(u'enabled', y)
-            for i in range(levels.count()):
-                item = levels.item(i)
+            for item in levels:
                 level = unicode(item.text())
                 state = item.checkState()
                 Main.__settings.setValue(level, state)
@@ -228,6 +263,14 @@ class Main(QtGui.QWidget):
                     logfilter.addLevel(level)
                 else:
                     logfilter.removeLevel(level)
+            for item in scopes:
+                scope = unicode(item.text())
+                state = item.checkState()
+                Main.__settings.setValue(scope, state)
+                if state:
+                    logfilter.addScope(scope)
+                else:
+                    logfilter.removeScope(scope)
         widget.save = save
         widget.globalText = QtGui.QApplication.translate(
             'Logs',

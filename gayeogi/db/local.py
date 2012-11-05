@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import json
 import os
 import glob
@@ -57,7 +58,7 @@ class LegacyDB(object):
                 avai[key][u'remote'] = set()
 
 
-logger = logging.getLogger('gayeogi.local')
+logger = logging.getLogger('gayeogi')
 _settings = QtCore.QSettings(u'gayeogi', u'Databases')
 
 
@@ -723,7 +724,6 @@ class BaseModel(QtCore.QAbstractItemModel):
             for rowi in xrange(self.rowCount(node)):
                 row = self.index(rowi, 0, node)
                 child = row.internalPointer()
-            #for child in node.children():
                 truth = True
                 for k, v in values.iteritems():
                     if child.metadata[k] != v:
