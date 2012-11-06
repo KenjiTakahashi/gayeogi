@@ -30,7 +30,6 @@ class Handler(logging.Handler):
         """Constructs new Handler instance.
 
         :update: Function used to update widget.
-        :levels: Enabled levels list.
         :level: Logging level.
 
         """
@@ -45,7 +44,10 @@ class Handler(logging.Handler):
         """
         self.update([
             record.levelname.capitalize(),
-            record.msg.get(u'artist') or record.msg.get(u'file'),
+            record.msg.get(u'file'),
+            record.msg.get(u'artist'),
+            record.msg.get(u'album'),
+            record.msg.get(u'track'),
             record.msg.get(u'message')
         ])
 
@@ -81,7 +83,9 @@ class LogFilter(logging.Filter):
         :record: Log record received from Logger.
 
         """
-        # TODO: Filter using scopes
+        for scope in LogFilter.allScopes:
+            if not scope in self.scopes and record.msg.get(scope.lower()):
+                return False
         return record.levelno in self.levels
 
     def addLevel(self, level):
@@ -147,10 +151,13 @@ class Main(QtGui.QWidget):
         Also creates appropriate widgets and adds them to main window.
 
         """
-        self.logs = QtGui.QStandardItemModel(0, 4)
+        self.logs = QtGui.QStandardItemModel(0, 6)
         self.logs.setHorizontalHeaderLabels([
-            QtGui.QApplication.translate('Logs', 'Type'),
-            QtGui.QApplication.translate('Logs', 'File/Entry'),
+            QtGui.QApplication.translate('Logs', 'Event'),
+            QtGui.QApplication.translate('Logs', 'File'),
+            QtGui.QApplication.translate('Logs', 'Artist'),
+            QtGui.QApplication.translate('Logs', 'Album'),
+            QtGui.QApplication.translate('Logs', 'Track'),
             QtGui.QApplication.translate('Logs', 'Message')
         ])
         self.view = TableView(None)  # TODO: provide state
