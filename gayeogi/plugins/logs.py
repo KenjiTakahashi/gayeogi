@@ -73,9 +73,11 @@ class LogFilter(logging.Filter):
             level = LogFilter.allLevels[name.capitalize()]
             logging.addLevelName(level, name.upper())
 
-            def func(self, msg, *args, **kwargs):
-                self._log(level, msg, args, **kwargs)
-            setattr(logging.Logger, name, func)
+            def wrapper(level):
+                def func(self, msg, *args, **kwargs):
+                    self._log(level, msg, args, **kwargs)
+                return func
+            setattr(logging.Logger, name, wrapper(level))
 
     def filter(self, record):
         """Filters incoming records according to their enabled state.
@@ -84,7 +86,8 @@ class LogFilter(logging.Filter):
 
         """
         for scope in LogFilter.allScopes:
-            if not scope in self.scopes and record.msg.get(scope.lower()):
+            val = record.msg.get(scope.lower())
+            if scope not in self.scopes and val is not None:
                 return False
         return record.levelno in self.levels
 
@@ -238,7 +241,7 @@ class Main(QtGui.QWidget):
         levelsW.setLayout(levelsL)
         for level in LogFilter.allLevels.keys():
             item = QtGui.QCheckBox(level)
-            item.setCheckState(Main.__settings.value(level, 0).toInt()[0])
+            item.setCheckState(Main.__settings.value(level, 2).toInt()[0])
             levels.append(item)
             levelsL.addWidget(item)
         scopes = list()
@@ -249,7 +252,7 @@ class Main(QtGui.QWidget):
         scopesW.setLayout(scopesL)
         for scope in LogFilter.allScopes:
             item = QtGui.QCheckBox(scope)
-            item.setCheckState(Main.__settings.value(scope, 0).toInt()[0])
+            item.setCheckState(Main.__settings.value(scope, 2).toInt()[0])
             scopes.append(item)
             scopesL.addWidget(item)
         layout = QtGui.QVBoxLayout()
