@@ -30,13 +30,13 @@ class HandlerMock(logging.Handler):
 
 
 class BaseTest(object):
-    def setUp(self, handler):
+    def setUp(self, handler, *args):
         self.logfilter = LogFilter()
         self.logfilter.levels = set(LogFilter.allLevels.values())
         self.logfilter.scopes = set(LogFilter.allScopes)
         self.logger = logging.getLogger('gayeogitest')
         self.logger.setLevel(logging.DEBUG)
-        self.handler = handler()
+        self.handler = handler(*args)
         self.handler.addFilter(self.logfilter)
         self.logger.addHandler(self.handler)
 
@@ -91,4 +91,11 @@ class TestLogFilter(BaseTest):
 
 class TestHandler(BaseTest):
     def setUp(self):
-        super(TestHandler, self).setUp(Handler)
+        super(TestHandler, self).setUp(Handler, self.update)
+
+    def update(self, value):
+        self.value = value[:]
+
+    def test_should_call_update_with_correct_values(self):
+        self.logger.added({u'artist': 0, u'track': 1})
+        assert self.value == [u'Added', None, 0, None, 1, None]
