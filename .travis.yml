@@ -20,7 +20,7 @@ before_install:
   - python configure.py --confirm-license
   - make -j 2
   - sudo make install
-  - cd ../TravisRamblings
+  - cd ../gayeogi
 install:
   - pip install mutagen
 script: nosetests tests/
