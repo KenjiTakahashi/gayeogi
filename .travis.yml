@@ -22,5 +22,5 @@ before_install:
   - sudo make install
   - cd ../gayeogi
 install:
-  - pip install mutagen
+  - pip install . --use-mirrors
 script: nosetests tests/
