@@ -2,9 +2,9 @@
 *pyc
 *swp
 releases/*
-.todo
+.td
 dist/*
 MANIFEST
 build/*
-gayeogi.egg-info/*
+*.egg-info/
 gprof2dot.py

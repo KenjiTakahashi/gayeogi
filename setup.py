@@ -21,7 +21,7 @@ setup(
     name='gayeogi',
     version='0.6.3',
     description='A fully-featured music management suite.',
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
     author='Karol "Kenji Takahashi" Woźniak',
     author_email='wozniakk@gmail.com',
     license='GPL3',
@@ -48,11 +48,12 @@ setup(
     Environment :: Win32 (MS Windows)
     Environment :: X11 Applications :: Qt
     Intended Audience :: End Users/Desktop
-    License :: OSI Approved :: GNU General Public License (GPL)
+    License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)
     Natural Language :: English
     Natural Language :: Polish
     Operating System :: OS Independent
     Programming Language :: Python :: 2
+    Topic :: Multimedia :: Sound/Audio
     Topic :: Multimedia :: Sound/Audio :: Players
     """.splitlines() if f.strip()]
 )
