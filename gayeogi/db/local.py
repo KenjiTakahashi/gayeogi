@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi/
-# Karol "Kenji Takahashi" Woźniak © 2010 - 2012
+# Karol "Kenji Takahashi" Woźniak © 2010 - 2013
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -695,6 +695,12 @@ class BaseModel(QtCore.QAbstractItemModel):
                 return node
         return self._rootNode
 
+    def getADR(self, meta, key):
+        try:
+            return meta.get(key)[0]
+        except (TypeError, IndexError):
+            return None
+
     def upsert(self, index, meta):
         """Inserts or updates an entry in the database.
 
@@ -738,7 +744,7 @@ class BaseModel(QtCore.QAbstractItemModel):
             place = None
         self.layoutAboutToBeChanged.emit()
         if not index:
-            def _update_(node, values, Class):
+            def _update_(node, values, Class, adr=None):
                 newNode = find(node, values)
                 if not newNode:
                     position = self.rowCount(node)
@@ -749,6 +755,10 @@ class BaseModel(QtCore.QAbstractItemModel):
                         Class(parent=node.internalPointer())
                     self.endInsertRows()
                     newNode = self.index(position, 0, node)
+                if adr is not None:
+                    logger.added(dict(values, **adr))
+                else:
+                    logger.added(values)
                 return newNode
             artist = _update_(QtCore.QModelIndex(), {
                 u'artist': meta.get(u'artist') or u'unknown'
@@ -757,7 +767,11 @@ class BaseModel(QtCore.QAbstractItemModel):
                 album = _update_(artist, {
                     u'album': meta.get(u'album') or u'unknown',
                     u'year': meta.get(u'year') or u'0000'
-                }, AlbumNode)
+                }, AlbumNode, {
+                    u'a': self.getADR(meta, u'__a__'),
+                    u'd': self.getADR(meta, u'__d__'),
+                    u'r': self.getADR(meta, u'__r__')
+                })
                 if not place or place == u'track':
                     position = self.rowCount(album)
                     self.beginInsertRows(album, position, position)
@@ -775,7 +789,7 @@ class BaseModel(QtCore.QAbstractItemModel):
                 artist.internalPointer().update(meta)
                 index = artist
         else:
-            def _update(node, values, Class):
+            def _update(node, values, Class, adr=None):
                 newNode = find(node, values)
                 if not newNode:
                     position = self.rowCount(node)
@@ -783,6 +797,10 @@ class BaseModel(QtCore.QAbstractItemModel):
                     Class(parent=node.internalPointer())
                     self.endInsertRows()
                     newNode = self.index(position, 0, node)
+                    if adr is not None:
+                        logger.added(dict(values, **adr))
+                    else:
+                        logger.added(values)
                 newNode.internalPointer().update(meta)
                 self.remove(newNode)
                 node.internalPointer().update()
@@ -793,7 +811,11 @@ class BaseModel(QtCore.QAbstractItemModel):
                     _update(index, {
                         u'album': meta[u'album'],
                         u'year': meta[u'year']
-                    }, AlbumNode)
+                    }, AlbumNode, {
+                        u'a': self.getADR(meta, u'__a__'),
+                        u'd': self.getADR(meta, u'__d__'),
+                        u'r': self.getADR(meta, u'__r__')
+                    })
                 elif place == u'track':
                     for albumi in xrange(self.rowCount(index)):
                         album = self.index(albumi, 0, index)
@@ -1206,3 +1228,6 @@ class DB(QtCore.QThread):
                                     )
                                     self.index[path] = os.stat(path).st_mtime
         self.finished.emit()
+
+
+#2

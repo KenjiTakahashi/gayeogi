@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This is a part of gayeogi @ http://github.com/KenjiTakahashi/gayeogi
-# Karol "Kenji Takahashi" Woźniak © 2012
+# Karol "Kenji Takahashi" Woźniak © 2012 - 2013
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ class HandlerMock(logging.Handler):
 
 
 class BaseTest(object):
-    def setUp(self, handler, *args):
+    def setUp(self, handler=HandlerMock, *args):
         self.logfilter = LogFilter()
         self.logfilter.levels = set(LogFilter.allLevels.values())
         self.logfilter.scopes = set(LogFilter.allScopes)
@@ -46,9 +46,6 @@ class BaseTest(object):
 
 
 class TestLogFilter(BaseTest):
-    def setUp(self):
-        super(TestLogFilter, self).setUp(HandlerMock)
-
     def test_added_log_level(self):
         self.logger.added({u'track': 0})
         assert self.handler.messages[0].levelno == 60
@@ -99,3 +96,31 @@ class TestHandler(BaseTest):
     def test_should_call_update_with_correct_values(self):
         self.logger.added({u'artist': 0, u'track': 1})
         assert self.value == [u'Added', None, 0, None, 1, None]
+
+
+class TestLogCases(BaseTest):
+    def test_d_adding_new_artist(self):
+        assert False
+
+    def test_d_adding_new_album(self):
+        assert False
+
+    def test_d_adding_new_track(self):
+        assert False
+
+    def test_d_removing_album(self):
+        assert False
+
+    def test_d_removing_track(self):
+        assert False
+
+    def test_r_adding_new_album(self):
+        # should tell us what was added to what
+        assert False
+
+    def test_r_removing_album(self):
+        # should tell us what was removed from what
+        assert False
+
+
+#2

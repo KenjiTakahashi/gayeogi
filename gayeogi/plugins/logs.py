@@ -42,11 +42,19 @@ class Handler(logging.Handler):
         :record: Log record.
 
         """
+        album = record.msg.get(u'album')
+        if album is not None:
+            album = "[{0}{1}{2}]{3}".format(
+                record.msg.get(u'a') and u'a' or u'',
+                record.msg.get(u'd') and u'd' or u'',
+                record.msg.get(u'r') and u'r' or u'',
+                album
+            )
         self.update([
             record.levelname.capitalize(),
             record.msg.get(u'file'),
             record.msg.get(u'artist'),
-            record.msg.get(u'album'),
+            album,
             record.msg.get(u'track'),
             record.msg.get(u'message')
         ])
@@ -62,7 +70,7 @@ class LogFilter(logging.Filter):
         u'Added': ADDED,
         u'Removed': REMOVED
     }
-    allScopes = [u'Artist', u'Album', u'Track']
+    allScopes = [u'File', u'Artist', u'Album', u'Track']
 
     def __init__(self):
         """Construcs new LogFilter instance."""
