@@ -1,3 +1,11 @@
+**DISCLAIMER**
+
+**This is now officially discontinued.**
+
+After some thinking, I decided that it's became too bloated to further extend without rewriting much of it. I've also realised that I have a bit different requirements from a music manager than when I first started this.
+
+I've learned quite a lot during this period and I don't give up on making a *different* music suite, especially suitable for metalheads, so stay tuned for what the future will bring.
+
 **gayeogi** is aimed to be fully-featured music management suite, including library collecting, new and missing releases checking, playing, scrobbling, tagging, and so on,
 but keep in mind that it's still in beta stage, so some features may be still missing or not fully working.
 
@@ -29,9 +37,12 @@ lxml >= 2.3 (metal-archives.com, musicbrainz.org, progarchives.com)
 - Windows installer provides all that dependencies to you, don't bother getting them separately (unless you want to build from source, of course).
 - Versions specified here are "known to work", but it may be possible that and older one will fit too.
 - Due to the name change during update to 0.6 you'll have to execute following commands if you want to keep your db and settings:
-        $ mkdir ~/.config/gayeogi
-        $ cp ~/.config/fetcher/* ~/.config/gayeogi/
-        $ mv ~/.config/gayeogi/Fetcher.conf ~/.config/gayeogi/gayeogi.conf
+
+```sh
+$ mkdir ~/.config/gayeogi
+$ cp ~/.config/fetcher/* ~/.config/gayeogi/
+$ mv ~/.config/gayeogi/Fetcher.conf ~/.config/gayeogi/gayeogi.conf
+```
 
 ## LINUX
 ### ARCHLINUX
@@ -48,7 +59,7 @@ There are binary packages (along with custom repositories) for some popular dist
 
 ### GENTOO
 
-There is an ebuild available in [overlays][overlays] thanks to <someone> (if you're the one, feel free to send me a message).
+There is an ebuild available in [overlays][overlays] thanks to *someone* (if you're the one, feel free to send me a message).
 
 [overlays]: http://gpo.zugaina.org/media-sound/gayeogi
 
